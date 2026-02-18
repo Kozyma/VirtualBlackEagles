@@ -961,19 +961,22 @@ def about():
 	# 개요 섹션 가져오기 (임무, 선발, 편대) - 언어별로 가져오기
 	lang_param = 'en' if lang == 'en' else 'ko'
 	overview_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('mission', 'selection', 'formation', lang_param)).fetchall()
-	
+
+	# 항공기 섹션 가져오기
+	aircraft_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('aircraft_intro', 'aircraft_specs', 'aircraft_features', lang_param)).fetchall()
+
 	# 사이트 이미지 가져오기
 	site_images = {}
 	images = conn.execute('SELECT image_key, image_path FROM site_images').fetchall()
 	for img in images:
 		site_images[img['image_key']] = img['image_path']
-	
+
 	conn.close()
-	
+
 	if lang == 'en':
-		return render_template('about_en.html', banner=banner, sections=sections, pilots=pilots, maintenance_crew=maintenance_crew, candidates=candidates, commanders=commanders, overview_sections=overview_sections, site_images=site_images)
+		return render_template('about_en.html', banner=banner, sections=sections, pilots=pilots, maintenance_crew=maintenance_crew, candidates=candidates, commanders=commanders, overview_sections=overview_sections, aircraft_sections=aircraft_sections, site_images=site_images)
 	else:
-		return render_template('about.html', banner=banner, sections=sections, pilots=pilots, maintenance_crew=maintenance_crew, candidates=candidates, commanders=commanders, overview_sections=overview_sections, site_images=site_images)
+		return render_template('about.html', banner=banner, sections=sections, pilots=pilots, maintenance_crew=maintenance_crew, candidates=candidates, commanders=commanders, overview_sections=overview_sections, aircraft_sections=aircraft_sections, site_images=site_images)
 
 
 @app.route('/contact')

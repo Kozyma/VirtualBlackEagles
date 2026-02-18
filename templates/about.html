@@ -37,10 +37,8 @@
             <div style="width:400px;flex-shrink:0;">
               <img src="{{ section['image_url'] or '/static/Picture/test.jpg' }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
             </div>
-            <div style="flex:1;">
-              <p style="font-size:1.1rem;line-height:1.8;">
-                {{ section['content'] }}
-              </p>
+            <div style="flex:1;font-size:1.1rem;line-height:1.8;">
+                {{ section['content']|safe }}
             </div>
           </div>
         </div>
@@ -178,102 +176,33 @@
       </section>
       <section id="aircraft" class="about-section tab-content">
         <h2 style="text-align:center;margin-bottom:3rem;font-size:2.5rem;">항공기</h2>
-        
-        <!-- T-50B 소개 -->
-        <div style="display:flex;align-items:center;gap:3rem;max-width:1200px;margin:0 auto 4rem auto;">
-          <div style="flex:1;">
-            <img src="/static/images/t50b.jpg" alt="T-50B Golden Eagle" style="width:100%;height:auto;border-radius:8px;">
-          </div>
-          <div style="flex:1;">
-            <h3 style="font-size:1.8rem;margin-bottom:1.5rem;">T-50B 골든이글</h3>
-            <p style="font-size:1.1rem;line-height:1.8;margin-bottom:1rem;">
-              T-50B는 대한민국이 독자 개발한 초음속 고등훈련기로, 블랙이글스 특수비행팀의 공식 기종입니다.
-            </p>
-            <ul style="font-size:1rem;line-height:1.8;color:#666;list-style:none;padding:0;">
-              <li style="margin-bottom:0.5rem;">• 최대속도: 마하 1.5</li>
-              <li style="margin-bottom:0.5rem;">• 엔진: F404-GE-102 터보팬 엔진</li>
-              <li style="margin-bottom:0.5rem;">• 승무원: 2명 (조종사, 부조종사)</li>
-              <li style="margin-bottom:0.5rem;">• 전장: 13.14m / 전폭: 9.45m</li>
-            </ul>
-          </div>
-        </div>
 
-        <!-- 블랙이글스 설명 -->
-        <div style="border-top:2px dotted #ccc;padding:3rem 0;margin:3rem 0;">
-          <p style="font-size:1.1rem;line-height:1.8;max-width:1200px;margin:0 auto;color:#333;">
-            블랙이글스는 전용 예약 T-50B 항공기는 흰색의 검은색과 황색, 아래면은 노란색으로 도색되어 있으며, 독수리를 형상화한 냉정하여 
-            있어 기존의 T-50B 항공기의 비해 에어쇼 가동분석과 연막 자료 확보에 편의성이다. T-50B 항공기는 조종석 내부와 항공기 외부에 
-            피 카메라가 설치되어 있어 기동 중인 T-50B 항공기 주변에 메이커스 비행기가 수록하여 편 카메라와 내장되어 있습니다.
-          </p>
-        </div>
-
-        <!-- T-50B 제원표 -->
-        <div style="border-top:2px dotted #ccc;padding-top:3rem;margin-top:3rem;">
-          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">T-50B 제원</h3>
-          <table style="width:100%;max-width:900px;margin:0 auto 3rem auto;border-collapse:collapse;border:1px solid #ddd;">
-            <thead>
-              <tr style="background:#4a90e2;color:white;">
-                <th style="padding:1rem;text-align:center;border:1px solid #ddd;width:30%;">구분</th>
-                <th style="padding:1rem;text-align:center;border:1px solid #ddd;">T-50B</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">길이</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">13.4M</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">폭</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">9.45M</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">높이</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">4.91M</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">타입</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">초음속 항공기</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">제작국</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">대한민국</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">이륙중량</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">13,454KG</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">최대속도</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">MACH 1.5</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 특징 -->
-        <div style="border-top:2px dotted #ccc;padding-top:3rem;margin-top:3rem;">
-          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">특징</h3>
-          <div style="display:flex;gap:2rem;max-width:1200px;margin:0 auto;">
-            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
-              <h4 style="color:#007bff;margin-bottom:1rem;">뛰어난 기동성</h4>
-              <p style="line-height:1.6;color:#666;">
-                고출력 엔진과 최신 항공전자장비를 탑재하여 다양한 특수비행 기동을 완벽하게 수행할 수 있습니다.
-              </p>
+        {% if aircraft_sections %}
+        {% for section in aircraft_sections %}
+        {% if not loop.first %}
+        <div style="border-top:2px dotted #ccc;margin:3rem 0;"></div>
+        {% endif %}
+        <div style="padding:2rem 0;max-width:1200px;margin:0 auto;">
+          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">{{ section['title'] }}</h3>
+          {% if section['image_url'] %}
+          <div style="display:flex;align-items:flex-start;gap:3rem;">
+            <div style="width:400px;flex-shrink:0;">
+              <img src="{{ section['image_url'] }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
             </div>
-            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
-              <h4 style="color:#007bff;margin-bottom:1rem;">국산 기술</h4>
-              <p style="line-height:1.6;color:#666;">
-                대한민국 항공우주산업(KAI)이 개발한 국산 항공기로, 우리의 기술력을 전 세계에 알리는 역할을 합니다.
-              </p>
-            </div>
-            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
-              <h4 style="color:#007bff;margin-bottom:1rem;">다목적 활용</h4>
-              <p style="line-height:1.6;color:#666;">
-                고등훈련기로서의 역할뿐만 아니라 경공격기로도 운용 가능한 다목적 항공기입니다.
-              </p>
+            <div style="flex:1;font-size:1.1rem;line-height:1.8;">
+              {{ section['content']|safe }}
             </div>
           </div>
+          {% else %}
+          <div style="font-size:1.1rem;line-height:1.8;">
+            {{ section['content']|safe }}
+          </div>
+          {% endif %}
         </div>
+        {% endfor %}
+        {% else %}
+        <p style="text-align:center;color:#999;margin-top:2rem;">관리자 패널에서 항공기 정보를 등록해주세요.<br>(팀소개 섹션 관리 > 항공기 소개/제원/특징)</p>
+        {% endif %}
       </section>
       <section id="maneuvers" class="about-section tab-content">
         

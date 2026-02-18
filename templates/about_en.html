@@ -37,10 +37,8 @@
             <div style="width:400px;flex-shrink:0;">
               <img src="{{ section['image_url'] or '/static/Picture/test.jpg' }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
             </div>
-            <div style="flex:1;">
-              <p style="font-size:1.1rem;line-height:1.8;">
-                {{ section['content'] }}
-              </p>
+            <div style="flex:1;font-size:1.1rem;line-height:1.8;">
+                {{ section['content']|safe }}
             </div>
           </div>
         </div>
@@ -176,97 +174,33 @@
       </section>
       <section id="aircraft" class="about-section tab-content">
         <h2 style="text-align:center;margin-bottom:3rem;font-size:2.5rem;">Aircraft</h2>
-        
-        <!-- T-50B Introduction -->
-        <div style="display:flex;align-items:center;gap:3rem;max-width:1200px;margin:0 auto 4rem auto;">
-          <div style="flex:1;">
-            <img src="/static/images/t50b.jpg" alt="T-50B Golden Eagle" style="width:100%;height:auto;border-radius:8px;">
-          </div>
-          <div style="flex:1;">
-            <h3 style="font-size:1.8rem;margin-bottom:1.5rem;">T-50B Golden Eagle</h3>
-            <p style="font-size:1.1rem;line-height:1.8;margin-bottom:1rem;">
-              The T-50B is a supersonic advanced trainer aircraft developed independently by South Korea 
-              and serves as the official aircraft of the Black Eagles aerobatic team.
-            </p>
-            <ul style="font-size:1rem;line-height:1.8;color:#666;list-style:none;padding:0;">
-              <li style="margin-bottom:0.5rem;">• Maximum Speed: Mach 1.5</li>
-              <li style="margin-bottom:0.5rem;">• Engine: F404-GE-102 Turbofan</li>
-              <li style="margin-bottom:0.5rem;">• Crew: 2 (Pilot, Co-pilot)</li>
-              <li style="margin-bottom:0.5rem;">• Length: 13.14m / Wingspan: 9.45m</li>
-            </ul>
-          </div>
-        </div>
 
-        <!-- T-50B Specifications -->
-        <div style="border-top:2px dotted #ccc;padding-top:3rem;margin-top:3rem;">
-          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">T-50B Specifications</h3>
-          <table style="width:100%;max-width:900px;margin:0 auto 3rem auto;border-collapse:collapse;border:1px solid #ddd;">
-            <thead>
-              <tr style="background:#4a90e2;color:white;">
-                <th style="padding:1rem;text-align:center;border:1px solid #ddd;width:30%;">Category</th>
-                <th style="padding:1rem;text-align:center;border:1px solid #ddd;">T-50B</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Length</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">13.4M</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Width</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">9.45M</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Height</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">4.91M</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Type</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">Supersonic Aircraft</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Manufacturer</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">Republic of Korea</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Takeoff Weight</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">13,454KG</td>
-              </tr>
-              <tr>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Max Speed</td>
-                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">MACH 1.5</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Features -->
-        <div style="border-top:2px dotted #ccc;padding-top:3rem;margin-top:3rem;">
-          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">Features</h3>
-          <div style="display:flex;gap:2rem;max-width:1200px;margin:0 auto;">
-            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
-              <h4 style="color:#007bff;margin-bottom:1rem;">Excellent Maneuverability</h4>
-              <p style="line-height:1.6;color:#666;">
-                Equipped with a high-power engine and advanced avionics, it can perfectly perform 
-                various special flight maneuvers.
-              </p>
+        {% if aircraft_sections %}
+        {% for section in aircraft_sections %}
+        {% if not loop.first %}
+        <div style="border-top:2px dotted #ccc;margin:3rem 0;"></div>
+        {% endif %}
+        <div style="padding:2rem 0;max-width:1200px;margin:0 auto;">
+          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">{{ section['title'] }}</h3>
+          {% if section['image_url'] %}
+          <div style="display:flex;align-items:flex-start;gap:3rem;">
+            <div style="width:400px;flex-shrink:0;">
+              <img src="{{ section['image_url'] }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
             </div>
-            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
-              <h4 style="color:#007bff;margin-bottom:1rem;">Korean Technology</h4>
-              <p style="line-height:1.6;color:#666;">
-                Developed by Korea Aerospace Industries (KAI), it showcases Korea's technological 
-                prowess to the world.
-              </p>
-            </div>
-            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
-              <h4 style="color:#007bff;margin-bottom:1rem;">Multi-Purpose Capability</h4>
-              <p style="line-height:1.6;color:#666;">
-                Functions not only as an advanced trainer but also as a light attack aircraft, 
-                making it a versatile platform.
-              </p>
+            <div style="flex:1;font-size:1.1rem;line-height:1.8;">
+              {{ section['content']|safe }}
             </div>
           </div>
+          {% else %}
+          <div style="font-size:1.1rem;line-height:1.8;">
+            {{ section['content']|safe }}
+          </div>
+          {% endif %}
         </div>
+        {% endfor %}
+        {% else %}
+        <p style="text-align:center;color:#999;margin-top:2rem;">Please add aircraft information from the admin panel.<br>(About Sections > Aircraft Intro/Specs/Features)</p>
+        {% endif %}
       </section>
       <section id="maneuvers" class="about-section tab-content">
         
