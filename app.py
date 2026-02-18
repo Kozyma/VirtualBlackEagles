@@ -1527,6 +1527,21 @@ def admin_dashboard():
 		SELECT COUNT(*) as count FROM page_views WHERE DATE(visited_at) = DATE('now')
 	''').fetchone()['count']
 
+	# 총 방문 수
+	total_views = conn.execute('SELECT COUNT(*) as count FROM page_views').fetchone()['count']
+
+	# 이번 주 방문 수
+	week_views = conn.execute('''
+		SELECT COUNT(*) as count FROM page_views
+		WHERE visited_at >= DATE('now', '-7 days')
+	''').fetchone()['count']
+
+	# 이번 달 방문 수
+	month_views = conn.execute('''
+		SELECT COUNT(*) as count FROM page_views
+		WHERE visited_at >= DATE('now', 'start of month')
+	''').fetchone()['count']
+
 	# 총 회원 수
 	total_users = conn.execute('SELECT COUNT(*) as count FROM users').fetchone()['count']
 
@@ -1538,6 +1553,9 @@ def admin_dashboard():
 		unread_chat_count=unread_chat_count,
 		active_chat_sessions=active_chat_sessions,
 		today_views=today_views,
+		total_views=total_views,
+		week_views=week_views,
+		month_views=month_views,
 		total_users=total_users
 	)
 
