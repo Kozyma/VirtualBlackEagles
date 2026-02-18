@@ -35,6 +35,11 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.environ.get('SECRET_KEY', 'devsecret-change-this-in-production')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
+app.config['PREFERRED_URL_SCHEME'] = 'https'
+
+# 프록시 뒤에서 HTTPS를 올바르게 감지하도록 설정
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # Google OAuth 설정
 if HAS_OAUTH:
@@ -1283,7 +1288,7 @@ def auth_google():
 	if not HAS_OAUTH or not os.environ.get('GOOGLE_CLIENT_ID'):
 		flash('Google 로그인이 설정되지 않았습니다.', 'error')
 		return redirect(url_for('index'))
-	redirect_uri = url_for('auth_google_callback', _external=True)
+	redirect_uri = url_for('auth_google_callback', _external=True, _scheme='https')
 	return google.authorize_redirect(redirect_uri)
 
 
