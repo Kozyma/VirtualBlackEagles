@@ -17,6 +17,16 @@ from markupsafe import Markup, escape
 from functools import wraps
 from PIL import Image
 
+# PostgreSQL 지원
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+USE_POSTGRES = bool(DATABASE_URL)
+if USE_POSTGRES:
+	import psycopg2
+	import psycopg2.extras
+	# Render에서 제공하는 URL이 postgres:// 로 시작하면 postgresql:// 로 변경
+	if DATABASE_URL.startswith('postgres://'):
+		DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
 try:
 	from sendgrid import SendGridAPIClient
 	from sendgrid.helpers.mail import Mail as SGMail, Email, To, Content
@@ -55,33 +65,8 @@ if HAS_OAUTH:
 # 파일 업로드 크기 제한 (16MB)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# 업로드 파일 영구 저장 경로 설정
-# Render 배포 시: RENDER_DISK_PATH/uploads/ 에 저장 → /uploads/ 라우트로 서빙
-# 로컬 개발 시: static/ 폴더에 저장 (기존과 동일)
-if os.environ.get('RENDER_DISK_PATH'):
-	UPLOAD_BASE = os.path.join(PERSISTENT_DIR, 'uploads')
-	os.makedirs(os.path.join(UPLOAD_BASE, 'gallery'), exist_ok=True)
-	os.makedirs(os.path.join(UPLOAD_BASE, 'members'), exist_ok=True)
-	os.makedirs(os.path.join(UPLOAD_BASE, 'images'), exist_ok=True)
-	USE_PERSISTENT_UPLOADS = True
-else:
-	UPLOAD_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
-	USE_PERSISTENT_UPLOADS = False
-
-# Render 영구 디스크에서 업로드 파일 서빙
-if USE_PERSISTENT_UPLOADS:
-	from flask import send_from_directory as _send_from_dir
-	@app.route('/static/gallery/<path:filename>')
-	def serve_gallery(filename):
-		return _send_from_dir(os.path.join(UPLOAD_BASE, 'gallery'), filename)
-
-	@app.route('/static/members/<path:filename>')
-	def serve_members(filename):
-		return _send_from_dir(os.path.join(UPLOAD_BASE, 'members'), filename)
-
-	@app.route('/static/images/<path:filename>')
-	def serve_images(filename):
-		return _send_from_dir(os.path.join(UPLOAD_BASE, 'images'), filename)
+# 업로드 파일 저장 경로 설정
+UPLOAD_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 
 
 # 페이지 방문 트래킹
@@ -185,25 +170,145 @@ def autolink_filter(text):
 	return Markup(linked)
 
 # 데이터베이스 설정
-# Render 영구 디스크: RENDER_DISK_PATH 환경변수가 설정된 경우 해당 경로 사용
-# 로컬 개발: 현재 디렉토리에 저장
-PERSISTENT_DIR = os.environ.get('RENDER_DISK_PATH', os.path.dirname(os.path.abspath(__file__)))
-os.makedirs(PERSISTENT_DIR, exist_ok=True)
-DATABASE = os.path.join(PERSISTENT_DIR, 'blackeagles.db')
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blackeagles.db')
+
+
+class DBWrapper:
+	"""SQLite와 PostgreSQL 모두 지원하는 DB 커넥션 래퍼.
+	- SQL 안의 ? 를 PostgreSQL용 %s 로 자동 변환
+	- INSERT OR IGNORE → ON CONFLICT DO NOTHING 자동 변환
+	- SQLite의 DATE('now') 등을 PostgreSQL 문법으로 변환
+	- fetchone()/fetchall() 결과를 딕셔너리로 반환 (row['column'] 접근)
+	"""
+	def __init__(self, conn, is_pg=False):
+		self._conn = conn
+		self._is_pg = is_pg
+		if is_pg:
+			self._cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+		else:
+			conn.row_factory = sqlite3.Row
+			self._cursor = None
+
+	def _convert_sql(self, sql):
+		"""SQLite SQL을 PostgreSQL 호환으로 변환"""
+		if not self._is_pg:
+			return sql
+		# INSERT OR IGNORE 감지 (변환 전에 플래그 설정)
+		had_insert_or_ignore = bool(re.search(r'INSERT\s+OR\s+IGNORE\s+INTO', sql, flags=re.IGNORECASE))
+		# ? → %s
+		sql = sql.replace('?', '%s')
+		# INSERT OR IGNORE → INSERT INTO (나중에 ON CONFLICT DO NOTHING 추가)
+		sql = re.sub(r'INSERT\s+OR\s+IGNORE\s+INTO', 'INSERT INTO', sql, flags=re.IGNORECASE)
+		# AUTOINCREMENT → (제거, PostgreSQL SERIAL이 자동 처리)
+		sql = sql.replace('AUTOINCREMENT', '')
+		sql = sql.replace('autoincrement', '')
+		# INTEGER PRIMARY KEY  → SERIAL PRIMARY KEY (CREATE TABLE 시)
+		sql = re.sub(r'id\s+INTEGER\s+PRIMARY\s+KEY', 'id SERIAL PRIMARY KEY', sql, flags=re.IGNORECASE)
+		# DATE('now') → CURRENT_DATE
+		sql = sql.replace("DATE('now')", "CURRENT_DATE")
+		# DATE('now', '-7 days') → CURRENT_DATE - INTERVAL '7 days'
+		sql = re.sub(r"DATE\('now',\s*'(-?\d+)\s+days?'\)", r"CURRENT_DATE + INTERVAL '\1 days'", sql)
+		# DATE('now', 'start of month') → DATE_TRUNC('month', CURRENT_DATE)
+		sql = re.sub(r"DATE\('now',\s*'start of month'\)", "DATE_TRUNC('month', CURRENT_TIMESTAMP)", sql)
+		# DATE('now', '-30 days') 형태도 처리
+		sql = re.sub(r"DATE\('now',\s*'-(\d+)\s+days?'\)", r"CURRENT_DATE - INTERVAL '\1 days'", sql)
+		# DATE(column) → column::DATE (PostgreSQL cast)
+		sql = re.sub(r'DATE\((\w+)\)', r'\1::DATE', sql)
+		# strftime('%Y-%m', col) = strftime('%Y-%m', 'now') → DATE_TRUNC
+		sql = re.sub(r"strftime\('%Y-%m',\s*(\w+)\)\s*=\s*strftime\('%Y-%m',\s*'now'\)",
+			r"DATE_TRUNC('month', \1) = DATE_TRUNC('month', CURRENT_TIMESTAMP)", sql)
+		# DEFAULT "center" → DEFAULT 'center' (쌍따옴표를 홑따옴표로)
+		sql = re.sub(r'DEFAULT\s+"([^"]*)"', r"DEFAULT '\1'", sql)
+		# SQL 주석 제거 (PostgreSQL 멀티라인 실행 시 문제 방지)
+		sql = re.sub(r'--[^\n]*', '', sql)
+		# INSERT OR IGNORE였던 쿼리에 ON CONFLICT DO NOTHING 추가
+		if had_insert_or_ignore:
+			sql = sql.rstrip().rstrip(';')
+			sql += ' ON CONFLICT DO NOTHING'
+		return sql
+
+	def execute(self, sql, params=None):
+		converted = self._convert_sql(sql)
+		if self._is_pg:
+			try:
+				if params:
+					self._cursor.execute(converted, params)
+				else:
+					self._cursor.execute(converted)
+			except psycopg2.Error:
+				self._conn.rollback()
+				raise
+			return self._cursor
+		else:
+			if params:
+				return self._conn.execute(sql, params)
+			else:
+				return self._conn.execute(sql)
+
+	def commit(self):
+		self._conn.commit()
+
+	def rollback(self):
+		self._conn.rollback()
+
+	def close(self):
+		if self._is_pg and self._cursor:
+			self._cursor.close()
+		self._conn.close()
+
+	def cursor(self):
+		"""래핑된 cursor 반환 (SQL 자동 변환 지원)"""
+		return CursorWrapper(self)
+
+
+class CursorWrapper:
+	"""DBWrapper를 통해 SQL 변환을 자동 적용하는 cursor 래퍼"""
+	def __init__(self, db_wrapper):
+		self._db = db_wrapper
+
+	def execute(self, sql, params=None):
+		return self._db.execute(sql, params)
+
+	def fetchone(self):
+		if self._db._is_pg:
+			return self._db._cursor.fetchone()
+		else:
+			return None  # SQLite에서는 conn.execute().fetchone() 사용
+
+	def fetchall(self):
+		if self._db._is_pg:
+			return self._db._cursor.fetchall()
+		else:
+			return []
+
 
 def get_db():
-	"""데이터베이스 연결"""
-	conn = sqlite3.connect(DATABASE)
-	conn.row_factory = sqlite3.Row
-	return conn
+	"""데이터베이스 연결 (PostgreSQL 또는 SQLite)"""
+	if USE_POSTGRES:
+		conn = psycopg2.connect(DATABASE_URL)
+		return DBWrapper(conn, is_pg=True)
+	else:
+		conn = sqlite3.connect(DATABASE)
+		return DBWrapper(conn, is_pg=False)
+
+def _get_count(row):
+	"""fetchone() 결과에서 COUNT 값을 추출 (SQLite tuple/Row와 PostgreSQL dict 모두 지원)"""
+	if row is None:
+		return 0
+	if isinstance(row, dict):
+		# PostgreSQL RealDictCursor: {'count': 5}
+		return list(row.values())[0]
+	try:
+		return row[0]
+	except (IndexError, KeyError):
+		return 0
 
 def init_db():
 	"""데이터베이스 초기화"""
 	conn = get_db()
-	cursor = conn.cursor()
-	
+
 	# 공지사항 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS notices (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			title TEXT NOT NULL,
@@ -213,9 +318,9 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# 일정 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS schedules (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			title TEXT NOT NULL,
@@ -226,9 +331,9 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# 문의 메시지 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS contact_messages (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT,
@@ -239,9 +344,9 @@ def init_db():
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# 페이지 섹션 테이블 (개선된 버전)
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS page_sections (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			page_name TEXT NOT NULL,
@@ -258,23 +363,23 @@ def init_db():
 			UNIQUE(page_name, section_id)
 		)
 	''')
-	
+
 	# 기본 페이지 섹션 생성
 	default_sections = [
 		('home', 'about', 'text', 'About Us', '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.', None, None, None, 1, 1),
 		('about', 'intro', 'text', '팀 소개', '블랙이글스는 대한민국 공군의 자랑입니다.', None, None, None, 1, 1),
 		('contact', 'discord', 'text', 'Contact Us', 'Discord ㅣ Johnson#4553', None, None, None, 1, 1),
 	]
-	
+
 	for section in default_sections:
-		cursor.execute('''
-			INSERT OR IGNORE INTO page_sections 
+		conn.execute('''
+			INSERT OR IGNORE INTO page_sections
 			(page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		''', section)
-	
+
 	# 배너 설정 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS banner_settings (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			page_name TEXT UNIQUE NOT NULL,
@@ -293,27 +398,27 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# 기존 테이블에 컬럼 추가 (이미 있으면 무시)
 	try:
-		cursor.execute('ALTER TABLE banner_settings ADD COLUMN vertical_position TEXT DEFAULT "center"')
+		conn.execute("ALTER TABLE banner_settings ADD COLUMN vertical_position TEXT DEFAULT 'center'")
 	except:
 		pass
 	try:
-		cursor.execute('ALTER TABLE banner_settings ADD COLUMN padding_top INTEGER DEFAULT 250')
+		conn.execute('ALTER TABLE banner_settings ADD COLUMN padding_top INTEGER DEFAULT 250')
 	except:
 		pass
-	
+
 	# 기본 홈페이지 배너 설정
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle, description, button_text, button_link)
-		VALUES ('home', '/static/images/hero.jpg', 'Black Eagles', 'Republic Of Korea AirForce', 
-		        '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.', 
+		VALUES ('home', '/static/images/hero.jpg', 'Black Eagles', 'Republic Of Korea AirForce',
+		        '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.',
 		        'more', '#about')
 	''')
-	
+
 	# 조종사 정보 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS pilots (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			number INTEGER NOT NULL,
@@ -328,7 +433,7 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# 기본 조종사 데이터 삽입 (중복 방지)
 	default_pilots = [
 		(1, 'LEADER', 'Bulta', 'VBE 1기', 'F-5', '/static/members/moon.jpeg', 1, 1),
@@ -340,21 +445,21 @@ def init_db():
 		(7, 'SOLO-1', 'Sonic', 'VBE 1기', 'F-5', '/static/members/moon.jpeg', 7, 1),
 		(8, 'SOLO-2', 'Strike', 'VBE 1기', 'F-5', '/static/members/moon.jpeg', 8, 1),
 	]
-	
+
 	# 이미 데이터가 있는지 확인
-	existing_count = cursor.execute('SELECT COUNT(*) FROM pilots').fetchone()[0]
-	
+	existing_count = _get_count(conn.execute('SELECT COUNT(*) FROM pilots').fetchone())
+
 	# 데이터가 없을 때만 기본 데이터 삽입
 	if existing_count == 0:
 		for pilot in default_pilots:
-			cursor.execute('''
-				INSERT INTO pilots 
+			conn.execute('''
+				INSERT INTO pilots
 				(number, position, callsign, generation, aircraft, photo_url, order_num, is_active)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 			''', pilot)
-	
+
 	# 홈 콘텐츠 테이블 (유튜브, SNS 피드 등)
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS home_contents (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			content_type TEXT NOT NULL,
@@ -366,22 +471,20 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# 기본 유튜브 콘텐츠 삽입
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO home_contents (id, content_type, title, content_data, order_num, is_active)
 		VALUES (1, 'youtube', 'Latest Video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 1, 1)
 	''')
-	
+
 	# 팀소개 섹션 테이블 (개요, 항공기 등)
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS about_sections (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			section_type TEXT NOT NULL,
 			title TEXT,
 			content TEXT,
-			-- 언어 구분 (ko / en). 기존 DB에는 없을 수 있으므로 아래에서 ALTER TABLE 로 추가
-			-- lang TEXT NOT NULL DEFAULT 'ko',
 			image_url TEXT,
 			order_num INTEGER DEFAULT 0,
 			is_active INTEGER DEFAULT 1,
@@ -389,58 +492,56 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# about_sections 테이블에 lang 컬럼이 없을 수 있으므로 동적으로 추가
 	try:
-		cursor.execute('ALTER TABLE about_sections ADD COLUMN lang TEXT DEFAULT "ko"')
+		conn.execute("ALTER TABLE about_sections ADD COLUMN lang TEXT DEFAULT 'ko'")
 	except Exception:
 		# 이미 컬럼이 있을 경우 에러를 무시
 		pass
-	
+
 	# 기본 개요 섹션 추가
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (1, 'overview', '가상 블랙이글스 소개', 
-		'가상 블랙이글스는 DCS World에서 활동하는 대한민국 가상 공군 특수비행팀입니다. 실제 블랙이글스의 정신과 전통을 계승하며, 정교한 편대비행과 에어쇼를 통해 뛰어난 비행실력을 선보입니다.', 
+		VALUES (1, 'overview', '가상 블랙이글스 소개',
+		'가상 블랙이글스는 DCS World에서 활동하는 대한민국 가상 공군 특수비행팀입니다. 실제 블랙이글스의 정신과 전통을 계승하며, 정교한 편대비행과 에어쇼를 통해 뛰어난 비행실력을 선보입니다.',
 		0, 1)
 	''')
-	
-	cursor.execute('''
+
+	conn.execute('''
 		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (2, 'mission', '임무', 
-		'우리의 임무는 대한민국 공군의 우수성을 전 세계에 알리고, 가상 비행 시뮬레이션을 통해 항공에 대한 관심과 이해를 높이는 것입니다. 또한 팀원들의 비행 실력 향상과 팀워크 강화를 목표로 합니다.', 
+		VALUES (2, 'mission', '임무',
+		'우리의 임무는 대한민국 공군의 우수성을 전 세계에 알리고, 가상 비행 시뮬레이션을 통해 항공에 대한 관심과 이해를 높이는 것입니다. 또한 팀원들의 비행 실력 향상과 팀워크 강화를 목표로 합니다.',
 		1, 1)
 	''')
-	
-	cursor.execute('''
+
+	conn.execute('''
 		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (3, 'aircraft_intro', 'T-50B 골든이글', 
-		'T-50B는 대한민국이 자체 개발한 초음속 고등훈련기로, 블랙이글스 팀이 사용하는 항공기입니다. 우수한 기동성과 안정성을 자랑하며, 다양한 편대비행 기동을 수행할 수 있습니다.', 
+		VALUES (3, 'aircraft_intro', 'T-50B 골든이글',
+		'T-50B는 대한민국이 자체 개발한 초음속 고등훈련기로, 블랙이글스 팀이 사용하는 항공기입니다. 우수한 기동성과 안정성을 자랑하며, 다양한 편대비행 기동을 수행할 수 있습니다.',
 		2, 1)
 	''')
-	
-	cursor.execute('''
+
+	conn.execute('''
 		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, image_url, order_num, is_active)
-		VALUES (4, 'aircraft_specs', 'T-50B 제원', 
+		VALUES (4, 'aircraft_specs', 'T-50B 제원',
 		'최대속도: 마하 1.5|전투행동반경: 1,851km|최대이륙중량: 12,300kg|엔진: F404-GE-102 터보팬|승무원: 2명|무장: 20mm 기관포, 공대공 미사일',
-		'/static/images/t50b.jpg', 
+		'/static/images/t50b.jpg',
 		3, 1)
 	''')
-	
-	cursor.execute('''
+
+	conn.execute('''
 		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (5, 'aircraft_features', '특징', 
-		'우수한 기동성|높은 안정성|효율적인 연료 소비|조종사 친화적 설계|다목적 운용 가능', 
+		VALUES (5, 'aircraft_features', '특징',
+		'우수한 기동성|높은 안정성|효율적인 연료 소비|조종사 친화적 설계|다목적 운용 가능',
 		4, 1)
 	''')
-	
+
 	# 전대장 인사말 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS commander_greeting (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
-			-- 언어 구분 (ko / en). 기존 DB에는 없을 수 있으므로 아래에서 ALTER TABLE 로 추가
-			-- lang TEXT NOT NULL DEFAULT 'ko',
 			rank TEXT NOT NULL,
 			callsign TEXT NOT NULL,
 			generation TEXT NOT NULL,
@@ -453,26 +554,26 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# commander_greeting 테이블에 lang 컬럼이 없을 수 있으므로 동적으로 추가
 	try:
-		cursor.execute('ALTER TABLE commander_greeting ADD COLUMN lang TEXT DEFAULT "ko"')
+		conn.execute("ALTER TABLE commander_greeting ADD COLUMN lang TEXT DEFAULT 'ko'")
 	except Exception:
 		# 이미 컬럼이 있을 경우 에러를 무시
 		pass
-	
+
 	# 기본 전대장 데이터 삽입 (데이터가 없을 때만)
-	existing_commanders = cursor.execute('SELECT COUNT(*) as count FROM commander_greeting').fetchone()[0]
+	existing_commanders = _get_count(conn.execute('SELECT COUNT(*) as count FROM commander_greeting').fetchone())
 	if existing_commanders == 0:
-		cursor.execute('''
+		conn.execute('''
 			INSERT INTO commander_greeting (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num, is_active)
-			VALUES ('Bulta', 'COMMANDER', '#1 Bulta', 'VBE 1기', 'F-5', '/static/images/default-pilot.jpg', 
-			'안녕하십니까. 가상 블랙이글스 전대장입니다. 우리 팀은 대한민국 공군의 자랑스러운 전통을 계승하며, 최고의 비행 실력을 갖춘 정예 조종사들로 구성되어 있습니다.', 
+			VALUES ('Bulta', 'COMMANDER', '#1 Bulta', 'VBE 1기', 'F-5', '/static/images/default-pilot.jpg',
+			'안녕하십니까. 가상 블랙이글스 전대장입니다. 우리 팀은 대한민국 공군의 자랑스러운 전통을 계승하며, 최고의 비행 실력을 갖춘 정예 조종사들로 구성되어 있습니다.',
 			1, 1)
 		''')
 
 	# 정비사 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS maintenance_crew (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
@@ -488,7 +589,7 @@ def init_db():
 	''')
 
 	# 후보자 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS candidates (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
@@ -503,7 +604,7 @@ def init_db():
 	''')
 
 	# 사진 게시판 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS gallery (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			title TEXT NOT NULL,
@@ -516,20 +617,20 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# 기본 샘플 이미지 추가
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO gallery (id, title, description, image_url, order_num, is_active)
 		VALUES (1, '편대비행 훈련', 'T-50B 4기 편대비행 훈련 모습', '/static/Picture/20251207_173919_section_formation.png', 1, 1)
 	''')
-	
-	cursor.execute('''
+
+	conn.execute('''
 		INSERT OR IGNORE INTO gallery (id, title, description, image_url, order_num, is_active)
 		VALUES (2, '에어쇼 공연', '2024 서울 에어쇼 블랙이글스 공연', '/static/Picture/Formation.png', 2, 1)
 	''')
-	
+
 	# 사이트 이미지 관리 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS site_images (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			image_key TEXT UNIQUE NOT NULL,
@@ -541,7 +642,7 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
+
 	# 기본 이미지 키 등록
 	default_images = [
 		('hero_banner', '홈 배너 이미지', '/static/images/hero.jpg', '메인 페이지 상단 배너', 'home'),
@@ -549,25 +650,25 @@ def init_db():
 		('default_pilot', '기본 파일럿 이미지', '/static/members/moon.jpeg', '파일럿 기본 프로필', 'about'),
 		('t50b_main', 'T-50B 메인 이미지', '/static/Picture/Formation.png', '항공기 소개 이미지', 'about'),
 	]
-	
+
 	for img_key, img_name, img_path, desc, cat in default_images:
-		cursor.execute('''
+		conn.execute('''
 			INSERT OR IGNORE INTO site_images (image_key, image_name, image_path, description, category)
 			VALUES (?, ?, ?, ?, ?)
 		''', (img_key, img_name, img_path, desc, cat))
-	
+
 	# 기존 DB에 이미 t50b_main 이 있다면 경로를 실제 존재하는 이미지로 교체
 	try:
-		cursor.execute('''
+		conn.execute('''
 			UPDATE site_images
 			SET image_path = '/static/Picture/Formation.png'
 			WHERE image_key = 't50b_main'
 		''')
 	except Exception:
 		pass
-	
+
 	# 영상 갤러리 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS videos (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			title TEXT NOT NULL,
@@ -583,7 +684,7 @@ def init_db():
 	''')
 
 	# 사이트 설정 테이블 (후원 링크 등 key-value)
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS site_settings (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			setting_key TEXT UNIQUE NOT NULL,
@@ -594,43 +695,43 @@ def init_db():
 	''')
 
 	# 기본 후원 설정
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
 		VALUES ('donate_kakaopay_link', '', '카카오페이 송금 링크')
 	''')
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
 		VALUES ('donate_bank_name', '', '후원 계좌 은행명')
 	''')
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
 		VALUES ('donate_account_number', '', '후원 계좌번호')
 	''')
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
 		VALUES ('donate_account_holder', '', '후원 계좌 예금주')
 	''')
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
 		VALUES ('contact_email', '', '문의 수신 이메일 주소')
 	''')
 
 	# 배너 기본값 (notice, schedule, gallery 추가)
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
 		VALUES ('notice', '/static/images/hero.jpg', '공지사항', 'Announcements')
 	''')
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
 		VALUES ('schedule', '/static/images/hero.jpg', '일정', 'Schedule')
 	''')
-	cursor.execute('''
+	conn.execute('''
 		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
 		VALUES ('gallery', '/static/images/hero.jpg', '활동', 'Activities')
 	''')
 
 	# 실시간 채팅 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS chat_sessions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			session_id TEXT UNIQUE NOT NULL,
@@ -641,8 +742,8 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-	
-	cursor.execute('''
+
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS chat_messages (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			session_id TEXT NOT NULL,
@@ -654,9 +755,9 @@ def init_db():
 			FOREIGN KEY (session_id) REFERENCES chat_sessions(session_id)
 		)
 	''')
-	
+
 	# 회원 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			email TEXT UNIQUE NOT NULL,
@@ -672,7 +773,7 @@ def init_db():
 	''')
 
 	# 페이지 방문 트래킹 테이블
-	cursor.execute('''
+	conn.execute('''
 		CREATE TABLE IF NOT EXISTS page_views (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			page_path TEXT NOT NULL,
@@ -1956,7 +2057,9 @@ def admin_page_section_save():
 			''', (page_name, section_identifier, section_type, title, content, image_url, 
 			      link_url, link_text, order_num, is_active))
 			flash('섹션이 추가되었습니다.', 'success')
-		except sqlite3.IntegrityError:
+		except Exception as _integrity_err:
+			if 'IntegrityError' not in type(_integrity_err).__name__ and 'UNIQUE' not in str(_integrity_err).upper():
+				raise
 			flash('이미 존재하는 페이지/섹션 조합입니다.', 'error')
 			conn.close()
 			return redirect(url_for('admin_page_section_form'))
