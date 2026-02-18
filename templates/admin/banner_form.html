@@ -1,0 +1,321 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}배너 수정{% endblock %}
+{% block page_title %}배너 수정{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_banner') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 목록으로</a>
+{% endblock %}
+
+{% block head %}
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Roboto:wght@300;400;500;700;900&family=Open+Sans:wght@300;400;600;700;800&family=Lato:wght@300;400;700;900&family=Montserrat:wght@300;400;600;700;800;900&family=Oswald:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;700;900&family=Merriweather:wght@300;400;700;900&family=Source+Sans+Pro:wght@300;400;600;700;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=Ubuntu:wght@300;400;500;700&family=Nunito:wght@300;400;600;700;800;900&family=PT+Sans:wght@400;700&family=PT+Serif:wght@400;700&family=Crimson+Text:wght@400;600;700&family=Lora:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Josefin+Sans:wght@300;400;600;700&family=Anton&family=Bebas+Neue&family=Righteous&family=Fredoka+One&family=Comfortaa:wght@300;400;700&family=Quicksand:wght@300;400;600;700&family=Kalam:wght@300;400;700&family=Caveat:wght@400;700&family=Permanent+Marker&family=Shadows+Into+Light&family=Amatic+SC:wght@400;700&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Titillium+Web:wght@300;400;600;700;900&family=Exo+2:wght@300;400;600;700;800;900&family=Kanit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+    .color-input-group {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+    .color-input-group input[type="color"] {
+        width: 60px;
+        height: 45px;
+        padding: 0.25rem;
+        cursor: pointer;
+    }
+    .color-input-group input[type="text"] {
+        flex: 1;
+    }
+    .preview-section {
+        margin-top: 2rem;
+        padding: 2rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    .preview-banner {
+        width: 100%;
+        min-height: 300px;
+        border-radius: 8px;
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem;
+        text-align: center;
+    }
+    .preview-content {
+        max-width: 800px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2 style="margin-top: 0;">{{ banner.page_name|upper }} 페이지 배너</h2>
+
+    <form method="POST" id="bannerForm">
+        <div class="form-group">
+            <label for="background_image">배경 이미지 경로</label>
+            <input type="text" id="background_image" name="background_image" class="form-control"
+                   value="{{ banner.background_image or '' }}"
+                   placeholder="/static/images/hero.jpg">
+            <small>이미지 파일을 /static/images/ 폴더에 업로드하고 경로를 입력하세요.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="title">제목 *</label>
+            <input type="text" id="title" name="title" class="form-control"
+                   value="{{ banner.title }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="subtitle">부제목</label>
+            <input type="text" id="subtitle" name="subtitle" class="form-control"
+                   value="{{ banner.subtitle or '' }}"
+                   placeholder="Republic Of Korea AirForce">
+        </div>
+
+        <div class="form-group">
+            <label for="description">설명</label>
+            <textarea id="description" name="description" class="form-control"
+                      placeholder="배너 설명을 입력하세요...">{{ banner.description or '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="button_text">버튼 텍스트</label>
+            <input type="text" id="button_text" name="button_text" class="form-control"
+                   value="{{ banner.button_text or '' }}"
+                   placeholder="more">
+        </div>
+
+        <div class="form-group">
+            <label for="button_link">버튼 링크</label>
+            <input type="text" id="button_link" name="button_link" class="form-control"
+                   value="{{ banner.button_link or '' }}"
+                   placeholder="#about">
+            <small>내부 링크: #section, 외부 링크: https://example.com</small>
+        </div>
+
+        <div class="form-group">
+            <label for="title_font">제목 글꼴</label>
+            <select id="title_font" name="title_font" class="form-control">
+                <optgroup label="기본 폰트">
+                    <option value="Arial, sans-serif" {% if banner.title_font == 'Arial, sans-serif' %}selected{% endif %}>Arial</option>
+                    <option value="'Courier New', monospace" {% if banner.title_font == "'Courier New', monospace" %}selected{% endif %}>Courier New</option>
+                    <option value="Georgia, serif" {% if banner.title_font == 'Georgia, serif' %}selected{% endif %}>Georgia</option>
+                    <option value="'Times New Roman', serif" {% if banner.title_font == "'Times New Roman', serif" %}selected{% endif %}>Times New Roman</option>
+                    <option value="Verdana, sans-serif" {% if banner.title_font == 'Verdana, sans-serif' %}selected{% endif %}>Verdana</option>
+                    <option value="Impact, sans-serif" {% if banner.title_font == 'Impact, sans-serif' %}selected{% endif %}>Impact</option>
+                    <option value="'Comic Sans MS', cursive" {% if banner.title_font == "'Comic Sans MS', cursive" %}selected{% endif %}>Comic Sans MS</option>
+                </optgroup>
+                <optgroup label="한글 폰트 (Google Fonts)">
+                    <option value="'Noto Sans KR', sans-serif" {% if banner.title_font == "'Noto Sans KR', sans-serif" %}selected{% endif %}>Noto Sans KR (본고딕)</option>
+                </optgroup>
+                <optgroup label="모던 산세리프 (Google Fonts)">
+                    <option value="'Roboto', sans-serif" {% if banner.title_font == "'Roboto', sans-serif" %}selected{% endif %}>Roboto</option>
+                    <option value="'Open Sans', sans-serif" {% if banner.title_font == "'Open Sans', sans-serif" %}selected{% endif %}>Open Sans</option>
+                    <option value="'Lato', sans-serif" {% if banner.title_font == "'Lato', sans-serif" %}selected{% endif %}>Lato</option>
+                    <option value="'Montserrat', sans-serif" {% if banner.title_font == "'Montserrat', sans-serif" %}selected{% endif %}>Montserrat</option>
+                    <option value="'Raleway', sans-serif" {% if banner.title_font == "'Raleway', sans-serif" %}selected{% endif %}>Raleway</option>
+                    <option value="'Source Sans Pro', sans-serif" {% if banner.title_font == "'Source Sans Pro', sans-serif" %}selected{% endif %}>Source Sans Pro</option>
+                    <option value="'Poppins', sans-serif" {% if banner.title_font == "'Poppins', sans-serif" %}selected{% endif %}>Poppins</option>
+                    <option value="'Inter', sans-serif" {% if banner.title_font == "'Inter', sans-serif" %}selected{% endif %}>Inter</option>
+                    <option value="'Ubuntu', sans-serif" {% if banner.title_font == "'Ubuntu', sans-serif" %}selected{% endif %}>Ubuntu</option>
+                    <option value="'Nunito', sans-serif" {% if banner.title_font == "'Nunito', sans-serif" %}selected{% endif %}>Nunito</option>
+                    <option value="'PT Sans', sans-serif" {% if banner.title_font == "'PT Sans', sans-serif" %}selected{% endif %}>PT Sans</option>
+                </optgroup>
+                <optgroup label="세리프 (Google Fonts)">
+                    <option value="'Playfair Display', serif" {% if banner.title_font == "'Playfair Display', serif" %}selected{% endif %}>Playfair Display</option>
+                    <option value="'Merriweather', serif" {% if banner.title_font == "'Merriweather', serif" %}selected{% endif %}>Merriweather</option>
+                    <option value="'PT Serif', serif" {% if banner.title_font == "'PT Serif', serif" %}selected{% endif %}>PT Serif</option>
+                    <option value="'Crimson Text', serif" {% if banner.title_font == "'Crimson Text', serif" %}selected{% endif %}>Crimson Text</option>
+                    <option value="'Lora', serif" {% if banner.title_font == "'Lora', serif" %}selected{% endif %}>Lora</option>
+                    <option value="'Libre Baskerville', serif" {% if banner.title_font == "'Libre Baskerville', serif" %}selected{% endif %}>Libre Baskerville</option>
+                </optgroup>
+                <optgroup label="디스플레이/헤드라인 (Google Fonts)">
+                    <option value="'Oswald', sans-serif" {% if banner.title_font == "'Oswald', sans-serif" %}selected{% endif %}>Oswald (굵고 강렬)</option>
+                    <option value="'Anton', sans-serif" {% if banner.title_font == "'Anton', sans-serif" %}selected{% endif %}>Anton (강렬한 헤드라인)</option>
+                    <option value="'Bebas Neue', sans-serif" {% if banner.title_font == "'Bebas Neue', sans-serif" %}selected{% endif %}>Bebas Neue (넓은 헤드라인)</option>
+                    <option value="'Righteous', sans-serif" {% if banner.title_font == "'Righteous', sans-serif" %}selected{% endif %}>Righteous (둥근 디스플레이)</option>
+                    <option value="'Fredoka One', sans-serif" {% if banner.title_font == "'Fredoka One', sans-serif" %}selected{% endif %}>Fredoka One (재미있는 디스플레이)</option>
+                    <option value="'Josefin Sans', sans-serif" {% if banner.title_font == "'Josefin Sans', sans-serif" %}selected{% endif %}>Josefin Sans (우아한 헤드라인)</option>
+                    <option value="'Orbitron', sans-serif" {% if banner.title_font == "'Orbitron', sans-serif" %}selected{% endif %}>Orbitron (미래지향적)</option>
+                    <option value="'Rajdhani', sans-serif" {% if banner.title_font == "'Rajdhani', sans-serif" %}selected{% endif %}>Rajdhani (기하학적)</option>
+                    <option value="'Titillium Web', sans-serif" {% if banner.title_font == "'Titillium Web', sans-serif" %}selected{% endif %}>Titillium Web (기술적)</option>
+                    <option value="'Exo 2', sans-serif" {% if banner.title_font == "'Exo 2', sans-serif" %}selected{% endif %}>Exo 2 (우주 테마)</option>
+                    <option value="'Kanit', sans-serif" {% if banner.title_font == "'Kanit', sans-serif" %}selected{% endif %}>Kanit (현대적 디스플레이)</option>
+                </optgroup>
+                <optgroup label="손글씨/캐주얼 (Google Fonts)">
+                    <option value="'Comfortaa', sans-serif" {% if banner.title_font == "'Comfortaa', sans-serif" %}selected{% endif %}>Comfortaa (부드러운)</option>
+                    <option value="'Quicksand', sans-serif" {% if banner.title_font == "'Quicksand', sans-serif" %}selected{% endif %}>Quicksand (둥근)</option>
+                    <option value="'Kalam', sans-serif" {% if banner.title_font == "'Kalam', sans-serif" %}selected{% endif %}>Kalam (손글씨 느낌)</option>
+                    <option value="'Caveat', sans-serif" {% if banner.title_font == "'Caveat', sans-serif" %}selected{% endif %}>Caveat (손글씨)</option>
+                    <option value="'Permanent Marker', sans-serif" {% if banner.title_font == "'Permanent Marker', sans-serif" %}selected{% endif %}>Permanent Marker (마커 느낌)</option>
+                    <option value="'Shadows Into Light', sans-serif" {% if banner.title_font == "'Shadows Into Light', sans-serif" %}selected{% endif %}>Shadows Into Light (손글씨)</option>
+                    <option value="'Amatic SC', sans-serif" {% if banner.title_font == "'Amatic SC', sans-serif" %}selected{% endif %}>Amatic SC (캐주얼 손글씨)</option>
+                </optgroup>
+            </select>
+            <small>50개 이상의 다양한 Google Fonts를 선택할 수 있습니다. 미리보기에서 바로 확인하세요!</small>
+        </div>
+
+        <div class="form-group">
+            <label for="title_color">제목 색상</label>
+            <div class="color-input-group">
+                <input type="color" id="title_color_picker" value="{{ banner.title_color or '#ffffff' }}">
+                <input type="text" id="title_color" name="title_color" class="form-control"
+                       value="{{ banner.title_color or '#ffffff' }}"
+                       placeholder="#ffffff">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="subtitle_color">부제목 색상</label>
+            <div class="color-input-group">
+                <input type="color" id="subtitle_color_picker" value="{{ banner.subtitle_color or '#ffffff' }}">
+                <input type="text" id="subtitle_color" name="subtitle_color" class="form-control"
+                       value="{{ banner.subtitle_color or '#ffffff' }}"
+                       placeholder="#ffffff">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description_color">설명 색상</label>
+            <div class="color-input-group">
+                <input type="color" id="description_color_picker" value="{{ banner.description_color or '#ffffff' }}">
+                <input type="text" id="description_color" name="description_color" class="form-control"
+                       value="{{ banner.description_color or '#ffffff' }}"
+                       placeholder="#ffffff">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="vertical_position">수직 위치</label>
+            <select id="vertical_position" name="vertical_position" class="form-control">
+                <option value="flex-start" {% if banner.vertical_position == 'flex-start' %}selected{% endif %}>상단</option>
+                <option value="center" {% if banner.vertical_position == 'center' or not banner.vertical_position %}selected{% endif %}>중앙</option>
+                <option value="flex-end" {% if banner.vertical_position == 'flex-end' %}selected{% endif %}>하단</option>
+            </select>
+            <small>배너 내 텍스트의 수직 정렬 위치를 선택하세요.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="padding_top">상단 여백 (px)</label>
+            <input type="number" id="padding_top" name="padding_top" class="form-control"
+                   value="{{ banner.padding_top or 250 }}"
+                   min="0" max="500" step="10"
+                   placeholder="250">
+            <small>배너 상단 여백 크기 (0-500px). 기본값: 250px</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">저장</button>
+            <a href="{{ url_for('admin_banner') }}" class="btn btn-secondary">취소</a>
+        </div>
+    </form>
+
+    <!-- 미리보기 -->
+    <div class="preview-section">
+        <h3>미리보기</h3>
+        <div class="preview-banner" id="previewBanner"
+             style="background-image: url('{{ banner.background_image or '/static/images/hero.jpg' }}');">
+            <div class="preview-content">
+                <div id="previewSubtitle"
+                     style="color: {{ banner.subtitle_color or '#ffffff' }}; font-size: 1.2rem; margin-bottom: 0.5rem;">
+                    {{ banner.subtitle or 'Republic Of Korea AirForce' }}
+                </div>
+                <h1 id="previewTitle"
+                    style="color: {{ banner.title_color or '#ffffff' }}; font-family: {{ banner.title_font or 'Arial, sans-serif' }}; font-size: 3rem; margin: 0.5rem 0;">
+                    {{ banner.title }}
+                </h1>
+                <p id="previewDescription"
+                   style="color: {{ banner.description_color or '#ffffff' }}; font-size: 1.1rem; line-height: 1.6; margin: 1rem 0;">
+                    {{ banner.description or '배너 설명이 여기에 표시됩니다.' }}
+                </p>
+                {% if banner.button_text %}
+                <span style="display: inline-block; padding: 0.75rem 2rem; background: #007bff; color: white; border-radius: 4px; margin-top: 1rem;">
+                    {{ banner.button_text }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 색상 피커와 텍스트 입력 동기화
+    document.getElementById('title_color_picker').addEventListener('input', function(e) {
+        document.getElementById('title_color').value = e.target.value;
+        updatePreview();
+    });
+    document.getElementById('title_color').addEventListener('input', function(e) {
+        document.getElementById('title_color_picker').value = e.target.value;
+        updatePreview();
+    });
+
+    document.getElementById('subtitle_color_picker').addEventListener('input', function(e) {
+        document.getElementById('subtitle_color').value = e.target.value;
+        updatePreview();
+    });
+    document.getElementById('subtitle_color').addEventListener('input', function(e) {
+        document.getElementById('subtitle_color_picker').value = e.target.value;
+        updatePreview();
+    });
+
+    document.getElementById('description_color_picker').addEventListener('input', function(e) {
+        document.getElementById('description_color').value = e.target.value;
+        updatePreview();
+    });
+    document.getElementById('description_color').addEventListener('input', function(e) {
+        document.getElementById('description_color_picker').value = e.target.value;
+        updatePreview();
+    });
+
+    // 실시간 미리보기 업데이트
+    const inputs = ['background_image', 'title', 'subtitle', 'description', 'title_font'];
+    inputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', updatePreview);
+            element.addEventListener('change', updatePreview);
+        }
+    });
+
+    function updatePreview() {
+        const bgImage = document.getElementById('background_image').value;
+        const title = document.getElementById('title').value;
+        const subtitle = document.getElementById('subtitle').value;
+        const description = document.getElementById('description').value;
+        const titleFont = document.getElementById('title_font').value;
+        const titleColor = document.getElementById('title_color').value;
+        const subtitleColor = document.getElementById('subtitle_color').value;
+        const descriptionColor = document.getElementById('description_color').value;
+
+        const previewBanner = document.getElementById('previewBanner');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewSubtitle = document.getElementById('previewSubtitle');
+        const previewDescription = document.getElementById('previewDescription');
+
+        if (bgImage) {
+            previewBanner.style.backgroundImage = `url('${bgImage}')`;
+        }
+        previewTitle.textContent = title || 'Black Eagles';
+        previewTitle.style.fontFamily = titleFont;
+        previewTitle.style.color = titleColor;
+
+        previewSubtitle.textContent = subtitle || 'Republic Of Korea AirForce';
+        previewSubtitle.style.color = subtitleColor;
+
+        previewDescription.textContent = description || '배너 설명이 여기에 표시됩니다.';
+        previewDescription.style.color = descriptionColor;
+    }
+
+    // 페이지 로드 시 미리보기 초기화
+    document.addEventListener('DOMContentLoaded', function() {
+        updatePreview();
+    });
+</script>
+{% endblock %}

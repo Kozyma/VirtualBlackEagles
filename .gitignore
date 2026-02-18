@@ -1,0 +1,37 @@
+# Database
+blackeagles.db
+flight_schedules.db
+*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+*.env
+
+# Logs
+flask.log
+flask.pid
+server.log
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary
+myWebSite
+set_mail_env.sh

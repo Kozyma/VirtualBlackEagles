@@ -1,0 +1,112 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}문의 상세보기{% endblock %}
+{% block page_title %}문의 상세보기{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_messages') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 목록</a>
+{% endblock %}
+
+{% block head %}
+<style>
+    .message-detail {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 2rem;
+    }
+    .message-info {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .message-info dt {
+        font-weight: bold;
+        color: #333;
+    }
+    .message-info dd {
+        color: #666;
+        margin: 0;
+    }
+    .message-content {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .type-badge {
+        display: inline-block;
+        padding: 0.35rem 0.85rem;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    .type-badge-contact {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+    .type-badge-donate {
+        background: #fce4ec;
+        color: #c2185b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="message-detail">
+    <dl class="message-info">
+        <dt>문의 번호</dt>
+        <dd>#{{ message.id }}</dd>
+
+        <dt>구분</dt>
+        <dd>
+            {% if message.type == 'donate' %}
+            <span class="type-badge type-badge-donate">후원 문의</span>
+            {% else %}
+            <span class="type-badge type-badge-contact">일반 문의</span>
+            {% endif %}
+        </dd>
+
+        <dt>이름</dt>
+        <dd>{{ message.name }}</dd>
+
+        <dt>{% if message.type == 'donate' %}후원 희망 금액{% else %}이메일{% endif %}</dt>
+        <dd>
+            {% if message.type == 'donate' %}
+            {{ message.email }}
+            {% else %}
+            <a href="mailto:{{ message.email }}" style="color: #007bff; text-decoration: none;">{{ message.email }}</a>
+            {% endif %}
+        </dd>
+
+        <dt>작성일시</dt>
+        <dd>{{ message.created_at }}</dd>
+
+        <dt>상태</dt>
+        <dd>
+            {% if message.is_read %}
+            <span style="color: #28a745; font-weight: bold;">읽음</span>
+            {% else %}
+            <span style="color: #dc3545; font-weight: bold;">읽지 않음</span>
+            {% endif %}
+        </dd>
+    </dl>
+
+    <div>
+        <h3 style="color: #333; margin-bottom: 1rem;">문의 내용</h3>
+        <div class="message-content">{{ message.message }}</div>
+    </div>
+
+    <div class="form-actions" style="margin-top: 2rem;">
+        <a href="mailto:{{ message.email }}?subject=Re: 문의 답변" class="btn btn-secondary">이메일로 답변하기</a>
+        <form method="POST" action="{{ url_for('admin_message_delete', message_id=message.id) }}" style="display:inline;" onsubmit="return confirm('이 문의를 삭제하시겠습니까?');">
+            <button type="submit" class="btn btn-danger">삭제</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

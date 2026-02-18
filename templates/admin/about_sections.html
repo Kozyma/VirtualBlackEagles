@@ -1,0 +1,78 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}팀소개 섹션 관리{% endblock %}
+{% block page_title %}팀소개 섹션 관리{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_about_section_new') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> 새 섹션
+    </a>
+{% endblock %}
+
+{% block content %}
+    {% if sections %}
+    <div class="table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>유형</th>
+                    <th>제목</th>
+                    <th>내용 미리보기</th>
+                    <th>순서</th>
+                    <th>활성</th>
+                    <th>작업</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for section in sections %}
+                <tr>
+                    <td>
+                        {% if section.section_type == 'overview' %}
+                        <span class="badge badge-info">개요</span>
+                        {% elif section.section_type == 'mission' %}
+                        <span class="badge badge-success">임무</span>
+                        {% elif section.section_type == 'aircraft_intro' %}
+                        <span class="badge badge-warning">항공기 소개</span>
+                        {% elif section.section_type == 'aircraft_specs' %}
+                        <span class="badge badge-info">항공기 제원</span>
+                        {% elif section.section_type == 'aircraft_features' %}
+                        <span class="badge badge-success">항공기 특징</span>
+                        {% else %}
+                        <span class="badge" style="background:#6c757d;color:white;">{{ section.section_type }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ section.title }}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ section.content[:100] }}...
+                    </td>
+                    <td>{{ section.order_num }}</td>
+                    <td>
+                        {% if section.is_active %}
+                        <span class="badge badge-success">활성</span>
+                        {% else %}
+                        <span class="badge" style="background:#6c757d;color:white;">비활성</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions">
+                        <a href="{{ url_for('admin_about_section_edit', section_id=section.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i> 수정
+                        </a>
+                        <form method="POST" action="{{ url_for('admin_about_section_delete', section_id=section.id) }}"
+                              style="display:inline;"
+                              onsubmit="return confirm('정말 이 섹션을 삭제하시겠습니까?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        등록된 팀소개 섹션이 없습니다. 섹션을 추가해주세요.
+    </div>
+    {% endif %}
+{% endblock %}

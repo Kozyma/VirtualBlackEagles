@@ -1,0 +1,72 @@
+# GitHub Actions - VirtualBlackEagles 자동 배포 워크플로우
+# main 브랜치에 머지되면 EC2로 자동 배포
+
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # 수동 실행 가능
+
+env:
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Deploy to EC2
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'DEPLOY_COMMANDS'
+            set -e
+            
+            echo "=== 배포 시작: $(date) ==="
+            
+            APP_DIR="/home/ec2-user/app"
+            SERVICE_NAME="virtualblackeagles"
+            
+            cd $APP_DIR
+            
+            echo ">>> Git pull..."
+            git fetch origin
+            git reset --hard origin/main
+            
+            echo ">>> 의존성 설치..."
+            source .venv/bin/activate
+            pip install -r requirements.txt --quiet
+            
+            echo ">>> 서비스 재시작..."
+            sudo systemctl restart $SERVICE_NAME
+            
+            sleep 2
+            sudo systemctl status $SERVICE_NAME --no-pager || true
+            
+            echo "=== 배포 완료: $(date) ==="
+          DEPLOY_COMMANDS
+
+      - name: Deployment Status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ 배포 성공!"
+            echo "🌐 https://virtualblackeagles.kr"
+          else
+            echo "❌ 배포 실패"
+          fi

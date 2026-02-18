@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}활동 - 가상 블랙이글스{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner else '/static/images/hero.jpg' }}')">
+    <div class="container">
+        <h1 class="banner-title">{{ banner.title if banner else '활동' }}</h1>
+        <p class="banner-subtitle">{{ banner.subtitle if banner else 'Virtual Black Eagles Activities' }}</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+
+<!-- Tab Navigation -->
+<div style="max-width:1200px; margin:2rem auto 0; padding:0 2rem;">
+    <div style="display:flex; gap:0; border-bottom:2px solid #e0e0e0;">
+        <a href="/gallery/photos" style="padding:0.75rem 2rem; font-weight:600; font-size:1.05rem; text-decoration:none; border-bottom:3px solid {% if active_tab == 'photos' %}#007bff{% else %}transparent{% endif %}; color:{% if active_tab == 'photos' %}#007bff{% else %}#888{% endif %}; margin-bottom:-2px; transition:all 0.2s;">
+            📷 사진관
+        </a>
+        <a href="/gallery/videos" style="padding:0.75rem 2rem; font-weight:600; font-size:1.05rem; text-decoration:none; border-bottom:3px solid {% if active_tab == 'videos' %}#007bff{% else %}transparent{% endif %}; color:{% if active_tab == 'videos' %}#007bff{% else %}#888{% endif %}; margin-bottom:-2px; transition:all 0.2s;">
+            🎬 영상관
+        </a>
+    </div>
+</div>
+
+<section class="content-section">
+    <div class="container">
+
+        {% if active_tab == 'photos' %}
+        <!-- Photo Gallery -->
+        {% if photos %}
+        <div class="gallery-grid">
+            {% for photo in photos %}
+            <div class="gallery-item" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 100 }}">
+                <div class="gallery-image-wrapper">
+                    <img src="{{ photo.image_url }}" alt="{{ photo.title }}" class="gallery-image">
+                    <div class="gallery-overlay">
+                        <div class="gallery-info">
+                            <h3 class="gallery-title">{{ photo.title }}</h3>
+                            {% if photo.description %}
+                            <p class="gallery-description">{{ photo.description }}</p>
+                            {% endif %}
+                            <p class="gallery-date">{{ photo.upload_date[:10] if photo.upload_date else '' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📷</div>
+            <h3>아직 등록된 사진이 없습니다</h3>
+            <p>곧 멋진 활동 사진들을 만나보실 수 있습니다.</p>
+        </div>
+        {% endif %}
+
+        {% elif active_tab == 'videos' %}
+        <!-- Video Gallery -->
+        {% if videos %}
+        <div class="video-grid">
+            {% for video in videos %}
+            <div class="video-item" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 100 }}">
+                <div class="video-wrapper">
+                    <iframe src="{{ video.video_url|youtube_embed }}" frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen title="{{ video.title }}"></iframe>
+                </div>
+                <div class="video-info">
+                    <h3>{{ video.title }}</h3>
+                    {% if video.description %}
+                    <p>{{ video.description }}</p>
+                    {% endif %}
+                    <span class="video-date">{{ video.upload_date[:10] if video.upload_date else '' }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🎬</div>
+            <h3>아직 등록된 영상이 없습니다</h3>
+            <p>곧 멋진 활동 영상들을 만나보실 수 있습니다.</p>
+        </div>
+        {% endif %}
+        {% endif %}
+
+    </div>
+</section>
+
+<style>
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+.gallery-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.gallery-item:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+.gallery-image-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: 75%;
+    overflow: hidden;
+    background: #f5f5f5;
+}
+.gallery-image {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+.gallery-item:hover .gallery-image { transform: scale(1.1); }
+.gallery-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    align-items: flex-end;
+    padding: 20px;
+}
+.gallery-item:hover .gallery-overlay { opacity: 1; }
+.gallery-info { width: 100%; color: white; }
+.gallery-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; color: white; }
+.gallery-description { font-size: 0.95rem; line-height: 1.5; margin-bottom: 8px; opacity: 0.9; }
+.gallery-date { font-size: 0.85rem; opacity: 0.7; margin: 0; }
+
+/* Video Grid */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+.video-item {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    background: #fff;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.video-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+.video-wrapper {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+}
+.video-wrapper iframe {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+}
+.video-info {
+    padding: 1.25rem;
+}
+.video-info h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+.video-info p {
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+}
+.video-date {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+.empty-state { text-align: center; padding: 80px 20px; }
+.empty-icon { font-size: 5rem; margin-bottom: 20px; opacity: 0.3; }
+.empty-state h3 { font-size: 1.5rem; margin-bottom: 10px; color: #333; }
+.empty-state p { color: #666; font-size: 1.1rem; }
+
+@media (max-width: 768px) {
+    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+    .video-grid { grid-template-columns: 1fr; gap: 20px; }
+}
+@media (max-width: 480px) {
+    .gallery-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+document.querySelectorAll('.gallery-image').forEach(img => {
+    img.addEventListener('click', function() {
+        const lightbox = document.createElement('div');
+        lightbox.className = 'lightbox';
+        lightbox.innerHTML = `
+            <div class="lightbox-content">
+                <span class="lightbox-close">&times;</span>
+                <img src="${this.src}" alt="${this.alt}">
+                <div class="lightbox-caption">
+                    <h3>${this.closest('.gallery-item').querySelector('.gallery-title').textContent}</h3>
+                    <p>${this.closest('.gallery-item').querySelector('.gallery-description')?.textContent || ''}</p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(lightbox);
+        lightbox.addEventListener('click', function(e) {
+            if (e.target === lightbox || e.target.className === 'lightbox-close') { lightbox.remove(); }
+        });
+    });
+});
+</script>
+<style>
+.lightbox { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; animation:fadeIn 0.3s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.lightbox-content { position:relative; max-width:90%; max-height:90vh; display:flex; flex-direction:column; align-items:center; }
+.lightbox-content img { max-width:100%; max-height:80vh; object-fit:contain; border-radius:8px; }
+.lightbox-close { position:absolute; top:-40px; right:0; font-size:40px; color:white; cursor:pointer; }
+.lightbox-caption { margin-top:20px; color:white; text-align:center; max-width:600px; }
+.lightbox-caption h3 { font-size:1.5rem; margin-bottom:10px; color:white; }
+.lightbox-caption p { font-size:1rem; opacity:0.8; line-height:1.6; }
+</style>
+
+<!-- Contact Us + Footer -->
+<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+		<h3 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
+		<p style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord | Johnson#4553</p>
+		<div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 2rem; margin-top: 2rem; text-align: center;">
+			<p style="color: white; font-size: 1rem; margin: 0;">&copy; 2025 Virtual Black Eagles</p>
+		</div>
+	</div>
+</section>
+<style>.site-footer { display: none; }</style>
+{% endblock %}

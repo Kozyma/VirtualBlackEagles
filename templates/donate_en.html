@@ -1,0 +1,490 @@
+{% extends "base_en.html" %}
+
+{% block title %}Donate - Virtual Black Eagles{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('/static/images/hero.jpg')">
+  <div class="container">
+    <h1 class="banner-title">Donate</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<main class="container section" style="padding-left: 7rem; text-align: center;">
+      <style>
+        .donate-wrapper {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+        .donate-intro {
+          text-align: center;
+          margin-bottom: 3rem;
+        }
+        .donate-intro h2 {
+          font-size: 2.5rem;
+          margin-bottom: 1rem;
+          color: #1a1a1a;
+        }
+        .donate-intro p {
+          font-size: 1.2rem;
+          color: #666;
+          line-height: 1.8;
+        }
+        .donate-content {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 3rem;
+          margin-bottom: 3rem;
+        }
+        .donate-info-card {
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          padding: 3rem;
+          border-radius: 20px;
+          color: white;
+          box-shadow: 0 10px 40px rgba(240, 147, 251, 0.3);
+        }
+        .donate-info-card h3 {
+          font-size: 2rem;
+          margin-bottom: 2rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .donate-info-card h3 svg {
+          width: 32px;
+          height: 32px;
+        }
+        .donate-methods {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+        .donate-method {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+          padding: 1.5rem;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          backdrop-filter: blur(10px);
+          transition: all 0.3s ease;
+        }
+        .donate-method:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: translateX(5px);
+        }
+        .donate-method-icon {
+          width: 48px;
+          height: 48px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .donate-method-icon svg {
+          width: 24px;
+          height: 24px;
+        }
+        .donate-method-content h4 {
+          font-size: 1.1rem;
+          margin-bottom: 0.5rem;
+          font-weight: 600;
+        }
+        .donate-method-content p {
+          margin: 0;
+          font-size: 1rem;
+          opacity: 0.9;
+        }
+
+        .donate-form-card {
+          background: white;
+          padding: 3rem;
+          border-radius: 20px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        .donate-form-card h3 {
+          font-size: 2rem;
+          margin-bottom: 2rem;
+          color: #1a1a1a;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .donate-form-card h3 svg {
+          width: 32px;
+          height: 32px;
+          color: #f5576c;
+        }
+        .amount-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+        .amount-btn {
+          padding: 1rem;
+          border: 2px solid #e0e0e0;
+          border-radius: 12px;
+          background: white;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #333;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .amount-btn:hover {
+          border-color: #f5576c;
+          color: #f5576c;
+        }
+        .amount-btn.active {
+          border-color: #f5576c;
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          color: white;
+        }
+        .custom-amount-group {
+          margin-bottom: 1.5rem;
+        }
+        .custom-amount-group label {
+          display: block;
+          font-size: 1rem;
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 0.5rem;
+        }
+        .custom-amount-input {
+          width: 100%;
+          padding: 1rem;
+          border: 2px solid #e0e0e0;
+          border-radius: 12px;
+          font-size: 1.1rem;
+          transition: all 0.3s ease;
+          text-align: center;
+          font-weight: 600;
+        }
+        .custom-amount-input:focus {
+          outline: none;
+          border-color: #f5576c;
+          box-shadow: 0 0 0 4px rgba(245, 87, 108, 0.1);
+        }
+        .donate-btn {
+          width: 100%;
+          padding: 1.2rem;
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 1.2rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+          margin-bottom: 1rem;
+        }
+        .donate-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+        }
+        .donate-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .donate-note {
+          font-size: 0.85rem;
+          color: #999;
+          text-align: center;
+          line-height: 1.6;
+        }
+        .bank-info-box {
+          margin-top: 1.5rem;
+          padding: 1.5rem;
+          background: #f8f9fa;
+          border-radius: 12px;
+          border: 1px solid #e9ecef;
+        }
+        .bank-info-box h4 {
+          font-size: 1rem;
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 0.75rem;
+        }
+        .bank-info-box p {
+          margin: 0.25rem 0;
+          font-size: 0.95rem;
+          color: #555;
+        }
+        .encourage-section {
+          margin-top: 2rem;
+          padding-top: 2rem;
+          border-top: 1px solid #eee;
+        }
+        .encourage-section h4 {
+          font-size: 1.1rem;
+          color: #333;
+          margin-bottom: 1rem;
+        }
+        .form-group {
+          margin-bottom: 1rem;
+          text-align: left;
+        }
+        .form-group label {
+          display: block;
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 0.5rem;
+        }
+        .form-group input,
+        .form-group textarea {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border: 2px solid #e0e0e0;
+          border-radius: 10px;
+          font-size: 0.95rem;
+          transition: all 0.3s ease;
+          font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+          outline: none;
+          border-color: #f5576c;
+          box-shadow: 0 0 0 4px rgba(245, 87, 108, 0.1);
+        }
+        .form-group textarea {
+          resize: vertical;
+          min-height: 80px;
+        }
+        .submit-btn {
+          width: 100%;
+          padding: 1rem;
+          background: #6c757d;
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .submit-btn:hover {
+          background: #5a6268;
+        }
+        .flashes {
+          list-style: none;
+          padding: 0;
+          margin-bottom: 1.5rem;
+        }
+        .flashes li {
+          padding: 1rem 1.5rem;
+          border-radius: 12px;
+          margin-bottom: 1rem;
+        }
+        .flashes li.success {
+          background: #d4edda;
+          color: #155724;
+          border: 1px solid #c3e6cb;
+        }
+        .flashes li.error {
+          background: #f8d7da;
+          color: #721c24;
+          border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+          .donate-content {
+            grid-template-columns: 1fr;
+          }
+          .donate-info-card,
+          .donate-form-card {
+            padding: 2rem;
+          }
+          .donate-intro h2 {
+            font-size: 2rem;
+          }
+        }
+      </style>
+
+      <div class="donate-wrapper">
+        <div class="donate-intro">
+          <h2>Support Us</h2>
+          <p>Please support Virtual Black Eagles' activities!<br>Your generous support greatly helps with team operations and development.</p>
+        </div>
+
+        <div class="donate-content">
+          <!-- Donation Info Card -->
+          <div class="donate-info-card">
+            <h3>
+              <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg>
+              Donation Guide
+            </h3>
+
+            <div class="donate-methods">
+              <div class="donate-method">
+                <div class="donate-method-icon">
+                  <svg fill="currentColor" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                </div>
+                <div class="donate-method-content">
+                  <h4>KakaoPay Transfer</h4>
+                  <p>Easy donation via KakaoPay</p>
+                </div>
+              </div>
+
+              {% if donate_settings.get('bank_name') %}
+              <div class="donate-method">
+                <div class="donate-method-icon">
+                  <svg fill="currentColor" viewBox="0 0 24 24"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z"/></svg>
+                </div>
+                <div class="donate-method-content">
+                  <h4>Bank Transfer</h4>
+                  <p>{{ donate_settings.get('bank_name', '') }} {{ donate_settings.get('account_number', '') }}</p>
+                  {% if donate_settings.get('account_holder') %}
+                  <p style="opacity:0.7; font-size:0.9rem;">Account holder: {{ donate_settings.get('account_holder', '') }}</p>
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+
+              <div class="donate-method">
+                <div class="donate-method-icon">
+                  <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                <div class="donate-method-content">
+                  <h4>Transparent Management</h4>
+                  <p>All donations are used only for team operations</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Donation Amount + Message -->
+          <div class="donate-form-card">
+            <h3>
+              <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              Donate
+            </h3>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <ul class="flashes">
+                {% for category, message in messages %}
+                  <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+              {% endif %}
+            {% endwith %}
+
+            <div class="amount-grid">
+              <button type="button" class="amount-btn" onclick="selectAmount(this, 5000)">5,000 KRW</button>
+              <button type="button" class="amount-btn" onclick="selectAmount(this, 10000)">10,000 KRW</button>
+              <button type="button" class="amount-btn" onclick="selectAmount(this, 30000)">30,000 KRW</button>
+              <button type="button" class="amount-btn" onclick="selectAmount(this, 50000)">50,000 KRW</button>
+            </div>
+
+            <div class="custom-amount-group">
+              <label for="customAmount">Custom Amount</label>
+              <input type="number" id="customAmount" class="custom-amount-input" placeholder="Enter amount (KRW)" min="1000" step="1000" oninput="customAmountChanged()">
+            </div>
+
+            {% if donate_settings.get('kakaopay_link') %}
+            <button type="button" class="donate-btn" id="kakaopayBtn" onclick="openKakaoPay()" disabled>
+              Donate via KakaoPay
+            </button>
+            <p class="donate-note">Select an amount to proceed to KakaoPay transfer page.</p>
+            {% else %}
+            <div class="bank-info-box">
+              <h4>Bank Account Information</h4>
+              {% if donate_settings.get('bank_name') %}
+              <p><strong>{{ donate_settings.get('bank_name', '') }}</strong> {{ donate_settings.get('account_number', '') }}</p>
+              {% if donate_settings.get('account_holder') %}
+              <p>Account holder: {{ donate_settings.get('account_holder', '') }}</p>
+              {% endif %}
+              {% else %}
+              <p>Donation account information is being prepared.</p>
+              <p>Please send an inquiry using the form below.</p>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="encourage-section">
+              <h4>Send an Encouragement Message</h4>
+              <form method="POST" action="{{ url_for('send_donate') }}">
+                <input type="hidden" name="lang" value="en">
+                <div class="form-group">
+                  <label for="userName">Name</label>
+                  <input type="text" name="name" id="userName" placeholder="Enter your name" required>
+                </div>
+                <div class="form-group">
+                  <label for="donateAmount">Donation Amount</label>
+                  <input type="text" name="email" id="donateAmount" placeholder="e.g. 10,000 KRW" required>
+                </div>
+                <div class="form-group">
+                  <label for="userMsg">Message</label>
+                  <textarea name="message" id="userMsg" placeholder="Leave your encouragement message" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Send Message</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+<script>
+let selectedAmount = 0;
+const kakaopayLink = "{{ donate_settings.get('kakaopay_link', '') }}";
+
+function selectAmount(btn, amount) {
+    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedAmount = amount;
+    document.getElementById('customAmount').value = '';
+    updateDonateBtn();
+}
+
+function customAmountChanged() {
+    const val = parseInt(document.getElementById('customAmount').value);
+    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
+    selectedAmount = val > 0 ? val : 0;
+    updateDonateBtn();
+}
+
+function updateDonateBtn() {
+    const btn = document.getElementById('kakaopayBtn');
+    if (btn) {
+        btn.disabled = selectedAmount <= 0;
+        if (selectedAmount > 0) {
+            btn.textContent = 'Donate ' + selectedAmount.toLocaleString() + ' KRW via KakaoPay';
+        } else {
+            btn.textContent = 'Donate via KakaoPay';
+        }
+    }
+}
+
+function openKakaoPay() {
+    if (selectedAmount <= 0) return;
+    if (kakaopayLink) {
+        window.open(kakaopayLink, '_blank');
+    }
+}
+</script>
+
+<!-- Contact Us + Footer Section -->
+<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+		<h3 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
+		<p style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord | Johnson#4553</p>
+		<div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 2rem; margin-top: 2rem; text-align: center;">
+			<p style="color: white; font-size: 1rem; margin: 0;">&copy; 2025 Virtual Black Eagles</p>
+		</div>
+	</div>
+</section>
+
+<style>
+.site-footer {
+	display: none;
+}
+</style>
+{% endblock %}

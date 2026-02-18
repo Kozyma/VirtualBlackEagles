@@ -1,0 +1,74 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}홈 콘텐츠 관리{% endblock %}
+{% block page_title %}홈 콘텐츠 관리{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_home_content_new') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> 새 콘텐츠
+    </a>
+{% endblock %}
+
+{% block content %}
+    {% if contents %}
+    <div class="table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>유형</th>
+                    <th>제목</th>
+                    <th>콘텐츠</th>
+                    <th>순서</th>
+                    <th>활성</th>
+                    <th>작업</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for content in contents %}
+                <tr>
+                    <td>
+                        {% if content.content_type == 'youtube' %}
+                        <span class="badge badge-danger"><i class="fab fa-youtube"></i> YouTube</span>
+                        {% elif content.content_type == 'instagram' %}
+                        <span class="badge badge-warning"><i class="fab fa-instagram"></i> Instagram</span>
+                        {% elif content.content_type == 'twitter' %}
+                        <span class="badge badge-info"><i class="fab fa-twitter"></i> Twitter</span>
+                        {% else %}
+                        <span class="badge" style="background:#6c757d;color:white;">{{ content.content_type }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ content.title if content.title else '-' }}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ content.content_data }}
+                    </td>
+                    <td>{{ content.order_num }}</td>
+                    <td>
+                        {% if content.is_active %}
+                        <span class="badge badge-success">활성</span>
+                        {% else %}
+                        <span class="badge" style="background:#6c757d;color:white;">비활성</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions">
+                        <a href="{{ url_for('admin_home_content_edit', content_id=content.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i> 수정
+                        </a>
+                        <form method="POST" action="{{ url_for('admin_home_content_delete', content_id=content.id) }}"
+                              style="display:inline;"
+                              onsubmit="return confirm('정말 이 콘텐츠를 삭제하시겠습니까?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        등록된 홈 콘텐츠가 없습니다. 콘텐츠를 추가해주세요.
+    </div>
+    {% endif %}
+{% endblock %}

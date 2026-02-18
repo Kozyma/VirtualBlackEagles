@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}공지사항 - Virtual Black Eagles{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner and banner.background_image else '/static/images/hero.jpg' }}')">
+  <div class="container">
+    <h1 class="banner-title">{{ banner.title if banner and banner.title else '공지사항' }}</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<main class="container section" style="max-width:960px;margin:0 auto;padding:2rem 1rem;">
+
+  <!-- 검색 + 총 건수 -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+    <span style="color:#666;font-size:0.95rem;">총 <strong style="color:#007bff;">{{ total }}</strong>건</span>
+    <form method="GET" action="{{ url_for('notice') }}" style="display:flex;gap:0.5rem;align-items:center;">
+      <select name="search_type" style="padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;background:#fff;">
+        <option value="title" {{ 'selected' if search_type == 'title' }}>제목</option>
+        <option value="content" {{ 'selected' if search_type == 'content' }}>내용</option>
+        <option value="author" {{ 'selected' if search_type == 'author' }}>작성자</option>
+      </select>
+      <input type="text" name="q" value="{{ search_query }}" placeholder="검색어를 입력하세요"
+             style="padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;width:200px;">
+      <button type="submit" style="padding:0.5rem 1rem;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.9rem;">
+        검색
+      </button>
+      {% if search_query %}
+      <a href="{{ url_for('notice') }}" style="padding:0.5rem 0.75rem;color:#666;text-decoration:none;font-size:0.9rem;">초기화</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- 테이블 -->
+  <div style="background:#fff;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.08);overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#f8f9fa;border-bottom:2px solid #e9ecef;">
+          <th style="padding:0.85rem 1rem;text-align:center;font-weight:600;color:#495057;font-size:0.9rem;width:60px;">번호</th>
+          <th style="padding:0.85rem 1rem;text-align:left;font-weight:600;color:#495057;font-size:0.9rem;">제목</th>
+          <th style="padding:0.85rem 1rem;text-align:center;font-weight:600;color:#495057;font-size:0.9rem;width:100px;">작성자</th>
+          <th style="padding:0.85rem 1rem;text-align:center;font-weight:600;color:#495057;font-size:0.9rem;width:110px;">작성일</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if notices %}
+          {% for notice in notices %}
+          <tr onclick="location.href='/notice/{{ notice.id }}'" style="cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.15s;"
+              onmouseover="this.style.background='#f8f9ff'" onmouseout="this.style.background='transparent'">
+            <td style="padding:0.8rem 1rem;text-align:center;color:#999;font-size:0.9rem;">{{ notice.id }}</td>
+            <td style="padding:0.8rem 1rem;text-align:left;color:#333;font-size:0.95rem;">{{ notice.title }}</td>
+            <td style="padding:0.8rem 1rem;text-align:center;color:#666;font-size:0.9rem;">{{ notice.author }}</td>
+            <td style="padding:0.8rem 1rem;text-align:center;color:#999;font-size:0.9rem;">{{ notice.created_at[:10] }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="4" style="text-align:center;padding:3rem;color:#999;font-size:0.95rem;">
+              {% if search_query %}
+                검색 결과가 없습니다.
+              {% else %}
+                등록된 공지사항이 없습니다.
+              {% endif %}
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 페이지네이션 -->
+  {% if total_pages > 1 %}
+  <div style="display:flex;justify-content:center;align-items:center;gap:0.25rem;margin-top:2rem;">
+    {% if page > 1 %}
+    <a href="{{ url_for('notice', page=page-1, q=search_query, search_type=search_type) }}"
+       style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:0.85rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == page %}
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:#007bff;color:#fff;border-radius:4px;font-size:0.9rem;font-weight:600;">{{ p }}</span>
+      {% elif p <= 2 or p >= total_pages - 1 or (p >= page - 2 and p <= page + 2) %}
+      <a href="{{ url_for('notice', page=p, q=search_query, search_type=search_type) }}"
+         style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:0.9rem;transition:background 0.15s;"
+         onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">{{ p }}</a>
+      {% elif p == 3 or p == total_pages - 2 %}
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;color:#999;font-size:0.9rem;">...</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a href="{{ url_for('notice', page=page+1, q=search_query, search_type=search_type) }}"
+       style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:0.85rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</main>
+
+<!-- Contact Us + Footer Section -->
+<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+		<h3 data-i18n="contact.title" style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
+		<p data-i18n="contact.text" style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord | Johnson#4553</p>
+
+		<div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 2rem; margin-top: 2rem; text-align: center;">
+			<p style="color: white; font-size: 1rem; margin: 0;">&copy; 2025 Virtual Black Eagles</p>
+		</div>
+	</div>
+</section>
+
+<style>
+.site-footer {
+	display: none;
+}
+</style>
+{% endblock %}

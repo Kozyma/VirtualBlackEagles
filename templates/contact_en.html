@@ -1,0 +1,291 @@
+{% extends "base_en.html" %}
+
+{% block title %}Contact - Virtual Black Eagles{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('/static/images/hero.jpg')">
+  <div class="container">
+    <h1 class="banner-title">Contact Us</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<main class="container section" style="padding-left: 7rem; text-align: center;">
+      <style>
+        .contact-wrapper {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+        
+        .contact-intro {
+          text-align: center;
+          margin-bottom: 4rem;
+        }
+        
+        .contact-intro h2 {
+          font-size: 2.5rem;
+          margin-bottom: 1rem;
+          color: #1a1a1a;
+        }
+        
+        .contact-intro p {
+          font-size: 1.2rem;
+          color: #666;
+          line-height: 1.8;
+        }
+        
+        .contact-content {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 3rem;
+          margin-bottom: 3rem;
+        }
+        
+        .contact-info-card {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          padding: 3rem;
+          border-radius: 20px;
+          color: white;
+          box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+        }
+        
+        .contact-info-card h3 {
+          font-size: 2rem;
+          margin-bottom: 2rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        
+        .contact-info-card h3 svg {
+          width: 32px;
+          height: 32px;
+        }
+        
+        .contact-methods {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+        
+        .contact-method {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+          padding: 1.5rem;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          backdrop-filter: blur(10px);
+          transition: all 0.3s ease;
+        }
+        
+        .contact-method:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: translateX(5px);
+        }
+        
+        .contact-method-icon {
+          width: 48px;
+          height: 48px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        
+        .contact-method-icon svg {
+          width: 24px;
+          height: 24px;
+        }
+        
+        .contact-method-details h4 {
+          margin: 0 0 0.5rem 0;
+          font-size: 1.1rem;
+        }
+        
+        .contact-method-details p {
+          margin: 0;
+          font-size: 1rem;
+          opacity: 0.9;
+        }
+        
+        .contact-form-card {
+          background: white;
+          padding: 3rem;
+          border-radius: 20px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .contact-form-card h3 {
+          font-size: 2rem;
+          margin-bottom: 2rem;
+          color: #1a1a1a;
+        }
+        
+        .form-group {
+          margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: #333;
+          font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+          width: 100%;
+          padding: 0.75rem;
+          border: 2px solid #e0e0e0;
+          border-radius: 8px;
+          font-size: 1rem;
+          transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+          outline: none;
+          border-color: #667eea;
+        }
+        
+        .form-group textarea {
+          min-height: 150px;
+          resize: vertical;
+        }
+        
+        .submit-btn {
+          width: 100%;
+          padding: 1rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 1.1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        @media (max-width: 768px) {
+          .contact-content {
+            grid-template-columns: 1fr;
+          }
+        }
+      </style>
+
+      <div class="contact-wrapper">
+        <div class="contact-intro">
+          <h2>Get in Touch</h2>
+          <p>Have questions about the Virtual Black Eagles? We're here to help!<br>
+             Reach out to us through any of the methods below.</p>
+        </div>
+
+        <div class="contact-content">
+          <!-- Contact Information -->
+          <div class="contact-info-card">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+              Contact Information
+            </h3>
+            
+            <div class="contact-methods">
+              <!-- Discord -->
+              <div class="contact-method">
+                <div class="contact-method-icon">
+                  <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0 a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                  </svg>
+                </div>
+                <div class="contact-method-details">
+                  <h4>Discord</h4>
+                  <p>Johnson#4553</p>
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="contact-method">
+                <div class="contact-method-icon">
+                  <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                  </svg>
+                </div>
+                <div class="contact-method-details">
+                  <h4>Email</h4>
+                  <p>Contact us via the form</p>
+                </div>
+              </div>
+
+              <!-- Social Media -->
+              <div class="contact-method">
+                <div class="contact-method-icon">
+                  <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </div>
+                <div class="contact-method-details">
+                  <h4>Social Media</h4>
+                  <p>Follow us on Instagram & Facebook</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Form -->
+          <div class="contact-form-card">
+            <h3>Send us a Message</h3>
+            <form action="{{ url_for('send_mail') }}" method="POST">
+                <input type="hidden" name="lang" value="en">
+              <div class="form-group">
+                <label for="name">Name *</label>
+                <input type="text" id="name" name="name" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="subject">Subject *</label>
+                <input type="text" id="subject" name="subject" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="message">Message *</label>
+                <textarea id="message" name="message" required></textarea>
+              </div>
+              
+              <button type="submit" class="submit-btn">Send Message</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div style="background:#f8f9fa;padding:3rem;border-radius:20px;text-align:center;margin-top:3rem;">
+          <h3 style="font-size:1.8rem;margin-bottom:1rem;color:#1a1a1a;">Join Our Community</h3>
+          <p style="font-size:1.1rem;color:#666;line-height:1.8;margin-bottom:2rem;">
+            Interested in joining the Virtual Black Eagles? Connect with us on Discord<br>
+            to learn more about our team and upcoming recruitment opportunities.
+          </p>
+          <div style="display:flex;gap:1rem;justify-content:center;">
+            <a href="https://www.facebook.com/VirtualBlackEagles/" target="_blank" style="display:inline-block;padding:0.75rem 1.5rem;background:#1877f2;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Facebook</a>
+            <a href="https://www.instagram.com/p/DR0nfrNE8qh/" target="_blank" style="display:inline-block;padding:0.75rem 1.5rem;background:#e1306c;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Instagram</a>
+            <a href="https://www.youtube.com/@VirtualBlackEagles-DCS" target="_blank" style="display:inline-block;padding:0.75rem 1.5rem;background:#ff0000;color:white;text-decoration:none;border-radius:8px;font-weight:600;">YouTube</a>
+          </div>
+        </div>
+      </div>
+    </main>
+{% endblock %}

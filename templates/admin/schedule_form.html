@@ -1,0 +1,164 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}{{ '일정 수정' if schedule else '일정 추가' }}{% endblock %}
+{% block page_title %}{{ '일정 수정' if schedule else '일정 추가' }}{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_schedules') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 목록</a>
+{% endblock %}
+
+{% block head %}
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+.link-preview-card {
+    display: flex; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;
+    margin: 0.5rem 0; background: #fafafa; max-width: 500px; text-decoration: none; color: inherit;
+}
+.link-preview-card img { width: 120px; height: 90px; object-fit: cover; flex-shrink: 0; }
+.link-preview-card .lp-info { padding: 0.5rem 0.75rem; flex: 1; min-width: 0; overflow: hidden; }
+.link-preview-card .lp-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.link-preview-card .lp-desc { font-size: 0.8rem; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.link-preview-card .lp-url { font-size: 0.75rem; color: #999; margin-top: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="POST" id="scheduleForm">
+        <div class="form-group">
+            <label for="title">행사명 *</label>
+            <input type="text" id="title" name="title" class="form-control" required
+                   value="{{ schedule.title if schedule else '' }}"
+                   placeholder="행사명을 입력하세요">
+        </div>
+
+        <div class="form-group">
+            <label for="event_date">날짜 *</label>
+            <input type="date" id="event_date" name="event_date" class="form-control" required
+                   value="{{ schedule.event_date if schedule else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="location">장소</label>
+            <input type="text" id="location" name="location" class="form-control"
+                   value="{{ schedule.location if schedule else '' }}"
+                   placeholder="장소를 입력하세요 (선택)">
+        </div>
+
+        <div class="form-group">
+            <label>설명</label>
+            <div id="editor-container" style="min-height:150px; background:white;">{{ schedule.description|safe if schedule else '' }}</div>
+            <input type="hidden" name="description" id="description-hidden">
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('admin_schedules') }}" class="btn btn-secondary">취소</a>
+            <button type="submit" class="btn btn-primary">
+                {{ '수정하기' if schedule else '추가하기' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+var quill = new Quill('#editor-container', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'align': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link', 'image'],
+            ['clean']
+        ]
+    },
+    placeholder: '일정에 대한 상세 설명을 입력하세요'
+});
+
+// URL 자동 인식
+var urlRegex = /https?:\/\/[^\s<]+/g;
+quill.on('text-change', function(delta, oldDelta, source) {
+    if (source !== 'user') return;
+    var ops = delta.ops;
+    if (!ops) return;
+    var lastOp = ops[ops.length - 1];
+    if (!lastOp || !lastOp.insert || typeof lastOp.insert !== 'string') return;
+    var insertedChar = lastOp.insert;
+    if (insertedChar !== ' ' && insertedChar !== '\n') return;
+
+    var cursorPos = quill.getSelection();
+    if (!cursorPos) return;
+
+    var textBefore = quill.getText(0, cursorPos.index);
+    var lines = textBefore.split('\n');
+    var lastLine = lines[lines.length - 1];
+    var words = lastLine.split(/\s/);
+    var lastWord = words[words.length - 2];
+
+    if (lastWord && urlRegex.test(lastWord)) {
+        urlRegex.lastIndex = 0;
+        var match = urlRegex.exec(lastWord);
+        if (match) {
+            var url = match[0];
+            var urlStart = cursorPos.index - insertedChar.length - url.length;
+            if (urlStart >= 0) {
+                quill.formatText(urlStart, url.length, 'link', url, 'api');
+                fetchLinkPreview(url, cursorPos.index);
+            }
+        }
+    }
+    urlRegex.lastIndex = 0;
+});
+
+function fetchLinkPreview(url, insertPos) {
+    fetch('/api/link-preview', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url: url})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) return;
+        var previewHtml = '<div class="link-preview-card" contenteditable="false">';
+        if (data.image) {
+            previewHtml += '<img src="' + data.image + '" alt="">';
+        }
+        previewHtml += '<div class="lp-info">';
+        previewHtml += '<div class="lp-title">' + (data.title || '') + '</div>';
+        if (data.description) {
+            previewHtml += '<div class="lp-desc">' + data.description + '</div>';
+        }
+        previewHtml += '<div class="lp-url">' + data.url + '</div>';
+        previewHtml += '</div></div>';
+
+        var currentPos = quill.getLength() - 1;
+        quill.clipboard.dangerouslyPasteHTML(insertPos, previewHtml);
+    })
+    .catch(function() {});
+}
+
+// 붙여넣기 시 URL 자동 링크 변환
+quill.root.addEventListener('paste', function(e) {
+    var text = (e.clipboardData || window.clipboardData).getData('text');
+    if (text && /^https?:\/\/[^\s]+$/.test(text.trim())) {
+        e.preventDefault();
+        var range = quill.getSelection(true);
+        var url = text.trim();
+        quill.insertText(range.index, url, 'link', url, 'user');
+        quill.setSelection(range.index + url.length);
+        fetchLinkPreview(url, range.index + url.length);
+    }
+});
+
+document.getElementById('scheduleForm').addEventListener('submit', function() {
+    var html = quill.root.innerHTML;
+    if (html === '<p><br></p>') html = '';
+    document.getElementById('description-hidden').value = html;
+});
+</script>
+{% endblock %}

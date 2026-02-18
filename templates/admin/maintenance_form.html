@@ -1,0 +1,88 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}{{ '정비사 수정' if crew else '정비사 추가' }}{% endblock %}
+{% block page_title %}{{ '정비사 수정' if crew else '새 정비사 추가' }}{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_maintenance') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 목록</a>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>사진</label>
+            <div class="file-upload-area" onclick="document.getElementById('photo').click()">
+                <input type="file" id="photo" name="photo" accept="image/*" style="display:none;">
+                <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                <div class="upload-text">클릭하여 이미지를 선택하세요</div>
+            </div>
+            <div class="image-preview image-preview-circle" id="preview-container" style="{% if not crew or not crew.photo_url %}display:none;{% endif %}">
+                <img id="preview-image" src="{{ crew.photo_url if crew and crew.photo_url else '' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="name">이름 <span class="required">*</span></label>
+            <input type="text" id="name" name="name" class="form-control" value="{% if crew %}{{ crew.name }}{% endif %}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="role">역할</label>
+            <input type="text" id="role" name="role" class="form-control" value="{% if crew %}{{ crew.role }}{% endif %}" placeholder="예: 정비팀장, 정비사">
+            <small class="form-text">정비사의 역할 (선택사항)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="callsign">콜사인 <span class="required">*</span></label>
+            <input type="text" id="callsign" name="callsign" class="form-control" value="{% if crew %}{{ crew.callsign }}{% endif %}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="bio">소개</label>
+            <textarea id="bio" name="bio" class="form-control" rows="4" placeholder="정비사 소개 내용을 입력하세요">{% if crew %}{{ crew.bio }}{% endif %}</textarea>
+            <small class="form-text">정비사의 간단한 소개 (선택사항)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="order_num">정렬 순서</label>
+            <input type="number" id="order_num" name="order_num" class="form-control" value="{% if crew %}{{ crew.order_num }}{% else %}0{% endif %}">
+            <small class="form-text">낮은 숫자가 먼저 표시됩니다</small>
+        </div>
+
+        <div class="form-group">
+            <label>활성 상태</label>
+            <div class="form-check">
+                <input type="checkbox" id="is_active" name="is_active" {% if not crew or crew.is_active %}checked{% endif %}>
+                <label for="is_active">활성화</label>
+            </div>
+            <small class="form-text">비활성화하면 웹사이트에 표시되지 않습니다</small>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('admin_maintenance') }}" class="btn btn-secondary">취소</a>
+            <button type="submit" class="btn btn-primary">{{ '수정하기' if crew else '추가하기' }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/image-compress.js"></script>
+<script>
+document.getElementById('photo').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('preview-image').src = ev.target.result;
+            document.getElementById('preview-container').style.display = '';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+if (typeof ImageCompressor !== 'undefined') {
+    ImageCompressor.setupImageInput("photo", { maxWidth: 800, maxHeight: 800, quality: 0.85 });
+}
+</script>
+{% endblock %}

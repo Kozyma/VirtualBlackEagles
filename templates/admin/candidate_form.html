@@ -1,0 +1,78 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}{{ '후보자 수정' if candidate else '후보자 추가' }}{% endblock %}
+{% block page_title %}{{ '후보자 수정' if candidate else '새 후보자 추가' }}{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_candidates') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 목록</a>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>사진</label>
+            <div class="file-upload-area" onclick="document.getElementById('photo').click()">
+                <input type="file" id="photo" name="photo" accept="image/*" style="display:none;">
+                <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                <div class="upload-text">클릭하여 이미지를 선택하세요</div>
+            </div>
+            <div class="image-preview image-preview-circle" id="preview-container" style="{% if not candidate or not candidate.photo_url %}display:none;{% endif %}">
+                <img id="preview-image" src="{{ candidate.photo_url if candidate and candidate.photo_url else '' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="name">이름 <span class="required">*</span></label>
+            <input type="text" id="name" name="name" class="form-control" value="{% if candidate %}{{ candidate.name }}{% endif %}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="callsign">콜사인 <span class="required">*</span></label>
+            <input type="text" id="callsign" name="callsign" class="form-control" value="{% if candidate %}{{ candidate.callsign }}{% endif %}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="bio">소개</label>
+            <textarea id="bio" name="bio" class="form-control" rows="4" placeholder="후보자 소개 내용을 입력하세요">{% if candidate %}{{ candidate.bio }}{% endif %}</textarea>
+            <small class="form-text">후보자의 간단한 소개 (선택사항)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="order_num">정렬 순서</label>
+            <input type="number" id="order_num" name="order_num" class="form-control" value="{% if candidate %}{{ candidate.order_num }}{% else %}0{% endif %}">
+            <small class="form-text">낮은 숫자가 먼저 표시됩니다</small>
+        </div>
+
+        <div class="form-group">
+            <label>활성 상태</label>
+            <div class="form-check">
+                <input type="checkbox" id="is_active" name="is_active" {% if not candidate or candidate.is_active %}checked{% endif %}>
+                <label for="is_active">활성화</label>
+            </div>
+            <small class="form-text">비활성화하면 웹사이트에 표시되지 않습니다</small>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('admin_candidates') }}" class="btn btn-secondary">취소</a>
+            <button type="submit" class="btn btn-primary">{{ '수정하기' if candidate else '추가하기' }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('photo').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('preview-image').src = ev.target.result;
+            document.getElementById('preview-container').style.display = '';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}

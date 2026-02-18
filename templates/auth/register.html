@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}회원가입 - Virtual Black Eagles{% endblock %}
+
+{% block content %}
+<main class="container section" style="max-width:420px;margin:4rem auto;padding:2rem;">
+  <div style="background:#fff;padding:2.5rem;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
+    <h2 style="text-align:center;margin:0 0 0.5rem;color:#333;">회원가입</h2>
+    <p style="text-align:center;color:#999;font-size:0.9rem;margin:0 0 2rem;">아이디와 비밀번호를 설정해주세요</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div style="padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-size:0.9rem;
+                background:{{ '#f8d7da' if category == 'error' else '#d4edda' }};
+                color:{{ '#721c24' if category == 'error' else '#155724' }};">
+      {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">이메일 (Google)</label>
+        <input type="email" value="{{ email }}" disabled
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #eee;border-radius:6px;font-size:0.95rem;background:#f8f9fa;color:#666;box-sizing:border-box;">
+      </div>
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">닉네임</label>
+        <input type="text" name="display_name" value="{{ name }}"
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;"
+               placeholder="표시할 이름을 입력하세요">
+      </div>
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">아이디 *</label>
+        <input type="text" name="username" required
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;"
+               placeholder="사용할 아이디를 입력하세요">
+      </div>
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">비밀번호 *</label>
+        <input type="password" name="password" required minlength="4"
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;"
+               placeholder="4자 이상">
+      </div>
+      <button type="submit"
+              style="width:100%;padding:0.75rem;background:#007bff;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;transition:background 0.15s;"
+              onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+        가입 완료
+      </button>
+    </form>
+  </div>
+</main>
+
+<style>.site-footer { display: none; }</style>
+{% endblock %}

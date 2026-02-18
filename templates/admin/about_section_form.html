@@ -1,0 +1,115 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}{% if section %}섹션 수정{% else %}섹션 추가{% endif %}{% endblock %}
+{% block page_title %}{% if section %}섹션 수정{% else %}섹션 추가{% endif %}{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_about_sections') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> 목록으로
+    </a>
+{% endblock %}
+
+{% block head %}
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="form-container">
+        <form method="POST" enctype="multipart/form-data" id="aboutForm">
+            <div class="form-group">
+                <label for="section_type">섹션 유형 <span style="color: red;">*</span></label>
+                <select id="section_type" name="section_type" class="form-control" required>
+                    <option value="">-- 선택하세요 --</option>
+                    <option value="overview" {% if section and section.section_type == 'overview' %}selected{% endif %}>개요</option>
+                    <option value="mission" {% if section and section.section_type == 'mission' %}selected{% endif %}>임무</option>
+                    <option value="selection" {% if section and section.section_type == 'selection' %}selected{% endif %}>선발</option>
+                    <option value="formation" {% if section and section.section_type == 'formation' %}selected{% endif %}>편대</option>
+                    <option value="aircraft_intro" {% if section and section.section_type == 'aircraft_intro' %}selected{% endif %}>항공기 소개</option>
+                    <option value="aircraft_specs" {% if section and section.section_type == 'aircraft_specs' %}selected{% endif %}>항공기 제원</option>
+                    <option value="aircraft_features" {% if section and section.section_type == 'aircraft_features' %}selected{% endif %}>항공기 특징</option>
+                </select>
+                <span class="help-text">섹션의 용도를 선택하세요</span>
+            </div>
+
+            <div class="form-group">
+                <label for="title">제목 <span style="color: red;">*</span></label>
+                <input type="text" id="title" name="title" class="form-control"
+                       value="{{ section.title if section else '' }}"
+                       placeholder="예: 임무"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label>내용</label>
+                <div id="editor-container" style="min-height:200px; background:white;">{{ section.content|safe if section else '' }}</div>
+                <input type="hidden" name="content" id="content-hidden">
+                <span class="help-text">개요 섹션의 상세 설명을 입력하세요</span>
+            </div>
+
+            <div class="form-group">
+                <label for="photo">이미지 첨부</label>
+                {% if section and section.image_url %}
+                <div class="image-preview" style="margin-bottom: 1rem;">
+                    <img src="{{ section.image_url }}" alt="현재 이미지" style="max-width: 300px; height: auto;">
+                    <p style="margin-top: 0.5rem; color: #666; font-size: 0.85rem;">현재 이미지: {{ section.image_url }}</p>
+                </div>
+                {% endif %}
+                <input type="file" id="photo" name="photo" class="form-control" accept="image/*">
+                <span class="help-text">새 이미지를 선택하면 기존 이미지가 교체됩니다</span>
+            </div>
+
+            <div class="form-group">
+                <label for="order_num">표시 순서</label>
+                <input type="number" id="order_num" name="order_num" class="form-control"
+                       value="{{ section.order_num if section else 0 }}"
+                       min="0" max="999">
+                <span class="help-text">숫자가 작을수록 먼저 표시됩니다</span>
+            </div>
+
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" id="is_active" name="is_active" value="1"
+                           {% if not section or section.is_active %}checked{% endif %}>
+                    <label for="is_active">활성화</label>
+                </div>
+                <span class="help-text">체크하면 팀소개 페이지에 표시됩니다</span>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('admin_about_sections') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> 취소
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 저장
+                </button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+var quill = new Quill('#editor-container', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'align': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link', 'image'],
+            ['clean']
+        ]
+    },
+    placeholder: '섹션 내용을 입력하세요'
+});
+
+document.getElementById('aboutForm').addEventListener('submit', function() {
+    var html = quill.root.innerHTML;
+    if (html === '<p><br></p>') html = '';
+    document.getElementById('content-hidden').value = html;
+});
+</script>
+{% endblock %}

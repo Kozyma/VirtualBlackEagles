@@ -1,0 +1,58 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}후보자 관리{% endblock %}
+{% block page_title %}후보자 관리{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_candidate_new') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 새 후보자</a>
+{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    {% if candidates %}
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>이름</th>
+                <th>콜사인</th>
+                <th>순서</th>
+                <th>활성</th>
+                <th>작업</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for candidate in candidates %}
+            <tr>
+                <td>{{ candidate.name }}</td>
+                <td>{{ candidate.callsign }}</td>
+                <td>{{ candidate.order_num }}</td>
+                <td>
+                    {% if candidate.is_active %}
+                    <span class="badge bg-success">활성</span>
+                    {% else %}
+                    <span class="badge bg-secondary">비활성</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('admin_candidate_edit', candidate_id=candidate.id) }}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i> 수정
+                    </a>
+                    <form method="POST" action="{{ url_for('admin_candidate_delete', candidate_id=candidate.id) }}"
+                          style="display:inline;"
+                          onsubmit="return confirm('정말 이 후보자를 삭제하시겠습니까?');">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>등록된 후보자가 없습니다.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

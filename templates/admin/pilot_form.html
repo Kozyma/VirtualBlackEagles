@@ -1,0 +1,95 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}{{ '조종사 수정' if pilot else '조종사 추가' }}{% endblock %}
+{% block page_title %}{{ '조종사 수정' if pilot else '새 조종사 추가' }}{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_pilots') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 목록</a>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>사진</label>
+            <div class="file-upload-area" onclick="document.getElementById('photo').click()">
+                <input type="file" id="photo" name="photo" accept="image/*" style="display:none;">
+                <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                <div class="upload-text">클릭하여 이미지를 선택하세요</div>
+            </div>
+            <div class="image-preview image-preview-circle" id="preview-container" style="{% if not pilot or not pilot.photo_url %}display:none;{% endif %}">
+                <img id="preview-image" src="{{ pilot.photo_url if pilot and pilot.photo_url else '' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="number">번호 <span class="required">*</span></label>
+            <input type="number" id="number" name="number" class="form-control" value="{% if pilot %}{{ pilot.number }}{% endif %}" required min="1" max="99">
+            <small class="form-text">조종사 번호 (예: 1, 2, 3...)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="position">포지션 <span class="required">*</span></label>
+            <input type="text" id="position" name="position" class="form-control" value="{% if pilot %}{{ pilot.position }}{% endif %}" required maxlength="100">
+            <small class="form-text">예: LEADER, LEFT WING, Slot</small>
+        </div>
+
+        <div class="form-group">
+            <label for="callsign">콜사인 <span class="required">*</span></label>
+            <input type="text" id="callsign" name="callsign" class="form-control" value="{% if pilot %}{{ pilot.callsign }}{% endif %}" required maxlength="100">
+            <small class="form-text">예: Bulta, Fox9, Moon</small>
+        </div>
+
+        <div class="form-group">
+            <label for="generation">기수 <span class="required">*</span></label>
+            <input type="text" id="generation" name="generation" class="form-control" value="{% if pilot %}{{ pilot.generation }}{% endif %}" required maxlength="50">
+            <small class="form-text">예: VBE 1기, VBE 2기</small>
+        </div>
+
+        <div class="form-group">
+            <label for="aircraft">주 기종 <span class="required">*</span></label>
+            <input type="text" id="aircraft" name="aircraft" class="form-control" value="{% if pilot %}{{ pilot.aircraft }}{% endif %}" required maxlength="50">
+            <small class="form-text">예: F-5, F-18</small>
+        </div>
+
+        <div class="form-group">
+            <label for="order_num">정렬 순서</label>
+            <input type="number" id="order_num" name="order_num" class="form-control" value="{% if pilot %}{{ pilot.order_num }}{% else %}0{% endif %}" min="0">
+            <small class="form-text">작은 숫자가 먼저 표시됩니다</small>
+        </div>
+
+        <div class="form-group">
+            <label>활성 상태</label>
+            <div class="form-check">
+                <input type="checkbox" id="is_active" name="is_active" {% if not pilot or pilot.is_active %}checked{% endif %}>
+                <label for="is_active">활성화</label>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('admin_pilots') }}" class="btn btn-secondary">취소</a>
+            <button type="submit" class="btn btn-primary">{{ '수정하기' if pilot else '추가하기' }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/image-compress.js"></script>
+<script>
+document.getElementById('photo').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('preview-image').src = ev.target.result;
+            document.getElementById('preview-container').style.display = '';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+if (typeof ImageCompressor !== 'undefined') {
+    ImageCompressor.setupImageInput("photo", { maxWidth: 800, maxHeight: 800, quality: 0.85 });
+}
+</script>
+{% endblock %}

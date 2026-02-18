@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>페이지 콘텐츠 편집 - Virtual Black Eagles</title>
+    <link rel="stylesheet" href="/static/style.css?v=900">
+    <style>
+        .admin-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #007bff;
+        }
+        .admin-header h1 {
+            color: #007bff;
+            margin: 0;
+        }
+        .form-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            min-height: 300px;
+            resize: vertical;
+        }
+        .form-help {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 1rem;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body style="background: #f7f7fb;">
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>📝 페이지 콘텐츠 편집</h1>
+            <a href="{{ url_for('admin_pages') }}" class="btn btn-secondary">← 목록</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="info-box">
+            <strong>⚠️ 주의:</strong> 페이지 이름이 같으면 내용이 업데이트되고, 없으면 새로 추가됩니다.
+        </div>
+
+        <div class="form-container">
+            <form method="POST">
+                <div class="form-group">
+                    <label for="page_name">페이지 이름 *</label>
+                    <select id="page_name" name="page_name" required>
+                        <option value="">선택하세요</option>
+                        <option value="index">홈페이지</option>
+                        <option value="about">소개</option>
+                        <option value="notice">공지사항</option>
+                        <option value="schedule">일정</option>
+                        <option value="contact">문의</option>
+                    </select>
+                    <div class="form-help">수정할 페이지를 선택하세요.</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="section_name">섹션 이름 *</label>
+                    <input type="text" id="section_name" name="section_name" required 
+                           placeholder="예: hero_title, about_description, mission_text">
+                    <div class="form-help">페이지 내의 특정 섹션을 식별하는 이름입니다.</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">내용 *</label>
+                    <textarea id="content" name="content" required 
+                              placeholder="HTML 태그를 포함할 수 있습니다.&#10;예: <h2>제목</h2><p>내용입니다.</p>"></textarea>
+                    <div class="form-help">HTML 태그를 사용하여 스타일을 적용할 수 있습니다.</div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{{ url_for('admin_pages') }}" class="btn btn-secondary">취소</a>
+                    <button type="submit" class="btn btn-primary">저장하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

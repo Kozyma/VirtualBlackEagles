@@ -1,0 +1,150 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}페이지 구성 관리{% endblock %}
+{% block page_title %}페이지 구성 관리{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_page_section_form') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 새 섹션 추가</a>
+{% endblock %}
+
+{% block head %}
+<style>
+    .info-box {
+        background: #e7f3ff;
+        border-left: 4px solid #007bff;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 4px;
+    }
+    .info-box h3 {
+        margin: 0 0 0.5rem 0;
+        color: #007bff;
+    }
+    .info-box p {
+        margin: 0;
+        color: #333;
+    }
+    .page-group {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    .page-group-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .page-group-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+    .section-item {
+        padding: 1.5rem;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        transition: background 0.2s;
+    }
+    .section-item:hover {
+        background: #f8f9fa;
+    }
+    .section-item:last-child {
+        border-bottom: none;
+    }
+    .section-info {
+        flex: 1;
+    }
+    .section-info h3 {
+        margin: 0 0 0.5rem 0;
+        color: #333;
+        font-size: 1.1rem;
+    }
+    .section-info p {
+        margin: 0.25rem 0;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    .section-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        background: #e7f3ff;
+        color: #007bff;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        margin-right: 0.5rem;
+    }
+    .section-badge.inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    .section-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="info-box">
+    <h3>사용 방법</h3>
+    <p>각 페이지(home, about, notice, contact, donate 등)의 섹션을 추가/수정/삭제할 수 있습니다. 섹션 타입(텍스트, 이미지, HTML 등)을 선택하고 순서를 지정하세요. 문의와 후원 페이지도 여기서 편집 가능합니다.</p>
+</div>
+
+{% if pages %}
+    {% for page_name, sections in pages.items() %}
+    <div class="page-group">
+        <div class="page-group-header">
+            <h2>{{ page_name|upper }} 페이지</h2>
+            <span style="opacity: 0.9;">{{ sections|length }} 개 섹션</span>
+        </div>
+        <div>
+            {% for section in sections %}
+            <div class="section-item">
+                <div class="section-info">
+                    <div>
+                        <span class="section-badge">{{ section.section_type }}</span>
+                        <span class="section-badge{% if not section.is_active %} inactive{% endif %}">
+                            {{ '활성' if section.is_active else '비활성' }}
+                        </span>
+                        <span style="color: #999; font-size: 0.85rem;">순서: {{ section.order_num }}</span>
+                    </div>
+                    <h3>{{ section.title or section.section_id }}</h3>
+                    {% if section.content %}
+                    <p><strong>내용:</strong> {{ section.content[:150] }}{{ '...' if section.content|length > 150 else '' }}</p>
+                    {% endif %}
+                    {% if section.image_url %}
+                    <p><strong>이미지:</strong> {{ section.image_url }}</p>
+                    {% endif %}
+                    {% if section.link_url %}
+                    <p><strong>링크:</strong> {{ section.link_url }} ({{ section.link_text or '링크 텍스트 없음' }})</p>
+                    {% endif %}
+                    <p style="font-size: 0.8rem; color: #999;">섹션 ID: {{ section.section_id }} | 수정일: {{ section.updated_at[:16] }}</p>
+                </div>
+                <div class="section-actions">
+                    <a href="{{ url_for('admin_page_section_form', section_id=section.id) }}" class="btn btn-sm btn-primary">수정</a>
+                    <form method="POST" action="{{ url_for('admin_page_section_delete', section_id=section.id) }}"
+                          style="display:inline;"
+                          onsubmit="return confirm('정말 이 섹션을 삭제하시겠습니까?');">
+                        <button type="submit" class="btn btn-sm btn-danger">삭제</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="page-group">
+    <div class="empty-state">
+        <p>등록된 페이지 섹션이 없습니다.</p>
+        <a href="{{ url_for('admin_page_section_form') }}" class="btn btn-primary">첫 섹션 추가하기</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

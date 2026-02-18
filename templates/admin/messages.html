@@ -1,0 +1,125 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}문의 관리{% endblock %}
+{% block page_title %}문의 관리{% endblock %}
+
+{% block head %}
+<style>
+    .filter-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .filter-tab {
+        padding: 0.75rem 1.5rem;
+        background: white;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #495057;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    .filter-tab:hover {
+        border-color: #007bff;
+        color: #007bff;
+    }
+    .filter-tab.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    .type-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .type-badge-contact {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+    .type-badge-donate {
+        background: #fce4ec;
+        color: #c2185b;
+    }
+    .status-unread {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .status-read {
+        color: #28a745;
+    }
+    tbody tr.unread {
+        background: #fff3cd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="filter-tabs">
+    <a href="{{ url_for('admin_messages', type='all') }}" class="filter-tab {% if current_type == 'all' %}active{% endif %}">
+        전체 문의
+    </a>
+    <a href="{{ url_for('admin_messages', type='contact') }}" class="filter-tab {% if current_type == 'contact' %}active{% endif %}">
+        일반 문의
+    </a>
+    <a href="{{ url_for('admin_messages', type='donate') }}" class="filter-tab {% if current_type == 'donate' %}active{% endif %}">
+        후원 문의
+    </a>
+</div>
+
+<div class="table-container">
+    {% if messages %}
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th style="width:50px;">번호</th>
+                <th style="width:100px;">구분</th>
+                <th>이름</th>
+                <th>이메일/금액</th>
+                <th style="width:40%;">메시지</th>
+                <th style="width:100px; text-align:center;">상태</th>
+                <th style="width:150px; text-align:center;">작성일</th>
+                <th style="width:150px; text-align:center;">작업</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for message in messages %}
+            <tr class="{% if not message.is_read %}unread{% endif %}">
+                <td>{{ message.id }}</td>
+                <td>
+                    {% if message.type == 'donate' %}
+                    <span class="type-badge type-badge-donate">후원</span>
+                    {% else %}
+                    <span class="type-badge type-badge-contact">일반</span>
+                    {% endif %}
+                </td>
+                <td>{{ message.name }}</td>
+                <td>{{ message.email }}</td>
+                <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    {{ message.message[:100] }}...
+                </td>
+                <td style="text-align:center;">
+                    {% if message.is_read %}
+                    <span class="status-read">읽음</span>
+                    {% else %}
+                    <span class="status-unread">새 문의</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">{{ message.created_at[:16] }}</td>
+                <td style="text-align:center;">
+                    <a href="{{ url_for('admin_message_detail', message_id=message.id) }}" class="btn btn-sm btn-primary">보기</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>아직 접수된 문의가 없습니다.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

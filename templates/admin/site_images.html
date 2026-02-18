@@ -1,0 +1,53 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}사이트 이미지 관리{% endblock %}
+{% block page_title %}사이트 이미지 관리{% endblock %}
+
+{% block content %}
+    {% set categories = {} %}
+    {% for image in images %}
+        {% if image.category not in categories %}
+            {% set _ = categories.update({image.category: []}) %}
+        {% endif %}
+        {% set _ = categories[image.category].append(image) %}
+    {% endfor %}
+
+    {% for category_name, category_images in categories.items() %}
+        <div style="margin-bottom: 2.5rem;">
+            <h2 style="font-size:1.1rem;color:#007bff;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #007bff;">
+                {% if category_name == 'home' %}
+                    <i class="fas fa-home"></i> 홈 페이지
+                {% elif category_name == 'about' %}
+                    <i class="fas fa-users"></i> 팀 소개
+                {% else %}
+                    <i class="fas fa-folder"></i> {{ category_name }}
+                {% endif %}
+            </h2>
+
+            <div class="gallery-grid">
+                {% for image in category_images %}
+                    <div class="gallery-item">
+                        <img src="{{ image.image_path }}" alt="{{ image.image_name }}" onerror="this.src='/static/images/placeholder.jpg'">
+                        <div class="item-info">
+                            <h3>{{ image.image_name }}</h3>
+                            <p><span style="font-family:monospace;background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:0.75rem;">{{ image.image_key }}</span></p>
+                            <p>{{ image.description }}</p>
+                            <div class="item-actions">
+                                <a href="{{ url_for('admin_site_image_edit', image_id=image.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-edit"></i> 이미지 변경
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+
+    {% if not images %}
+        <div class="empty-state">
+            <p><i class="fas fa-images" style="font-size:3rem;display:block;margin-bottom:1rem;opacity:0.3;"></i></p>
+            <p><strong>등록된 이미지가 없습니다</strong></p>
+        </div>
+    {% endif %}
+{% endblock %}

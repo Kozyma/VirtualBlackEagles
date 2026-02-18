@@ -1,0 +1,82 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}사이트 설정{% endblock %}
+{% block page_title %}사이트 설정{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="POST">
+        <h3 style="margin-bottom:1rem; color:#333;"><i class="fas fa-envelope"></i> 문의 수신 이메일</h3>
+        <div class="form-group">
+            <label for="contact_email">문의 수신 이메일 주소</label>
+            <input type="email" id="contact_email" name="contact_email" class="form-control"
+                   value="{{ settings.get('contact_email', '') }}"
+                   placeholder="admin@example.com">
+            <div class="help-text">비워두면 기본 SMTP 계정({{ config.get('MAIL_USERNAME', 'rr3340@naver.com') }})으로 수신됩니다.</div>
+        </div>
+
+        <hr style="margin: 2rem 0; border-color: #eee;">
+
+        <h3 style="margin-bottom:1rem; color:#333;"><i class="fas fa-comment-dollar"></i> 카카오페이 설정</h3>
+        <div class="form-group">
+            <label for="donate_kakaopay_link">카카오페이 송금 링크</label>
+            <input type="url" id="donate_kakaopay_link" name="donate_kakaopay_link" class="form-control"
+                   value="{{ settings.get('donate_kakaopay_link', '') }}"
+                   placeholder="https://qr.kakaopay.com/...">
+            <div class="help-text">카카오페이 > 더보기 > 송금코드에서 링크를 복사하세요.</div>
+        </div>
+
+        <hr style="margin: 2rem 0; border-color: #eee;">
+
+        <h3 style="margin-bottom:1rem; color:#333;"><i class="fas fa-university"></i> 계좌이체 정보 (카카오페이 미설정 시 대체)</h3>
+        <div class="form-group">
+            <label for="donate_bank_name">은행명</label>
+            <input type="text" id="donate_bank_name" name="donate_bank_name" class="form-control"
+                   value="{{ settings.get('donate_bank_name', '') }}" placeholder="예: 국민은행">
+        </div>
+        <div class="form-group">
+            <label for="donate_account_number">계좌번호</label>
+            <input type="text" id="donate_account_number" name="donate_account_number" class="form-control"
+                   value="{{ settings.get('donate_account_number', '') }}" placeholder="예: 123-456-7890">
+        </div>
+        <div class="form-group">
+            <label for="donate_account_holder">예금주</label>
+            <input type="text" id="donate_account_holder" name="donate_account_holder" class="form-control"
+                   value="{{ settings.get('donate_account_holder', '') }}" placeholder="예금주 이름">
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 저장</button>
+        </div>
+    </form>
+
+    <hr style="margin: 2rem 0; border-color: #eee;">
+
+    <h3 style="margin-bottom:1rem; color:#333;"><i class="fas fa-paper-plane"></i> 이메일 발송 테스트</h3>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;margin-bottom:1rem;font-size:0.9rem;">
+        <p style="margin:0 0 0.5rem;"><strong>현재 SMTP 설정:</strong></p>
+        <p style="margin:0;color:#666;">서버: {{ config.get('MAIL_SERVER', 'smtp.naver.com') }}:{{ config.get('MAIL_PORT', 465) }}</p>
+        <p style="margin:0;color:#666;">발송 계정: {{ config.get('MAIL_USERNAME', 'rr3340@naver.com') }}</p>
+        <p style="margin:0;color:{{ '#28a745' if config.get('MAIL_PASSWORD') else '#dc3545' }};">
+            비밀번호: {{ '설정됨' if config.get('MAIL_PASSWORD') else '미설정 (환경변수 MAIL_PASSWORD 필요)' }}
+        </p>
+    </div>
+    <form method="POST" action="{{ url_for('admin_test_email') }}">
+        <div class="form-group">
+            <label for="smtp_password">SMTP 비밀번호 (네이버 앱 비밀번호)</label>
+            <input type="password" id="smtp_password" name="smtp_password" class="form-control"
+                   placeholder="환경변수에 이미 설정된 경우 비워두세요">
+            <div class="help-text">네이버 > 메일 > 환경설정 > POP3/SMTP > 앱 비밀번호 생성 필요</div>
+        </div>
+        <div class="form-group">
+            <label for="test_email">테스트 수신 이메일</label>
+            <input type="email" id="test_email" name="test_email" class="form-control"
+                   value="rr3340@naver.com" placeholder="테스트 이메일 주소" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" style="background:#17a2b8;border-color:#17a2b8;">
+                <i class="fas fa-paper-plane"></i> 테스트 이메일 발송
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

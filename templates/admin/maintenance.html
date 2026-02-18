@@ -1,0 +1,60 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}정비사 관리{% endblock %}
+{% block page_title %}정비사 관리{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_maintenance_new') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 새 정비사</a>
+{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    {% if crew %}
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>이름</th>
+                <th>역할</th>
+                <th>콜사인</th>
+                <th>순서</th>
+                <th>활성</th>
+                <th>작업</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in crew %}
+            <tr>
+                <td>{{ member.name }}</td>
+                <td>{{ member.role or '-' }}</td>
+                <td>{{ member.callsign }}</td>
+                <td>{{ member.order_num }}</td>
+                <td>
+                    {% if member.is_active %}
+                    <span class="badge bg-success">활성</span>
+                    {% else %}
+                    <span class="badge bg-secondary">비활성</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('admin_maintenance_edit', crew_id=member.id) }}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i> 수정
+                    </a>
+                    <form method="POST" action="{{ url_for('admin_maintenance_delete', crew_id=member.id) }}"
+                          style="display:inline;"
+                          onsubmit="return confirm('정말 이 정비사를 삭제하시겠습니까?');">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>등록된 정비사가 없습니다.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

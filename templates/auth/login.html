@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}로그인 - Virtual Black Eagles{% endblock %}
+
+{% block content %}
+<main class="container section" style="max-width:420px;margin:4rem auto;padding:2rem;">
+  <div style="background:#fff;padding:2.5rem;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
+    <h2 style="text-align:center;margin:0 0 2rem;color:#333;">로그인</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div style="padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-size:0.9rem;
+                background:{{ '#f8d7da' if category == 'error' else '#d4edda' }};
+                color:{{ '#721c24' if category == 'error' else '#155724' }};">
+      {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Google 로그인 -->
+    <a href="{{ url_for('auth_google') }}"
+       style="display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:0.75rem;border:1px solid #ddd;border-radius:8px;text-decoration:none;color:#333;background:#fff;font-size:0.95rem;transition:background 0.15s;"
+       onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='#fff'">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Google로 로그인
+    </a>
+
+    <div style="text-align:center;margin:1.5rem 0;color:#999;font-size:0.85rem;position:relative;">
+      <span style="background:#fff;padding:0 0.75rem;position:relative;z-index:1;">또는</span>
+      <hr style="position:absolute;top:50%;left:0;right:0;border:none;border-top:1px solid #eee;margin:0;">
+    </div>
+
+    <!-- 일반 로그인 -->
+    <form method="POST" action="{{ url_for('auth_login') }}">
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">아이디</label>
+        <input type="text" name="username" required
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+      </div>
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">비밀번호</label>
+        <input type="password" name="password" required
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+      </div>
+      <button type="submit"
+              style="width:100%;padding:0.75rem;background:#007bff;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;transition:background 0.15s;"
+              onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+        로그인
+      </button>
+    </form>
+
+    <!-- 회원가입 / 아이디·비밀번호 찾기 -->
+    <div style="margin-top:1.5rem;text-align:center;font-size:0.85rem;color:#888;">
+      <a href="{{ url_for('auth_signup') }}" style="color:#007bff;text-decoration:none;font-weight:500;">회원가입</a>
+      <span style="margin:0 0.6rem;color:#ddd;">|</span>
+      <a href="{{ url_for('auth_find_id') }}" style="color:#666;text-decoration:none;">아이디 찾기</a>
+      <span style="margin:0 0.6rem;color:#ddd;">|</span>
+      <a href="{{ url_for('auth_find_password') }}" style="color:#666;text-decoration:none;">비밀번호 찾기</a>
+    </div>
+  </div>
+</main>
+{% endblock %}

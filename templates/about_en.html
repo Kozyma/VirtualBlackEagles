@@ -1,0 +1,778 @@
+{% extends "base_en.html" %}
+
+{% block title %}About - Virtual Black Eagles{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('/static/images/hero.jpg')">
+  <div class="container">
+    <h1 class="banner-title">About Us</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<main class="container section" style="padding-left: 7rem; text-align: center;">
+      <h2>About Us</h2>
+      <nav class="sub-nav" id="about-tabs" style="display:flex;gap:1rem;margin-bottom:2rem;border-bottom:1px solid #e0e0e0;justify-content:center;">
+        <a href="#overview" data-tab="overview" class="tab-link active">Overview</a>
+        <a href="#members" data-tab="members" class="tab-link">Members</a>
+        <a href="#aircraft" data-tab="aircraft" class="tab-link">Aircraft</a>
+        <a href="#maneuvers" data-tab="maneuvers" class="tab-link">Maneuvers</a>
+      </nav>
+      <section id="overview" class="about-section tab-content active">
+        <h2 style="text-align:center;margin-bottom:3rem;font-size:2.5rem;">Overview</h2>
+        <p style="text-align:center;font-size:1.2rem;line-height:2;margin-bottom:3rem;">
+          The Black Eagles is the Republic of Korea Air Force's premier aerobatic team,<br>
+          consisting of eight T-50B supersonic aircraft, demonstrating advanced flight<br>
+          capabilities through various special maneuvers with exceptional teamwork.
+        </p>
+
+        {% for section in overview_sections %}
+        {% if not loop.first %}
+        <div style="border-top:2px dotted #ccc;margin:3rem 0;"></div>
+        {% endif %}
+        <div style="padding:3rem 0;">
+          <h2 style="text-align:center;margin-bottom:2rem;font-size:2rem;">{{ section['title'] }}</h2>
+          <div style="display:flex;align-items:flex-start;gap:3rem;max-width:1200px;margin:0;">
+            <div style="width:400px;flex-shrink:0;">
+              <img src="{{ section['image_url'] or '/static/Picture/test.jpg' }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
+            </div>
+            <div style="flex:1;">
+              <p style="font-size:1.1rem;line-height:1.8;">
+                {{ section['content'] }}
+              </p>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </section>
+      <section id="members" class="about-section tab-content">
+        
+        <!-- Sub-tab menu -->
+        <nav class="member-sub-nav" style="display:flex;gap:2rem;margin-bottom:3rem;justify-content:center;border-bottom:2px solid #e0e0e0;padding-bottom:1rem;">
+          <a href="#" data-member-tab="commander" class="member-tab-link active" style="text-decoration:none;color:#333;padding:0.5rem 1rem;border-bottom:3px solid #007bff;font-weight:bold;">Commander's Message</a>
+          <a href="#" data-member-tab="pilots" class="member-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">Pilots</a>
+          <a href="#" data-member-tab="maintenance" class="member-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">Maintenance</a>
+          <a href="#" data-member-tab="support" class="member-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">Candidates</a>
+        </nav>
+
+        <!-- Commander's Message -->
+        <div id="commander" class="member-content active">
+          {% for commander in commanders %}
+          <div style="max-width:1200px;margin:0 auto;padding:2rem 0;">
+            <h2 style="text-align:center;font-size:2rem;margin-bottom:3rem;color:#333;">Welcome to the<br>Black Eagles Website</h2>
+            
+            <div style="display:flex;gap:4rem;align-items:flex-start;margin-bottom:3rem;">
+              <!-- Left: Photo -->
+              <div style="flex-shrink:0;">
+                <img src="{{ commander.photo_url }}" alt="{{ commander.callsign }}" 
+                     style="width:400px;height:auto;object-fit:cover;border-radius:8px;">
+              </div>
+              
+              <!-- Right: Message Text -->
+              <div style="flex:1;">
+                <h3 style="font-size:1.3rem;font-weight:bold;margin-bottom:1.5rem;color:#333;"></h3>
+                {% if commander.greeting_text %}
+                  {% set paragraphs = commander.greeting_text.split('\n\n') %}
+                  {% for paragraph in paragraphs %}
+                    <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">{{ paragraph }}</p>
+                  {% endfor %}
+                {% else %}
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    I am the Commander of the 53rd Special Flight Squadron.
+                  </p>
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    First, I would like to express my deep gratitude to all of you for your unwavering support and encouragement.
+                  </p>
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    The Black Eagles have grown significantly thanks to your trust and support. We will continue to advance with renewed dedication and commitment.
+                  </p>
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    We understand that the best airshow within the highest safety standards is not achieved overnight, and we will always give our best without a moment's rest.
+                  </p>
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    We will strive to become "The Most Magnificent Black Eagles that Illuminate the Republic of Korea" by ensuring the highest safety through thorough adherence to basic principles and procedures, and bringing happiness and joy to you through the best airshow.
+                  </p>
+                {% endif %}
+                
+                <p style="text-align:right;margin-top:2rem;font-weight:bold;color:#333;font-size:1.05rem;"></p>
+                <p style="text-align:right;margin-top:1rem;color:#666;font-size:1rem;">- {{ commander.rank }} {{ commander.callsign }}</p>
+              </div>
+            </div>
+            
+            <div style="border-top:2px solid #e0e0e0;padding-top:0.5rem;">
+              <!-- Bottom line -->
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Pilots -->
+        <div id="pilots" class="member-content" style="display:none;">
+          {% for pilot in pilots %}
+          <h3 style="text-align:left;margin-bottom:2rem;">#{{ pilot.number }} {{ pilot.position }}</h3>
+          <div class="member-card" style="max-width:600px;margin:0 0 2rem 0;background:#f8f9fa;padding:2rem;border-radius:8px;display:flex;align-items:center;gap:2rem;">
+            <img src="{{ pilot.photo_url }}" alt="{{ pilot.callsign }}" style="width:150px;height:150px;object-fit:cover;flex-shrink:0;">
+            <div style="text-align:left;">
+              <h4 style="color:#007bff;margin:0 0 0.5rem 0;">#{{ pilot.number }} {{ pilot.callsign }}</h4>
+              <p style="margin:0.5rem 0;color:#666;">Class : {{ pilot.generation }}</p>
+              <p style="margin:0.5rem 0;color:#666;">Aircraft : {{ pilot.aircraft }}</p>
+            </div>
+          </div>
+          {% if not loop.last %}
+          <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 2rem 0;">
+          {% endif %}
+          {% endfor %}
+        </div>
+
+        <!-- Maintenance -->
+        <div id="maintenance" class="member-content" style="display:none;">
+          {% if maintenance_crew %}
+          {% for member in maintenance_crew %}
+          <h3 style="text-align:left;margin-bottom:2rem;">{{ member.name }}</h3>
+          <div class="member-card" style="max-width:600px;margin:0 0 2rem 0;background:#f8f9fa;padding:2rem;border-radius:8px;display:flex;align-items:center;gap:2rem;">
+            <img src="{{ member.photo_url }}" alt="{{ member.callsign }}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <div style="text-align:left;">
+              <h4 style="color:#007bff;margin:0 0 0.5rem 0;">{{ member.callsign }}</h4>
+              {% if member.role %}
+              <p style="margin:0.5rem 0;color:#666;">Role : {{ member.role }}</p>
+              {% endif %}
+              {% if member.bio %}
+              <p style="margin:0.5rem 0;color:#333;">{{ member.bio }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if not loop.last %}
+          <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 2rem 0;">
+          {% endif %}
+          {% endfor %}
+          {% else %}
+          <p style="text-align:center;color:#666;margin-top:2rem;">No maintenance crew registered.</p>
+          {% endif %}
+        </div>
+
+        <!-- Candidates -->
+        <div id="support" class="member-content" style="display:none;">
+          {% if candidates %}
+          {% for candidate in candidates %}
+          <h3 style="text-align:left;margin-bottom:2rem;">{{ candidate.name }}</h3>
+          <div class="member-card" style="max-width:600px;margin:0 0 2rem 0;background:#f8f9fa;padding:2rem;border-radius:8px;display:flex;align-items:center;gap:2rem;">
+            <img src="{{ candidate.photo_url }}" alt="{{ candidate.callsign }}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <div style="text-align:left;">
+              <h4 style="color:#007bff;margin:0 0 0.5rem 0;">{{ candidate.callsign }}</h4>
+              {% if candidate.bio %}
+              <p style="margin:0.5rem 0;color:#333;">{{ candidate.bio }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if not loop.last %}
+          <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 2rem 0;">
+          {% endif %}
+          {% endfor %}
+          {% else %}
+          <p style="text-align:center;color:#666;margin-top:2rem;">No candidates registered.</p>
+          {% endif %}
+        </div>
+      </section>
+      <section id="aircraft" class="about-section tab-content">
+        <h2 style="text-align:center;margin-bottom:3rem;font-size:2.5rem;">Aircraft</h2>
+        
+        <!-- T-50B Introduction -->
+        <div style="display:flex;align-items:center;gap:3rem;max-width:1200px;margin:0 auto 4rem auto;">
+          <div style="flex:1;">
+            <img src="/static/images/t50b.jpg" alt="T-50B Golden Eagle" style="width:100%;height:auto;border-radius:8px;">
+          </div>
+          <div style="flex:1;">
+            <h3 style="font-size:1.8rem;margin-bottom:1.5rem;">T-50B Golden Eagle</h3>
+            <p style="font-size:1.1rem;line-height:1.8;margin-bottom:1rem;">
+              The T-50B is a supersonic advanced trainer aircraft developed independently by South Korea 
+              and serves as the official aircraft of the Black Eagles aerobatic team.
+            </p>
+            <ul style="font-size:1rem;line-height:1.8;color:#666;list-style:none;padding:0;">
+              <li style="margin-bottom:0.5rem;">• Maximum Speed: Mach 1.5</li>
+              <li style="margin-bottom:0.5rem;">• Engine: F404-GE-102 Turbofan</li>
+              <li style="margin-bottom:0.5rem;">• Crew: 2 (Pilot, Co-pilot)</li>
+              <li style="margin-bottom:0.5rem;">• Length: 13.14m / Wingspan: 9.45m</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- T-50B Specifications -->
+        <div style="border-top:2px dotted #ccc;padding-top:3rem;margin-top:3rem;">
+          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">T-50B Specifications</h3>
+          <table style="width:100%;max-width:900px;margin:0 auto 3rem auto;border-collapse:collapse;border:1px solid #ddd;">
+            <thead>
+              <tr style="background:#4a90e2;color:white;">
+                <th style="padding:1rem;text-align:center;border:1px solid #ddd;width:30%;">Category</th>
+                <th style="padding:1rem;text-align:center;border:1px solid #ddd;">T-50B</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Length</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">13.4M</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Width</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">9.45M</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Height</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">4.91M</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Type</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">Supersonic Aircraft</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Manufacturer</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">Republic of Korea</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Takeoff Weight</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">13,454KG</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">Max Speed</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">MACH 1.5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Features -->
+        <div style="border-top:2px dotted #ccc;padding-top:3rem;margin-top:3rem;">
+          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">Features</h3>
+          <div style="display:flex;gap:2rem;max-width:1200px;margin:0 auto;">
+            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
+              <h4 style="color:#007bff;margin-bottom:1rem;">Excellent Maneuverability</h4>
+              <p style="line-height:1.6;color:#666;">
+                Equipped with a high-power engine and advanced avionics, it can perfectly perform 
+                various special flight maneuvers.
+              </p>
+            </div>
+            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
+              <h4 style="color:#007bff;margin-bottom:1rem;">Korean Technology</h4>
+              <p style="line-height:1.6;color:#666;">
+                Developed by Korea Aerospace Industries (KAI), it showcases Korea's technological 
+                prowess to the world.
+              </p>
+            </div>
+            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
+              <h4 style="color:#007bff;margin-bottom:1rem;">Multi-Purpose Capability</h4>
+              <p style="line-height:1.6;color:#666;">
+                Functions not only as an advanced trainer but also as a light attack aircraft, 
+                making it a versatile platform.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="maneuvers" class="about-section tab-content">
+        
+        <!-- Maneuver Sub-tab Menu -->
+        <nav class="maneuver-sub-nav" style="display:flex;gap:2rem;margin-bottom:3rem;justify-content:center;border-bottom:2px solid #e0e0e0;padding-bottom:1rem;">
+          <a href="#" data-maneuver-tab="highshow" class="maneuver-tab-link active" style="text-decoration:none;color:#007bff;padding:0.5rem 1rem;border-bottom:3px solid #007bff;font-weight:bold;">High Show</a>
+          <a href="#" data-maneuver-tab="lowshow" class="maneuver-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">Low Show</a>
+          <a href="#" data-maneuver-tab="flatshow" class="maneuver-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">Flat Show</a>
+        </nav>
+
+        <!-- High Show -->
+        <div id="highshow" class="maneuver-content active">
+          
+          <!-- Main Image -->
+          <div style="max-width:1000px;margin:0 auto 4rem auto;">
+            <div style="text-align:center;margin-bottom:2rem;">
+              <img id="highshow-main-image" src="/static/images/01-Change-Loop.jpg" alt="Change Loop" style="max-width:600px;width:100%;height:auto;cursor:pointer;transition:opacity 0.3s;" onclick="openImageModal(this.src)">
+            </div>
+          </div>
+
+          <!-- Image Gallery -->
+          <div style="padding:2rem 0;margin-top:3rem;">
+            <div style="display:grid;grid-template-columns:repeat(8, 1fr);gap:0.5rem;max-width:600px;margin:0 auto;">
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/01-Change-Loop.jpg')">
+                <img src="/static/images/01-Change-Loop.jpg" alt="Maneuver 1" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/02-Change-Turn.jpg')">
+                <img src="/static/images/02-Change-Turn.jpg" alt="Maneuver 2" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/03-Wedge-Roll.jpg')">
+                <img src="/static/images/03-Wedge-Roll.jpg" alt="Maneuver 3" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/04-Roll-Bon-ton-rollue.jpg')">
+                <img src="/static/images/04-Roll-Bon-ton-rollue.jpg" alt="Maneuver 4" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/05-Rain-Fall.jpg')">
+                <img src="/static/images/05-Rain-Fall.jpg" alt="Maneuver 5" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/06-Scissor-Pass.jpg')">
+                <img src="/static/images/06-Scissor-Pass.jpg" alt="Maneuver 6" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/07-Vortex-Manuever.jpg')">
+                <img src="/static/images/07-Vortex-Manuever.jpg" alt="Maneuver 7" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/08-Double-Cross-Turn.jpg')">
+                <img src="/static/images/08-Double-Cross-Turn.jpg" alt="Maneuver 8" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/09-Goose.jpg')">
+                <img src="/static/images/09-Goose.jpg" alt="Maneuver 9" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/10-Heart.jpg')">
+                <img src="/static/images/10-Heart.jpg" alt="Maneuver 10" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/11-Orchid.jpg')">
+                <img src="/static/images/11-Orchid.jpg" alt="Maneuver 11" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/12-2-Ship-High-a-Loop.jpg')">
+                <img src="/static/images/12-2-Ship-High-a-Loop.jpg" alt="Maneuver 12" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/13-Rollback-AB-Loop.jpg')">
+                <img src="/static/images/13-Rollback-AB-Loop.jpg" alt="Maneuver 13" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/14-Taeguek.jpg')">
+                <img src="/static/images/14-Taeguek.jpg" alt="Maneuver 14" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/15-Clover-Leaf.jpg')">
+                <img src="/static/images/15-Clover-Leaf.jpg" alt="Maneuver 15" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/16-Rock-Roll.jpg')">
+                <img src="/static/images/16-Rock-Roll.jpg" alt="Maneuver 16" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/17-Inverted-BUP.jpg')">
+                <img src="/static/images/17-Inverted-BUP.jpg" alt="Maneuver 17" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/18-Echelon-Review.jpg')">
+                <img src="/static/images/18-Echelon-Review.jpg" alt="Maneuver 18" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/19-Double-Helix.jpg')">
+                <img src="/static/images/19-Double-Helix.jpg" alt="Maneuver 19" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/20-Eagle-Snatch.jpg')">
+                <img src="/static/images/20-Eagle-Snatch.jpg" alt="Maneuver 20" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/21-Dizzying-Break.jpg')">
+                <img src="/static/images/21-Dizzying-Break.jpg" alt="Maneuver 21" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/22-Twist-Roll.jpg')">
+                <img src="/static/images/22-Twist-Roll.jpg" alt="Maneuver 22" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/23-Double-Loop-Spiral.jpg')">
+                <img src="/static/images/23-Double-Loop-Spiral.jpg" alt="Maneuver 23" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/24-Victory.jpg')">
+                <img src="/static/images/24-Victory.jpg" alt="Maneuver 24" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Low Show -->
+        <div id="lowshow" class="maneuver-content" style="display:none;">
+          <!-- Low Show Main Image -->
+          <div style="max-width:1000px;margin:0 auto 4rem auto;">
+            <div style="text-align:center;margin-bottom:2rem;">
+              <img id="lowshow-main-image" src="/static/images/01-Change-Loop.jpg" alt="Low Show" style="max-width:600px;width:100%;height:auto;cursor:pointer;transition:opacity 0.3s;" onclick="openImageModal(this.src)">
+            </div>
+          </div>
+          
+          <!-- Low Show Image Gallery -->
+          <div style="padding:2rem 0;margin-top:3rem;">
+            <div style="display:grid;grid-template-columns:repeat(8, 1fr);gap:0.5rem;max-width:600px;margin:0 auto;">
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 1" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 2" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 3" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 4" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 5" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 6" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 7" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 8" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 9" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 10" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 11" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 12" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 13" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 14" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 15" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 16" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 17" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 18" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 19" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 20" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 21" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 22" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 23" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Low Show 24" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flat Show -->
+        <div id="flatshow" class="maneuver-content" style="display:none;">
+          <!-- Flat Show Main Image -->
+          <div style="max-width:1000px;margin:0 auto 4rem auto;">
+            <div style="text-align:center;margin-bottom:2rem;">
+              <img id="flatshow-main-image" src="/static/images/01-Change-Loop.jpg" alt="Flat Show" style="max-width:600px;width:100%;height:auto;cursor:pointer;transition:opacity 0.3s;" onclick="openImageModal(this.src)">
+            </div>
+          </div>
+          
+          <!-- Flat Show Image Gallery -->
+          <div style="padding:2rem 0;margin-top:3rem;">
+            <div style="display:grid;grid-template-columns:repeat(8, 1fr);gap:0.5rem;max-width:600px;margin:0 auto;">
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 1" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 2" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 3" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 4" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 5" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 6" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 7" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 8" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 9" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 10" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 11" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 12" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 13" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 14" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 15" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 16" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 17" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 18" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 19" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 20" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 21" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 22" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 23" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/images/maneuvers/change-loop.jpg" alt="Flat Show 24" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+<!-- Contact Us + Footer Section -->
+<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+		<h3 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
+		<p style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord ㅣ Johnson#4553</p>
+	</div>
+</section>
+
+<style>
+.site-footer {
+	display: none;
+}
+
+/* Ensure member content is hidden by default except active tab */
+.member-content {
+	display: none !important;
+}
+
+.member-content.active {
+	display: block !important;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<!-- Image Modal -->
+<div id="imageModal" class="image-modal" style="display:none;">
+  <span class="close-modal" onclick="closeImageModal()">&times;</span>
+  <div class="image-modal-content">
+    <img id="modal-image" src="" alt="Full size image">
+  </div>
+</div>
+
+<style>
+/* Image Modal Styles */
+.image-modal {
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s;
+}
+
+.image-modal-content {
+  max-width: 90%;
+  max-height: 90%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-modal-content img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.close-modal {
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  color: #fff;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 10000;
+  transition: color 0.3s;
+}
+
+.close-modal:hover,
+.close-modal:focus {
+  color: #bbb;
+}
+
+@keyframes fadeIn {
+  from {opacity: 0;}
+  to {opacity: 1;}
+}
+
+@media (max-width: 768px) {
+  .close-modal {
+    top: 10px;
+    right: 20px;
+    font-size: 30px;
+  }
+}
+</style>
+
+<script>
+  // Image Modal Functions
+  function openImageModal(imageSrc) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modal-image');
+    modal.style.display = 'flex';
+    modalImg.src = imageSrc;
+  }
+
+  function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.style.display = 'none';
+  }
+
+  // Close modal when clicking outside the image
+  document.addEventListener('click', function(event) {
+    const modal = document.getElementById('imageModal');
+    if (event.target === modal) {
+      closeImageModal();
+    }
+  });
+
+  // Close modal with ESC key
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      closeImageModal();
+    }
+  });
+
+  // Change Main Image Function
+  function changeMainImage(showType, imageSrc) {
+    const mainImage = document.getElementById(showType + '-main-image');
+    if (mainImage) {
+      mainImage.style.opacity = '0';
+      setTimeout(() => {
+        mainImage.src = imageSrc;
+        mainImage.style.opacity = '1';
+      }, 150);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize member content visibility - show commander by default
+    const memberContents = document.querySelectorAll('.member-content');
+    memberContents.forEach(content => {
+      if (content.classList.contains('active')) {
+        content.style.display = 'block';
+      } else {
+        content.style.display = 'none';
+      }
+    });
+
+    // Main tab switching
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Deactivate all tabs
+        tabLinks.forEach(l => l.classList.remove('active'));
+        tabContents.forEach(content => {
+          content.style.display = 'none';
+          content.classList.remove('active');
+        });
+        
+        // Activate clicked tab
+        this.classList.add('active');
+        const target = this.getAttribute('data-tab');
+        const targetSection = document.getElementById(target);
+        if (targetSection) {
+          targetSection.style.display = 'block';
+          targetSection.classList.add('active');
+        }
+      });
+    });
+
+    // Member sub-tab switching
+    const memberLinks = document.querySelectorAll('.member-tab-link');
+    memberLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Deactivate all links and content
+        memberLinks.forEach(l => {
+          l.style.borderBottom = 'none';
+          l.style.color = '#666';
+          l.style.fontWeight = 'normal';
+          l.classList.remove('active');
+        });
+        memberContents.forEach(content => {
+          content.style.display = 'none';
+        });
+        
+        // Activate clicked link
+        this.style.borderBottom = '3px solid #007bff';
+        this.style.color = '#333';
+        this.style.fontWeight = 'bold';
+        this.classList.add('active');
+        
+        // Show corresponding content
+        const target = this.getAttribute('data-member-tab');
+        const targetContent = document.getElementById(target);
+        if (targetContent) {
+          targetContent.style.display = 'block';
+        }
+      });
+    });
+
+    // Maneuver sub-tab switching
+    const maneuverLinks = document.querySelectorAll('.maneuver-tab-link');
+    const maneuverContents = document.querySelectorAll('.maneuver-content');
+    maneuverLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Deactivate all links and content
+        maneuverLinks.forEach(l => {
+          l.style.borderBottom = 'none';
+          l.style.color = '#666';
+          l.style.fontWeight = 'normal';
+          l.classList.remove('active');
+        });
+        maneuverContents.forEach(content => {
+          content.style.display = 'none';
+        });
+        
+        // Activate clicked link
+        this.style.borderBottom = '3px solid #007bff';
+        this.style.color = '#007bff';
+        this.style.fontWeight = 'bold';
+        this.classList.add('active');
+        
+        // Show corresponding content
+        const target = this.getAttribute('data-maneuver-tab');
+        document.getElementById(target).style.display = 'block';
+      });
+    });
+  });
+</script>
+{% endblock %}

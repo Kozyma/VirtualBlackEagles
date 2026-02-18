@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ schedule.title }} - Virtual Black Eagles{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('/static/images/hero.jpg')">
+  <div class="container">
+    <h1 class="banner-title">일정</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<main class="container section">
+  <div style="max-width: 900px; margin: 0 auto;">
+    <!-- 상단 정보 -->
+    <div style="border-bottom: 2px solid #007bff; padding-bottom: 1.5rem; margin-bottom: 2rem;">
+      <h2 style="font-size: 2rem; margin: 0 0 1rem 0; color: #333;">{{ schedule.title }}</h2>
+      <div style="display: flex; gap: 2rem; color: #666; font-size: 0.95rem; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#007bff">
+            <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
+          </svg>
+          <strong>날짜:</strong> {{ schedule.event_date }}
+        </div>
+        {% if schedule.location %}
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#007bff">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+          <strong>장소:</strong> {{ schedule.location }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 내용 -->
+    <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-height: 300px;">
+      {% if schedule.description %}
+      <h3 style="margin: 0 0 1rem 0; color: #007bff; font-size: 1.3rem;">상세 설명</h3>
+      <div style="line-height: 1.8; color: #333; word-wrap: break-word;">{{ schedule.description|safe }}</div>
+      {% else %}
+      <div style="text-align: center; color: #999; padding: 3rem 0;">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="#ddd" style="margin-bottom: 1rem;">
+          <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
+        </svg>
+        <p>상세 설명이 없습니다.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- 추가 정보 -->
+    {% if schedule.created_at %}
+    <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem; color: #666;">
+      <div style="display: flex; gap: 2rem;">
+        <div><strong>등록일:</strong> {{ schedule.created_at[:10] }}</div>
+        {% if schedule.updated_at != schedule.created_at %}
+        <div><strong>수정일:</strong> {{ schedule.updated_at[:10] }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 하단 버튼 -->
+    <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+      <a href="{{ url_for('schedule') }}" style="display: inline-block; padding: 0.75rem 1.5rem; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+        ← 목록으로
+      </a>
+    </div>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}사진 게시판 관리{% endblock %}
+{% block page_title %}사진 게시판 관리{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_gallery_new') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> 새 사진
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="card-body">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">사용 방법</h3>
+            <p style="margin: 0; opacity: 0.95; font-size: 0.9rem;">활동 사진을 추가/수정/삭제할 수 있습니다. 사진은 URL로 등록하며, 순서를 지정하여 표시 순서를 조정할 수 있습니다.</p>
+        </div>
+    </div>
+
+    <div class="table-container">
+        {% if photos %}
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 100px;">미리보기</th>
+                        <th>제목</th>
+                        <th>설명</th>
+                        <th style="width: 120px;">업로드일</th>
+                        <th style="width: 80px;">순서</th>
+                        <th style="width: 80px;">활성화</th>
+                        <th style="width: 180px;">작업</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for photo in photos %}
+                    <tr>
+                        <td>
+                            <img src="{{ photo.image_url }}" alt="{{ photo.title }}" class="thumb"
+                                 onerror="this.src='/static/images/no-image.jpg'"
+                                 style="width:80px;height:60px;object-fit:cover;">
+                        </td>
+                        <td>
+                            <strong>{{ photo.title }}</strong>
+                        </td>
+                        <td>
+                            <div style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                {{ photo.description if photo.description else '-' }}
+                            </div>
+                        </td>
+                        <td>
+                            {{ photo.upload_date[:10] }}
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ photo.order_num }}</span>
+                        </td>
+                        <td>
+                            {% if photo.is_active %}
+                                <span class="badge badge-success">활성</span>
+                            {% else %}
+                                <span class="badge" style="background:#6c757d;color:white;">비활성</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions">
+                            <a href="{{ url_for('admin_gallery_edit', photo_id=photo.id) }}"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-edit"></i> 수정
+                            </a>
+                            <form method="POST" action="{{ url_for('admin_gallery_delete', photo_id=photo.id) }}"
+                                  style="display: inline;"
+                                  onsubmit="return confirm('정말 이 사진을 삭제하시겠습니까?');">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash"></i> 삭제
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-state">
+                <p><i class="fas fa-images" style="font-size:3rem;display:block;margin-bottom:1rem;opacity:0.3;"></i></p>
+                <p><strong>아직 등록된 사진이 없습니다</strong></p>
+                <p>첫 번째 활동 사진을 추가해보세요!</p>
+                <a href="{{ url_for('admin_gallery_new') }}" class="btn btn-primary" style="margin-top:0.5rem;">
+                    <i class="fas fa-plus"></i> 첫 사진 추가하기
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

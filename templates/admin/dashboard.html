@@ -1,0 +1,256 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}대시보드{% endblock %}
+{% block page_title %}대시보드{% endblock %}
+
+{% block head %}
+<style>
+.stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: #fff; padding: 1.25rem; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+.stat-card .stat-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+.stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: #333; }
+.stat-card .stat-label { font-size: 0.85rem; color: #999; margin-top: 0.25rem; }
+.chart-container { background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 2rem; }
+.preview-container { background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 2rem; }
+.preview-container iframe { width: 100%; height: 400px; border: 1px solid #e0e0e0; border-radius: 6px; }
+@media (max-width: 768px) { .stat-cards { grid-template-columns: repeat(2, 1fr); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<p style="color: #666; margin-bottom: 1.5rem;">{{ session.username }}님, 관리자 대시보드에 오신 것을 환영합니다.</p>
+
+<!-- 통계 카드 -->
+<div class="stat-cards">
+    <div class="stat-card">
+        <div class="stat-icon" style="color:#007bff;"><i class="fas fa-eye"></i></div>
+        <div class="stat-value">{{ today_views }}</div>
+        <div class="stat-label">오늘 방문</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="color:#28a745;"><i class="fas fa-users"></i></div>
+        <div class="stat-value">{{ total_users }}</div>
+        <div class="stat-label">총 회원</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="color:#dc3545;"><i class="fas fa-envelope"></i></div>
+        <div class="stat-value">{{ unread_count }}</div>
+        <div class="stat-label">새 문의</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="color:#ffc107;"><i class="fas fa-comments"></i></div>
+        <div class="stat-value">{{ unread_chat_count }}</div>
+        <div class="stat-label">새 채팅</div>
+    </div>
+</div>
+
+<!-- 트래픽 그래프 -->
+<div class="chart-container">
+    <h3 style="margin:0 0 1rem;font-size:1.1rem;color:#333;"><i class="fas fa-chart-line"></i> 최근 30일 방문 트래픽</h3>
+    <canvas id="trafficChart" height="80"></canvas>
+</div>
+
+<!-- 홈페이지 미리보기 -->
+<div class="preview-container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h3 style="margin:0;font-size:1.1rem;color:#333;"><i class="fas fa-desktop"></i> 홈페이지 미리보기</h3>
+        <a href="{{ url_for('index') }}" target="_blank" class="btn btn-primary" style="font-size:0.85rem;"><i class="fas fa-external-link-alt"></i> 새 탭에서 열기</a>
+    </div>
+    <iframe src="{{ url_for('index') }}" title="홈페이지 미리보기"></iframe>
+</div>
+
+<!-- 관리 카드 그리드 -->
+<div class="dashboard-cards">
+    <div class="dashboard-card">
+        <h2><i class="fas fa-envelope"></i> 문의 관리</h2>
+        <p>홈페이지 문의 내용을 확인하고 관리합니다.</p>
+        {% if unread_count > 0 %}
+        <p style="color: #dc3545; font-weight: bold; font-size: 1.1rem;">새 문의 {{ unread_count }}개</p>
+        {% else %}
+        <p style="color: #28a745;">읽지 않은 문의가 없습니다</p>
+        {% endif %}
+        <a href="{{ url_for('admin_messages') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-bullhorn"></i> 공지사항 관리</h2>
+        <p>공지사항을 추가, 수정, 삭제할 수 있습니다.</p>
+        <a href="{{ url_for('admin_notices') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-calendar-alt"></i> 일정 관리</h2>
+        <p>에어쇼 일정을 추가, 수정, 삭제할 수 있습니다.</p>
+        <a href="{{ url_for('admin_schedules') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-users"></i> 회원 관리</h2>
+        <p>회원 역할 및 등급을 관리합니다.</p>
+        <a href="{{ url_for('admin_users') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-file-alt"></i> 페이지 콘텐츠 관리</h2>
+        <p>각 페이지의 섹션을 수정할 수 있습니다.</p>
+        <a href="{{ url_for('admin_pages') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-image"></i> 배너 설정 관리</h2>
+        <p>각 페이지 배너 이미지, 텍스트를 수정합니다.</p>
+        <a href="{{ url_for('admin_banner') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-jet-fighter"></i> 조종사 관리</h2>
+        <p>조종사 정보를 추가, 수정, 삭제합니다.</p>
+        <a href="{{ url_for('admin_pilots') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-wrench"></i> 정비사 관리</h2>
+        <p>정비사 정보를 추가, 수정, 삭제합니다.</p>
+        <a href="{{ url_for('admin_maintenance') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-user-graduate"></i> 후보자 관리</h2>
+        <p>후보자 정보를 추가, 수정, 삭제합니다.</p>
+        <a href="{{ url_for('admin_candidates') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-star"></i> 전대장 인사말 관리</h2>
+        <p>전대장 인사말과 사진을 관리합니다.</p>
+        <a href="{{ url_for('admin_commanders') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-comments"></i> 실시간 채팅 관리</h2>
+        <p>방문자와 실시간 1대1 대화를 진행합니다.</p>
+        {% if unread_chat_count > 0 %}
+        <div class="notification-badge">읽지 않은 메시지 {{ unread_chat_count }}개</div>
+        {% endif %}
+        {% if active_chat_sessions > 0 %}
+        <p style="color: #28a745; font-size: 0.9rem; margin: 0.5rem 0;">활성 대화 {{ active_chat_sessions }}개</p>
+        {% endif %}
+        <a href="{{ url_for('admin_chats') }}" class="btn btn-primary">채팅 관리</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-home"></i> 홈 콘텐츠 관리</h2>
+        <p>홈페이지 유튜브 영상, SNS 피드 등을 관리합니다.</p>
+        <a href="{{ url_for('admin_home_contents') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-info-circle"></i> 팀소개 섹션 관리</h2>
+        <p>팀소개 페이지의 개요, 항공기 정보를 편집합니다.</p>
+        <a href="{{ url_for('admin_about_sections') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-camera"></i> 사진 게시판 관리</h2>
+        <p>활동 사진을 추가/수정/삭제합니다.</p>
+        <a href="{{ url_for('admin_gallery') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-video"></i> 영상 게시판 관리</h2>
+        <p>활동 영상을 추가/수정/삭제합니다.</p>
+        <a href="{{ url_for('admin_videos') }}" class="btn btn-primary">관리하기</a>
+    </div>
+
+    <div class="dashboard-card">
+        <h2><i class="fas fa-images"></i> 사이트 이미지 관리</h2>
+        <p>홈 배너, 팀소개 페이지 이미지를 변경합니다.</p>
+        <a href="{{ url_for('admin_site_images') }}" class="btn btn-primary">관리하기</a>
+    </div>
+</div>
+
+{% if recent_messages %}
+<div class="card" style="margin-top: 1rem;">
+    <div class="card-header"><i class="fas fa-inbox"></i> 최근 문의</div>
+    <div class="card-body" style="padding: 0;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>이름</th>
+                    <th>이메일</th>
+                    <th>메시지</th>
+                    <th style="text-align:center;">상태</th>
+                    <th style="text-align:center;">작성일</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for message in recent_messages %}
+                <tr class="{{ 'unread' if not message.is_read else '' }}">
+                    <td>{{ message.name }}</td>
+                    <td>{{ message.email }}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <a href="{{ url_for('admin_message_detail', message_id=message.id) }}" style="color: #007bff; text-decoration: none;">
+                            {{ message.message[:50] }}...
+                        </a>
+                    </td>
+                    <td style="text-align: center;">
+                        {% if message.is_read %}
+                        <span class="status-read">읽음</span>
+                        {% else %}
+                        <span class="status-unread">새 문의</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">{{ message.created_at[:16] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div style="margin-top: 0.75rem; text-align: center;">
+    <a href="{{ url_for('admin_messages') }}" style="color: #007bff; text-decoration: none; font-weight: 600;">모든 문의 보기</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+fetch('/api/traffic')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var labels = data.map(function(d) { return d.date.substring(5); }); // MM-DD
+        var values = data.map(function(d) { return d.count; });
+
+        var ctx = document.getElementById('trafficChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '방문 수',
+                    data: values,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0,123,255,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#007bff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

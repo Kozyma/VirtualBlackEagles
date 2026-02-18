@@ -1,0 +1,158 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}{% if content %}콘텐츠 수정{% else %}콘텐츠 추가{% endif %}{% endblock %}
+{% block page_title %}{% if content %}콘텐츠 수정{% else %}콘텐츠 추가{% endif %}{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_home_contents') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> 목록으로
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="form-container">
+        <form method="POST">
+            <div class="form-group">
+                <label for="content_type">콘텐츠 유형 <span style="color: red;">*</span></label>
+                <select id="content_type" name="content_type" class="form-control" required onchange="updatePreview()">
+                    <option value="">-- 선택하세요 --</option>
+                    <option value="youtube" {% if content and content.content_type == 'youtube' %}selected{% endif %}>
+                        YouTube 영상
+                    </option>
+                    <option value="instagram" {% if content and content.content_type == 'instagram' %}selected{% endif %}>
+                        Instagram 피드
+                    </option>
+                    <option value="twitter" {% if content and content.content_type == 'twitter' %}selected{% endif %}>
+                        Twitter 피드
+                    </option>
+                    <option value="tiktok" {% if content and content.content_type == 'tiktok' %}selected{% endif %}>
+                        TikTok 영상
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="title">제목</label>
+                <input type="text" id="title" name="title" class="form-control"
+                       value="{{ content.title if content else '' }}"
+                       placeholder="예: 블랙이글스 공연 영상">
+                <span class="help-text">선택사항: 콘텐츠 설명용 제목</span>
+            </div>
+
+            <div class="form-group">
+                <label for="content_data">콘텐츠 데이터 <span style="color: red;">*</span></label>
+                <textarea id="content_data" name="content_data" class="form-control" required oninput="updatePreview()">{{ content.content_data if content else '' }}</textarea>
+                <span class="help-text" id="content_help">
+                    YouTube: 영상 URL 또는 embed URL (예: https://www.youtube.com/embed/VIDEO_ID)
+                </span>
+            </div>
+
+            <div class="form-group">
+                <label for="order_num">표시 순서</label>
+                <input type="number" id="order_num" name="order_num" class="form-control"
+                       value="{{ content.order_num if content else 0 }}"
+                       min="0" max="999">
+                <span class="help-text">숫자가 작을수록 먼저 표시됩니다 (기본값: 0)</span>
+            </div>
+
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" id="is_active" name="is_active" value="1"
+                           {% if not content or content.is_active %}checked{% endif %}>
+                    <label for="is_active">활성화</label>
+                </div>
+                <span class="help-text">체크하면 홈페이지에 표시됩니다</span>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('admin_home_contents') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> 취소
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 저장
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div style="margin-top:1.5rem;background:#f8f9fa;padding:1.5rem;border-radius:8px;border:2px dashed #dee2e6;">
+        <h3 style="margin-top:0;color:#495057;font-size:1.1rem;"><i class="fas fa-eye"></i> 미리보기</h3>
+        <div id="preview_area">
+            <p style="color: #6c757d;">콘텐츠를 입력하면 미리보기가 표시됩니다.</p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updatePreview() {
+        const type = document.getElementById('content_type').value;
+        const data = document.getElementById('content_data').value.trim();
+        const previewArea = document.getElementById('preview_area');
+        const helpText = document.getElementById('content_help');
+
+        if (!type || !data) {
+            previewArea.innerHTML = '<p style="color: #6c757d;">콘텐츠를 입력하면 미리보기가 표시됩니다.</p>';
+            return;
+        }
+
+        if (type === 'youtube') {
+            helpText.innerHTML = 'YouTube: 영상 URL 또는 embed URL (예: https://www.youtube.com/embed/VIDEO_ID)';
+
+            let embedUrl = data;
+            // Convert regular YouTube URL to embed URL
+            if (data.includes('youtube.com/watch')) {
+                const videoId = data.split('v=')[1]?.split('&')[0];
+                if (videoId) {
+                    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                }
+            } else if (data.includes('youtu.be/')) {
+                const videoId = data.split('youtu.be/')[1]?.split('?')[0];
+                if (videoId) {
+                    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                }
+            }
+
+            previewArea.innerHTML = `
+                <div style="position:relative;width:100%;max-width:560px;padding-bottom:315px;height:0;overflow:hidden;">
+                    <iframe src="${embedUrl}"
+                            style="position:absolute;top:0;left:0;width:100%;height:100%;"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                    </iframe>
+                </div>
+            `;
+        } else if (type === 'instagram') {
+            helpText.innerHTML = 'Instagram: 게시물 URL (예: https://www.instagram.com/p/POST_ID/)';
+            previewArea.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i> Instagram 콘텐츠는 실제 홈페이지에서 표시됩니다.
+                </div>
+                <p><strong>URL:</strong> ${data}</p>
+            `;
+        } else if (type === 'twitter') {
+            helpText.innerHTML = 'Twitter: 트윗 URL (예: https://twitter.com/username/status/TWEET_ID)';
+            previewArea.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i> Twitter 콘텐츠는 실제 홈페이지에서 표시됩니다.
+                </div>
+                <p><strong>URL:</strong> ${data}</p>
+            `;
+        } else if (type === 'tiktok') {
+            helpText.innerHTML = 'TikTok: 영상 URL (예: https://www.tiktok.com/@username/video/VIDEO_ID)';
+            previewArea.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i> TikTok 콘텐츠는 실제 홈페이지에서 표시됩니다.
+                </div>
+                <p><strong>URL:</strong> ${data}</p>
+            `;
+        }
+    }
+
+    // Initial preview if editing
+    {% if content %}
+    updatePreview();
+    {% endif %}
+</script>
+{% endblock %}

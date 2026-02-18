@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}일정 - Virtual Black Eagles{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('/static/images/hero.jpg')">
+  <div class="container">
+    <h1 class="banner-title">비행 일정</h1>
+    <p class="banner-subtitle" style="color: white; font-size: 1.2rem; margin-top: 1rem;">블랙이글스의 비행 훈련 및 에어쇼 일정</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<main class="container section" style="padding-left: 7rem;">
+  
+  <!-- 필터 버튼 -->
+  <div style="margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+    <a href="/schedule?filter=all" class="filter-btn {{ 'active' if filter_type == 'all' else '' }}" style="padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s; {{ 'background: #007bff; color: white;' if filter_type == 'all' else 'background: white; color: #333; border: 2px solid #e0e0e0;' }}">
+      📋 전체
+    </a>
+    <a href="/schedule?filter=upcoming" class="filter-btn {{ 'active' if filter_type == 'upcoming' else '' }}" style="padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s; {{ 'background: #007bff; color: white;' if filter_type == 'upcoming' else 'background: white; color: #333; border: 2px solid #e0e0e0;' }}">
+      🔜 다가오는 일정
+    </a>
+    <a href="/schedule?filter=week" class="filter-btn {{ 'active' if filter_type == 'week' else '' }}" style="padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s; {{ 'background: #007bff; color: white;' if filter_type == 'week' else 'background: white; color: #333; border: 2px solid #e0e0e0;' }}">
+      📅 이번 주
+    </a>
+    <a href="/schedule?filter=month" class="filter-btn {{ 'active' if filter_type == 'month' else '' }}" style="padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s; {{ 'background: #007bff; color: white;' if filter_type == 'month' else 'background: white; color: #333; border: 2px solid #e0e0e0;' }}">
+      📆 이번 달
+    </a>
+    <a href="/schedule?filter=past" class="filter-btn {{ 'active' if filter_type == 'past' else '' }}" style="padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s; {{ 'background: #007bff; color: white;' if filter_type == 'past' else 'background: white; color: #333; border: 2px solid #e0e0e0;' }}">
+      📜 지난 일정
+    </a>
+  </div>
+
+  <!-- 일정 통계 -->
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+    <h3 style="color: white; margin: 0 0 1rem 0; font-size: 1.5rem;">📊 일정 현황</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+      <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 8px; text-align: center;">
+        <div style="color: white; font-size: 2rem; font-weight: bold;">{{ schedules|length }}</div>
+        <div style="color: rgba(255,255,255,0.9); font-size: 0.9rem; margin-top: 0.5rem;">
+          {% if filter_type == 'all' %}전체 일정
+          {% elif filter_type == 'upcoming' %}다가오는 일정
+          {% elif filter_type == 'past' %}지난 일정
+          {% elif filter_type == 'week' %}이번 주
+          {% elif filter_type == 'month' %}이번 달
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 일정 목록 -->
+  {% if schedules %}
+  <div style="margin-top: 2rem;">
+    {% for schedule in schedules %}
+    <div onclick="location.href='/schedule/{{ schedule.id }}'" style="background: white; padding: 2rem; margin-bottom: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.3s; border-left: 5px solid {{ '#28a745' if schedule.status == 'upcoming' else '#dc3545' if schedule.status == 'past' else '#ffc107' }};" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)';">
+      
+      <div style="display: flex; justify-content: space-between; align-items: start; gap: 2rem; flex-wrap: wrap;">
+        <!-- 왼쪽: 일정 정보 -->
+        <div style="flex: 1; min-width: 300px;">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <h3 style="margin: 0; color: #333; font-size: 1.5rem;">{{ schedule.title }}</h3>
+            {% if schedule.status == 'today' %}
+            <span style="display: inline-block; padding: 0.3rem 0.8rem; background: #ffc107; color: #333; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">🔥 오늘</span>
+            {% endif %}
+          </div>
+          
+          {% if schedule.location %}
+          <p style="margin: 0 0 0.75rem 0; color: #666; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.2rem;">📍</span>
+            <span style="font-size: 1.05rem;">{{ schedule.location }}</span>
+          </p>
+          {% endif %}
+          
+          {% if schedule.description %}
+          <p style="margin: 0.75rem 0 0 0; color: #555; line-height: 1.6;">
+            {{ schedule.description[:150] }}{{ '...' if schedule.description|length > 150 else '' }}
+          </p>
+          {% endif %}
+        </div>
+        
+        <!-- 오른쪽: 날짜 및 D-Day -->
+        <div style="text-align: right; min-width: 180px;">
+          <div style="background: {{ '#28a745' if schedule.status == 'upcoming' else '#dc3545' if schedule.status == 'past' else '#ffc107' }}; color: white; padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+            <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.3rem;">📅 날짜</div>
+            <div style="font-size: 1.1rem; font-weight: bold;">{{ schedule.event_date }}</div>
+          </div>
+          
+          <div style="background: {{ '#e8f5e9' if schedule.status == 'upcoming' else '#ffebee' if schedule.status == 'past' else '#fff3e0' }}; color: {{ '#2e7d32' if schedule.status == 'upcoming' else '#c62828' if schedule.status == 'past' else '#ef6c00' }}; padding: 0.75rem 1.25rem; border-radius: 8px; font-weight: bold; font-size: 1.3rem;">
+            {{ schedule.d_day }}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 12px; margin-top: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">📭</div>
+    <h3 style="color: #666; margin: 0 0 0.5rem 0;">등록된 일정이 없습니다</h3>
+    <p style="color: #999;">
+      {% if filter_type == 'upcoming' %}다가오는 일정이 없습니다.
+      {% elif filter_type == 'past' %}지난 일정이 없습니다.
+      {% elif filter_type == 'week' %}이번 주 일정이 없습니다.
+      {% elif filter_type == 'month' %}이번 달 일정이 없습니다.
+      {% else %}등록된 일정이 없습니다.
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+
+</main>
+
+<!-- Contact Us + Footer Section -->
+<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+		<h3 data-i18n="contact.title" style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
+		<p data-i18n="contact.text" style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord ㅣ Johnson#4553</p>
+		
+		<div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 2rem; margin-top: 2rem; text-align: center;">
+			<p style="color: white; font-size: 1rem; margin: 0;">© 2025 Virtual Black Eagles</p>
+		</div>
+	</div>
+</section>
+
+<style>
+.site-footer {
+	display: none;
+}
+
+.filter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.filter-btn:not(.active):hover {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+@media (max-width: 768px) {
+  main.container.section {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+  
+  .filter-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+</style>
+
+{% endblock %}

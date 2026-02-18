@@ -1,0 +1,147 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}실시간 채팅 관리{% endblock %}
+{% block page_title %}실시간 채팅 관리{% endblock %}
+
+{% block head %}
+<style>
+    .chat-sessions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+    }
+
+    .chat-session-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    }
+
+    .chat-session-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .chat-session-card.closed {
+        opacity: 0.6;
+    }
+
+    .session-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .session-info {
+        flex: 1;
+    }
+
+    .session-info h3 {
+        margin: 0 0 4px 0;
+        font-size: 18px;
+        color: #333;
+    }
+
+    .session-status {
+        display: inline-block;
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: #f0f0f0;
+    }
+
+    .session-status.active {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .session-status.closed {
+        background: #f5f5f5;
+        color: #757575;
+    }
+
+    .unread-badge {
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .session-body {
+        border-top: 1px solid #f0f0f0;
+        padding-top: 12px;
+    }
+
+    .last-message {
+        margin: 0 0 8px 0;
+        color: #666;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    .last-message.no-message {
+        color: #999;
+        font-style: italic;
+    }
+
+    .session-time {
+        margin: 0;
+        font-size: 12px;
+        color: #999;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <p style="color:#666;margin-bottom:1.5rem;">방문자와의 실시간 대화를 관리합니다</p>
+
+    {% if sessions %}
+    <div class="chat-sessions-grid">
+        {% for session in sessions %}
+        <div class="chat-session-card {% if session['status'] == 'closed' %}closed{% endif %}" onclick="location.href='{{ url_for('admin_chat_detail', session_id=session['session_id']) }}'">
+            <div class="session-header">
+                <div class="session-info">
+                    <h3>{{ session['user_name'] or '익명' }}</h3>
+                    <span class="session-status {{ session['status'] }}">
+                        {% if session['status'] == 'active' %}
+                            활성
+                        {% else %}
+                            종료됨
+                        {% endif %}
+                    </span>
+                </div>
+                {% if session['unread_count'] > 0 %}
+                <span class="unread-badge">{{ session['unread_count'] }}</span>
+                {% endif %}
+            </div>
+
+            <div class="session-body">
+                {% if session['last_message'] %}
+                <p class="last-message">{{ session['last_message'][:50] }}{% if session['last_message']|length > 50 %}...{% endif %}</p>
+                {% else %}
+                <p class="last-message no-message">메시지가 없습니다</p>
+                {% endif %}
+                <p class="session-time">{{ session['created_at'] }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p><i class="fas fa-comments" style="font-size:3rem;display:block;margin-bottom:1rem;opacity:0.3;"></i></p>
+        <p><strong>채팅 세션이 없습니다</strong></p>
+        <p>방문자가 문의를 시작하면 여기에 표시됩니다</p>
+    </div>
+    {% endif %}
+{% endblock %}

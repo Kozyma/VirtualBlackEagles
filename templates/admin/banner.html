@@ -1,0 +1,76 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}배너 설정 관리{% endblock %}
+{% block page_title %}배너 설정 관리{% endblock %}
+
+{% block head %}
+<style>
+    .banner-list {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .banner-item {
+        padding: 1.5rem;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .banner-item:last-child {
+        border-bottom: none;
+    }
+    .banner-info h3 {
+        margin: 0 0 0.5rem 0;
+        color: #333;
+    }
+    .banner-info p {
+        margin: 0.25rem 0;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    .banner-preview {
+        width: 200px;
+        height: 100px;
+        border-radius: 8px;
+        background-size: cover;
+        background-position: center;
+        margin-right: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="banner-list">
+    <h2 style="margin-top: 0;">배너 목록</h2>
+
+    {% if banners %}
+        {% for banner in banners %}
+        <div class="banner-item">
+            <div style="display: flex; align-items: center; flex: 1;">
+                {% if banner.background_image %}
+                <div class="banner-preview" style="background-image: url('{{ banner.background_image }}');"></div>
+                {% endif %}
+                <div class="banner-info">
+                    <h3>{{ banner.page_name|upper }} 페이지</h3>
+                    <p><strong>제목:</strong> {{ banner.title }}</p>
+                    <p><strong>부제목:</strong> {{ banner.subtitle or '없음' }}</p>
+                    <p><strong>설명:</strong> {{ (banner.description or '')[:50] }}{{ '...' if (banner.description or '')|length > 50 else '' }}</p>
+                    <p><strong>글꼴:</strong> {{ banner.title_font }}</p>
+                    <p><strong>제목 색상:</strong> <span style="color: {{ banner.title_color }};">&#9679;</span> {{ banner.title_color }}</p>
+                    <p style="font-size: 0.8rem; color: #999;">마지막 수정: {{ banner.updated_at }}</p>
+                </div>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_banner_edit', banner_id=banner.id) }}" class="btn btn-primary">수정</a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <p>등록된 배너 설정이 없습니다.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

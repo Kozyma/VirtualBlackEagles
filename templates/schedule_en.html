@@ -1,0 +1,138 @@
+{% extends "base_en.html" %}
+
+{% block title %}Schedule - Virtual Black Eagles{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner and banner.background_image else '/static/images/hero.jpg' }}')">
+  <div class="container">
+    <h1 class="banner-title">{{ banner.title if banner and banner.title else 'Schedule' }}</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<main class="container section" style="max-width:960px;margin:0 auto;padding:2rem 1rem;">
+
+  <!-- Calendar -->
+  <div id="calendar" style="background:#fff;padding:1rem;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.08);margin-bottom:2rem;"></div>
+
+  <div style="margin-bottom:1.5rem;">
+    <span style="color:#666;font-size:0.95rem;">Total <strong style="color:#007bff;">{{ total }}</strong> events</span>
+  </div>
+
+  {% if schedules %}
+  <div style="display:flex;flex-direction:column;gap:1rem;">
+    {% for schedule in schedules %}
+    <div onclick="location.href='/schedule/{{ schedule.id }}?lang=en'"
+         style="background:#fff;padding:1.5rem;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.08);cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;display:flex;justify-content:space-between;align-items:center;gap:1.5rem;"
+         onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.12)'"
+         onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 1px 6px rgba(0,0,0,0.08)'">
+      <div style="flex:1;min-width:0;">
+        <h3 style="margin:0 0 0.5rem 0;color:#333;font-size:1.1rem;">{{ schedule.title }}</h3>
+        {% if schedule.location %}
+        <p style="margin:0 0 0.4rem 0;color:#666;font-size:0.9rem;display:flex;align-items:center;gap:0.4rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#007bff"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          {{ schedule.location }}
+        </p>
+        {% endif %}
+        {% if schedule.description %}
+        <p style="margin:0;color:#888;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          {{ schedule.description[:80] }}{{ '...' if (schedule.description or '')|length > 80 else '' }}
+        </p>
+        {% endif %}
+      </div>
+      <div style="flex-shrink:0;text-align:center;background:#f0f4ff;border-radius:8px;padding:0.75rem 1.25rem;min-width:100px;">
+        <div style="font-size:0.75rem;color:#007bff;font-weight:600;text-transform:uppercase;">DATE</div>
+        <div style="font-size:1rem;color:#333;font-weight:700;margin-top:0.25rem;">{{ schedule.event_date }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:3rem;background:#fff;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="#ddd" style="margin-bottom:1rem;">
+      <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
+    </svg>
+    <p style="color:#999;font-size:0.95rem;">No scheduled events available.</p>
+  </div>
+  {% endif %}
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <div style="display:flex;justify-content:center;align-items:center;gap:0.25rem;margin-top:2rem;">
+    {% if page > 1 %}
+    <a href="{{ url_for('schedule', lang='en', page=page-1) }}"
+       style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == page %}
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:#007bff;color:#fff;border-radius:4px;font-size:0.9rem;font-weight:600;">{{ p }}</span>
+      {% elif p <= 2 or p >= total_pages - 1 or (p >= page - 2 and p <= page + 2) %}
+      <a href="{{ url_for('schedule', lang='en', page=p) }}"
+         style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:0.9rem;transition:background 0.15s;"
+         onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">{{ p }}</a>
+      {% elif p == 3 or p == total_pages - 2 %}
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;color:#999;">...</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a href="{{ url_for('schedule', lang='en', page=page+1) }}"
+       style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</main>
+
+<!-- Contact Us + Footer Section -->
+<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+		<h3 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
+		<p style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord | Johnson#4553</p>
+	</div>
+</section>
+
+<style>
+.site-footer {
+	display: none;
+}
+.fc .fc-toolbar-title { font-size: 1.2rem !important; }
+.fc .fc-button { font-size: 0.85rem !important; }
+.fc .fc-daygrid-event { cursor: pointer; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    if (calendarEl) {
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'en',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth'
+            },
+            height: 'auto',
+            events: '/api/schedules',
+            eventClick: function(info) {
+                info.jsEvent.preventDefault();
+                if (info.event.url) {
+                    window.location.href = info.event.url + '?lang=en';
+                }
+            },
+            eventColor: '#007bff',
+            dayMaxEvents: 3
+        });
+        calendar.render();
+    }
+});
+</script>
+{% endblock %}

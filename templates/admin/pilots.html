@@ -1,0 +1,64 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}조종사 관리{% endblock %}
+{% block page_title %}조종사 관리{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_pilot_new') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 새 조종사</a>
+{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    {% if pilots %}
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>번호</th>
+                <th>포지션</th>
+                <th>콜사인</th>
+                <th>기수</th>
+                <th>주 기종</th>
+                <th>순서</th>
+                <th>활성</th>
+                <th>작업</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pilot in pilots %}
+            <tr>
+                <td>#{{ pilot.number }}</td>
+                <td>{{ pilot.position }}</td>
+                <td>{{ pilot.callsign }}</td>
+                <td>{{ pilot.generation }}</td>
+                <td>{{ pilot.aircraft }}</td>
+                <td>{{ pilot.order_num }}</td>
+                <td>
+                    {% if pilot.is_active %}
+                    <span class="badge bg-success">활성</span>
+                    {% else %}
+                    <span class="badge bg-secondary">비활성</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('admin_pilot_edit', pilot_id=pilot.id) }}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i> 수정
+                    </a>
+                    <form method="POST" action="{{ url_for('admin_pilot_delete', pilot_id=pilot.id) }}"
+                          style="display:inline;"
+                          onsubmit="return confirm('정말 이 조종사를 삭제하시겠습니까?');">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>등록된 조종사가 없습니다.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

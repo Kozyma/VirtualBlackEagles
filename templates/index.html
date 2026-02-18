@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Virtual Black Eagles - 홈페이지{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner else '/static/images/hero.jpg' }}'); min-height: 900px; align-items: {{ banner.vertical_position if banner and banner.vertical_position else 'flex-start' }}; padding-top: {{ banner.padding_top if banner and banner.padding_top else 250 }}px;">
+	<style>
+		/* Tablet / Foldable Phone (769px ~ 1024px) */
+		@media (min-width: 769px) and (max-width: 1024px) {
+			.hero.banner {
+				min-height: 600px !important;
+				padding-top: 120px !important;
+			}
+		}
+		/* Mobile (max-width: 768px) */
+		@media (max-width: 768px) {
+			.hero.banner {
+				min-height: 400px !important;
+				padding-top: 60px !important;
+				align-items: flex-start !important;
+			}
+		}
+		/* Small Mobile (max-width: 480px) */
+		@media (max-width: 480px) {
+			.hero.banner {
+				min-height: 400px !important;
+				padding-top: 50px !important;
+			}
+		}
+	</style>
+	<div class="container">
+		{% if banner and banner.subtitle %}
+		<div class="banner-subtitle" style="color: {{ banner.subtitle_color }};">{{ banner.subtitle }}</div>
+		{% else %}
+		<div class="banner-subtitle">Republic Of Korea AirForce</div>
+		{% endif %}
+		
+		{% if banner %}
+		<h1 class="banner-title" style="font-family: {{ banner.title_font }}; color: {{ banner.title_color }};">{{ banner.title }}</h1>
+		{% else %}
+		<h1 class="banner-title">Black Eagles</h1>
+		{% endif %}
+		
+		{% if banner and banner.description %}
+		<p class="banner-description" style="color: {{ banner.description_color }};">{{ banner.description }}</p>
+		{% else %}
+		<p class="banner-description" style="color: white;">가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 </p>
+		<p class="banner-description" style="color: white;">고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.</p>
+		{% endif %}
+		
+		{% if banner and banner.button_text %}
+		<a class="btn" href="{{ banner.button_link or '#about' }}" data-i18n="hero.cta">{{ banner.button_text }}</a>
+		{% else %}
+		<a class="btn" href="#about" data-i18n="hero.cta">more</a>
+		{% endif %}
+	</div>
+</section>
+{% endblock %}
+
+{% block content %}
+<!-- 동적 섹션 렌더링 -->
+{% if sections %}
+	{% for section in sections %}
+		{% if section.section_type == 'text' %}
+		<section id="{{ section.section_id }}" class="container section">
+			{% if section.title %}
+			<h2>{{ section.title }}</h2>
+			{% endif %}
+			{% if section.content %}
+			<p>{{ section.content|safe }}</p>
+			{% endif %}
+		</section>
+		{% elif section.section_type == 'image' %}
+		<section id="{{ section.section_id }}" class="container section">
+			{% if section.title %}
+			<h2>{{ section.title }}</h2>
+			{% endif %}
+			{% if section.image_url %}
+			<img src="{{ section.image_url }}" alt="{{ section.title or '' }}" style="max-width: 100%; border-radius: 8px;">
+			{% endif %}
+		</section>
+		{% elif section.section_type == 'text_image' %}
+		<section id="{{ section.section_id }}" class="container section">
+			<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center;">
+				<div>
+					{% if section.title %}
+					<h2>{{ section.title }}</h2>
+					{% endif %}
+					{% if section.content %}
+					<p>{{ section.content|safe }}</p>
+					{% endif %}
+					{% if section.link_url %}
+					<a href="{{ section.link_url }}" class="btn">{{ section.link_text or '자세히 보기' }}</a>
+					{% endif %}
+				</div>
+				{% if section.image_url %}
+				<div>
+					<img src="{{ section.image_url }}" alt="{{ section.title or '' }}" style="max-width: 100%; border-radius: 8px;">
+				</div>
+				{% endif %}
+			</div>
+		</section>
+		{% elif section.section_type == 'html' %}
+		<section id="{{ section.section_id }}" class="container section">
+			{{ section.content|safe }}
+		</section>
+		{% endif %}
+	{% endfor %}
+{% endif %}
+
+<!-- Social Now 섹션 (항상 표시) -->
+<section id="about" class="container section">
+	<p style="text-align: center; font-size: 1.2rem; color: #333; margin-bottom: 1.5rem; font-weight: 500; padding-top: 2rem;">T-50B Mode made in Red Owl by Ensalado</p>
+	<h2 data-i18n="about.title" style="text-align: center; font-size: 2.5rem; letter-spacing: 1.2rem;">Social Now</h2>
+</section>
+
+<!-- 홈 콘텐츠 (관리자가 추가한 콘텐츠) -->
+{% if home_contents %}
+<section class="container section">
+	<div style="max-width: 1200px; margin: 0 auto;">
+		{% for content in home_contents %}
+			{% if content.content_type == 'youtube' %}
+			<!-- YouTube 콘텐츠 -->
+			<div style="margin-bottom: 3rem;">
+				{% if content.title %}
+				<h3 style="text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem; color: #333;">{{ content.title }}</h3>
+				{% endif %}
+				<div style="position: relative; width: 100%; max-width: 900px; margin: 0 auto; padding-bottom: 50.625%; height: 0; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+					<iframe 
+						src="{{ content.content_data|youtube_embed }}" 
+						style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+						frameborder="0" 
+						allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+						allowfullscreen>
+					</iframe>
+				</div>
+			</div>
+			
+			{% elif content.content_type == 'instagram' %}
+			<!-- Instagram 콘텐츠 -->
+			<div style="margin-bottom: 3rem;">
+				{% if content.title %}
+				<h3 style="text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem; color: #333;">{{ content.title }}</h3>
+				{% endif %}
+				<div style="max-width: 540px; margin: 0 auto;">
+					<blockquote class="instagram-media" 
+						data-instgrm-permalink="{{ content.content_data }}" 
+						data-instgrm-version="14" 
+						style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px auto; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);">
+					</blockquote>
+				</div>
+			</div>
+			
+			{% elif content.content_type == 'twitter' %}
+			<!-- Twitter 콘텐츠 -->
+			<div style="margin-bottom: 3rem;">
+				{% if content.title %}
+				<h3 style="text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem; color: #333;">{{ content.title }}</h3>
+				{% endif %}
+				<div style="max-width: 550px; margin: 0 auto;">
+					<blockquote class="twitter-tweet">
+						<a href="{{ content.content_data }}"></a>
+					</blockquote>
+				</div>
+			</div>
+			
+			{% elif content.content_type == 'tiktok' %}
+			<!-- TikTok 콘텐츠 -->
+			<div style="margin-bottom: 3rem;">
+				{% if content.title %}
+				<h3 style="text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem; color: #333;">{{ content.title }}</h3>
+				{% endif %}
+				<div style="max-width: 605px; margin: 0 auto; text-align: center;">
+					<blockquote class="tiktok-embed" 
+						cite="{{ content.content_data }}" 
+						data-video-id="{{ content.content_data.split('/')[-1] }}" 
+						style="max-width: 605px; min-width: 325px;">
+						<section>
+							<a target="_blank" href="{{ content.content_data }}">TikTok</a>
+						</section>
+					</blockquote>
+				</div>
+			</div>
+			{% endif %}
+		{% endfor %}
+	</div>
+</section>
+{% endif %}
+
+<section id="services" class="container section">
+	<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; max-width: 1200px; margin: 2rem auto; align-items: start;">
+		<!-- 페이스북 섹션 -->
+		<div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+			<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; color: white;">
+				<div style="display: flex; align-items: center; gap: 1rem;">
+					<svg width="40" height="40" viewBox="0 0 24 24" fill="white">
+						<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+					</svg>
+					<div>
+						<h3 style="margin: 0; font-size: 1.5rem;">Facebook</h3>
+						<p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">Virtual Black Eagles</p>
+					</div>
+				</div>
+			</div>
+			<div style="padding: 1.5rem;">
+				<!-- Facebook Page Plugin -->
+				<div id="fb-root"></div>
+				<div class="fb-page" 
+					data-href="https://www.facebook.com/VirtualBlackEagles/" 
+					data-tabs="timeline" 
+					data-width="500" 
+					data-height="600" 
+					data-small-header="false" 
+					data-adapt-container-width="true" 
+					data-hide-cover="false" 
+					data-show-facepile="false">
+					<blockquote cite="https://www.facebook.com/VirtualBlackEagles/" class="fb-xfbml-parse-ignore">
+						<a href="https://www.facebook.com/VirtualBlackEagles/">Virtual Black Eagles</a>
+					</blockquote>
+				</div>
+			</div>
+		</div>
+
+		<!-- 인스타그램 섹션 -->
+		<div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+			<div style="background: linear-gradient(135deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); padding: 1.5rem; color: white;">
+				<div style="display: flex; align-items: center; gap: 1rem;">
+					<svg width="40" height="40" viewBox="0 0 24 24" fill="white">
+						<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+					</svg>
+					<div>
+						<h3 style="margin: 0; font-size: 1.5rem;">Instagram</h3>
+						<p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">@rokaf.blackeagles</p>
+					</div>
+				</div>
+			</div>
+			<div style="padding: 1.5rem; overflow-y: auto; max-height: 600px;">
+				<!-- 인스타그램 게시물 1 -->
+				<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/p/DR0nfrNE8qh/" data-instgrm-version="14" style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px auto 16px; max-width:100%; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote>
+				
+				<!-- 인스타그램 게시물 2 -->
+				<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/p/DDwNq6qSKXN/" data-instgrm-version="14" style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px auto 16px; max-width:100%; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote>
+				
+				<!-- 인스타그램 게시물 3 -->
+				<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/p/DDrwB-jyW0V/" data-instgrm-version="14" style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px auto 16px; max-width:100%; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section id="contact" class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+		<h3 data-i18n="contact.title" style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
+		<p data-i18n="contact.text" style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord ㅣ Johnson#4553</p>
+		
+		<!-- Footer 내용을 여기에 포함 -->
+		<div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 2rem; margin-top: 2rem; text-align: center;">
+			<p style="color: white; font-size: 1rem; margin: 0;">© 2025 Virtual Black Eagles</p>
+		</div>
+	</div>
+</section>
+
+<!-- footer 오버라이드 (빈 footer로 대체) -->
+<style>
+.site-footer {
+	display: none;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<!-- Facebook SDK -->
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/ko_KR/sdk.js#xfbml=1&version=v18.0"></script>
+<!-- Instagram Embed -->
+<script async src="https://www.instagram.com/embed.js"></script>
+<!-- Twitter Embed -->
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<!-- TikTok Embed -->
+<script async src="https://www.tiktok.com/embed.js"></script>
+<script>
+// 인스타그램 임베드 강제 리로드
+window.addEventListener('load', function() {
+	if (window.instgrm) {
+		window.instgrm.Embeds.process();
+	}
+});
+</script>
+{% endblock %}
+

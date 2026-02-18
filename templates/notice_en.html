@@ -1,0 +1,120 @@
+{% extends "base_en.html" %}
+
+{% block title %}Announcements - Virtual Black Eagles{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner and banner.background_image else '/static/images/hero.jpg' }}')">
+  <div class="container">
+    <h1 class="banner-title">{{ banner.title if banner and banner.title else 'Announcements' }}</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<main class="container section" style="max-width:960px;margin:0 auto;padding:2rem 1rem;">
+
+  <!-- Search + Count -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+    <span style="color:#666;font-size:0.95rem;">Total <strong style="color:#007bff;">{{ total }}</strong> posts</span>
+    <form method="GET" action="{{ url_for('notice', lang='en') }}" style="display:flex;gap:0.5rem;align-items:center;">
+      <input type="hidden" name="lang" value="en">
+      <select name="search_type" style="padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;background:#fff;">
+        <option value="title" {{ 'selected' if search_type == 'title' }}>Title</option>
+        <option value="content" {{ 'selected' if search_type == 'content' }}>Content</option>
+        <option value="author" {{ 'selected' if search_type == 'author' }}>Author</option>
+      </select>
+      <input type="text" name="q" value="{{ search_query }}" placeholder="Enter search term"
+             style="padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;width:200px;">
+      <button type="submit" style="padding:0.5rem 1rem;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.9rem;">
+        Search
+      </button>
+      {% if search_query %}
+      <a href="{{ url_for('notice', lang='en') }}" style="padding:0.5rem 0.75rem;color:#666;text-decoration:none;font-size:0.9rem;">Reset</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div style="background:#fff;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.08);overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#f8f9fa;border-bottom:2px solid #e9ecef;">
+          <th style="padding:0.85rem 1rem;text-align:center;font-weight:600;color:#495057;font-size:0.9rem;width:60px;">No.</th>
+          <th style="padding:0.85rem 1rem;text-align:left;font-weight:600;color:#495057;font-size:0.9rem;">Title</th>
+          <th style="padding:0.85rem 1rem;text-align:center;font-weight:600;color:#495057;font-size:0.9rem;width:100px;">Author</th>
+          <th style="padding:0.85rem 1rem;text-align:center;font-weight:600;color:#495057;font-size:0.9rem;width:110px;">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if notices %}
+          {% for notice in notices %}
+          <tr onclick="location.href='/notice/{{ notice.id }}?lang=en'" style="cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.15s;"
+              onmouseover="this.style.background='#f8f9ff'" onmouseout="this.style.background='transparent'">
+            <td style="padding:0.8rem 1rem;text-align:center;color:#999;font-size:0.9rem;">{{ notice.id }}</td>
+            <td style="padding:0.8rem 1rem;text-align:left;color:#333;font-size:0.95rem;">{{ notice.title }}</td>
+            <td style="padding:0.8rem 1rem;text-align:center;color:#666;font-size:0.9rem;">{{ notice.author }}</td>
+            <td style="padding:0.8rem 1rem;text-align:center;color:#999;font-size:0.9rem;">{{ notice.created_at[:10] }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="4" style="text-align:center;padding:3rem;color:#999;font-size:0.95rem;">
+              {% if search_query %}
+                No results found.
+              {% else %}
+                No announcements available.
+              {% endif %}
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <div style="display:flex;justify-content:center;align-items:center;gap:0.25rem;margin-top:2rem;">
+    {% if page > 1 %}
+    <a href="{{ url_for('notice', lang='en', page=page-1, q=search_query, search_type=search_type) }}"
+       style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:0.85rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == page %}
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:#007bff;color:#fff;border-radius:4px;font-size:0.9rem;font-weight:600;">{{ p }}</span>
+      {% elif p <= 2 or p >= total_pages - 1 or (p >= page - 2 and p <= page + 2) %}
+      <a href="{{ url_for('notice', lang='en', page=p, q=search_query, search_type=search_type) }}"
+         style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:0.9rem;transition:background 0.15s;"
+         onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">{{ p }}</a>
+      {% elif p == 3 or p == total_pages - 2 %}
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;color:#999;font-size:0.9rem;">...</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a href="{{ url_for('notice', lang='en', page=page+1, q=search_query, search_type=search_type) }}"
+       style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:0.85rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</main>
+
+<!-- Contact Us + Footer Section -->
+<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+		<h3 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
+		<p style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord | Johnson#4553</p>
+	</div>
+</section>
+
+<style>
+.site-footer {
+	display: none;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}{{ '섹션 수정' if section else '섹션 추가' }}{% endblock %}
+{% block page_title %}{{ '섹션 수정' if section else '새 섹션 추가' }}{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_pages') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 목록으로</a>
+{% endblock %}
+
+{% block head %}
+<style>
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .checkbox-group input[type="checkbox"] {
+        width: auto;
+        cursor: pointer;
+    }
+    .info-box {
+        background: #e7f3ff;
+        border-left: 4px solid #007bff;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 4px;
+    }
+    .section-type-info {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="POST" action="{{ url_for('admin_page_section_save') }}">
+        {% if section %}
+        <input type="hidden" name="section_id" value="{{ section.id }}">
+        {% endif %}
+
+        <div class="info-box">
+            <strong>페이지/섹션 ID 예시:</strong><br>
+            페이지: home, about, notice, contact<br>
+            섹션 ID: about, intro, features, contact_info 등 (영문, 언더스코어 사용)
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="page_name">페이지 이름 *</label>
+                <input type="text" id="page_name" name="page_name" class="form-control"
+                       value="{{ section.page_name if section else '' }}"
+                       placeholder="예: home" required>
+                <small>영문 소문자로 입력 (home, about, notice, contact 등)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="section_identifier">섹션 ID *</label>
+                <input type="text" id="section_identifier" name="section_identifier" class="form-control"
+                       value="{{ section.section_id if section else '' }}"
+                       placeholder="예: about" required>
+                <small>고유한 섹션 식별자 (영문, 언더스코어)</small>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="section_type">섹션 타입 *</label>
+                <select id="section_type" name="section_type" class="form-control" required>
+                    <option value="text" {% if section and section.section_type == 'text' %}selected{% endif %}>텍스트</option>
+                    <option value="image" {% if section and section.section_type == 'image' %}selected{% endif %}>이미지</option>
+                    <option value="text_image" {% if section and section.section_type == 'text_image' %}selected{% endif %}>텍스트+이미지</option>
+                    <option value="link" {% if section and section.section_type == 'link' %}selected{% endif %}>링크</option>
+                    <option value="html" {% if section and section.section_type == 'html' %}selected{% endif %}>HTML</option>
+                </select>
+                <div class="section-type-info" id="typeInfo">
+                    <strong>텍스트:</strong> 제목과 내용만 표시<br>
+                    <strong>이미지:</strong> 이미지 URL만 표시<br>
+                    <strong>텍스트+이미지:</strong> 제목, 내용, 이미지 모두 표시<br>
+                    <strong>링크:</strong> 클릭 가능한 링크<br>
+                    <strong>HTML:</strong> 사용자 정의 HTML 코드
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="order_num">순서</label>
+                <input type="number" id="order_num" name="order_num" class="form-control"
+                       value="{{ section.order_num if section else 0 }}"
+                       min="0" step="1">
+                <small>작은 숫자가 먼저 표시됩니다 (0, 1, 2...)</small>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="title">제목</label>
+            <input type="text" id="title" name="title" class="form-control"
+                   value="{{ section.title if section else '' }}"
+                   placeholder="섹션 제목">
+        </div>
+
+        <div class="form-group">
+            <label for="content">내용</label>
+            <textarea id="content" name="content" class="form-control"
+                      placeholder="섹션 내용을 입력하세요..." style="min-height:150px;">{{ section.content if section else '' }}</textarea>
+            <small>HTML 태그도 사용 가능합니다</small>
+        </div>
+
+        <div class="form-group">
+            <label for="image_url">이미지 URL</label>
+            <input type="text" id="image_url" name="image_url" class="form-control"
+                   value="{{ section.image_url if section else '' }}"
+                   placeholder="/static/images/example.jpg">
+            <small>이미지 파일을 /static/images/ 폴더에 업로드 후 경로 입력</small>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="link_url">링크 URL</label>
+                <input type="text" id="link_url" name="link_url" class="form-control"
+                       value="{{ section.link_url if section else '' }}"
+                       placeholder="https://example.com 또는 #section">
+            </div>
+
+            <div class="form-group">
+                <label for="link_text">링크 텍스트</label>
+                <input type="text" id="link_text" name="link_text" class="form-control"
+                       value="{{ section.link_text if section else '' }}"
+                       placeholder="자세히 보기">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="is_active" name="is_active"
+                       {% if not section or section.is_active %}checked{% endif %}>
+                <label for="is_active" style="margin: 0; font-weight: normal;">이 섹션 활성화</label>
+            </div>
+            <small>비활성화하면 페이지에 표시되지 않습니다</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">저장</button>
+            <a href="{{ url_for('admin_pages') }}" class="btn btn-secondary">취소</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 섹션 타입 변경시 도움말 업데이트
+    document.getElementById('section_type').addEventListener('change', function() {
+        const typeInfo = {
+            'text': '<strong>텍스트:</strong> 제목과 내용만 표시됩니다.',
+            'image': '<strong>이미지:</strong> 이미지 URL이 필요합니다.',
+            'text_image': '<strong>텍스트+이미지:</strong> 제목, 내용, 이미지가 모두 표시됩니다.',
+            'link': '<strong>링크:</strong> 클릭 가능한 링크를 생성합니다. 링크 URL과 텍스트가 필요합니다.',
+            'html': '<strong>HTML:</strong> 내용 필드에 HTML 코드를 직접 입력할 수 있습니다.'
+        };
+        document.getElementById('typeInfo').innerHTML = typeInfo[this.value] || '';
+    });
+</script>
+{% endblock %}

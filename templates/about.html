@@ -1,0 +1,744 @@
+{% extends "base.html" %}
+
+{% block title %}팀소개 - Virtual Black Eagles{% endblock %}
+
+{% block banner %}
+<section class="hero banner" style="background-image: url('/static/images/hero.jpg')">
+  <div class="container">
+    <h1 class="banner-title">팀 소개</h1>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<main class="container section" style="padding-left: 7rem;">
+      <h2 style="text-align: center;">팀 소개</h2>
+      <nav class="sub-nav" id="about-tabs" style="display:flex;gap:1rem;margin-bottom:2rem;border-bottom:1px solid #e0e0e0;justify-content:center;">
+        <a href="#overview" data-tab="overview" class="tab-link active">개요</a>
+        <a href="#members" data-tab="members" class="tab-link">멤버</a>
+        <a href="#aircraft" data-tab="aircraft" class="tab-link">항공기</a>
+        <a href="#maneuvers" data-tab="maneuvers" class="tab-link">기동</a>
+      </nav>
+      <section id="overview" class="about-section tab-content active">
+        <h2 style="text-align:center;margin-bottom:3rem;font-size:2.5rem;">개요</h2>
+        <p style="text-align:center;font-size:1.2rem;line-height:2;margin-bottom:3rem;">
+          블랙이글스는 국산 초음속 항공기 T-50B 8대로 팀을 구성하여 고도의<br>
+          팀워크를 바탕으로 다양한 종류의 특수 비행을 선보이는 대한민국 공군<br>
+          특수비행팀입니다.
+        </p>
+
+        {% for section in overview_sections %}
+        {% if not loop.first %}
+        <div style="border-top:2px dotted #ccc;margin:3rem 0;"></div>
+        {% endif %}
+        <div style="padding:3rem 0;">
+          <h2 style="text-align:center;margin-bottom:2rem;font-size:2rem;">{{ section['title'] }}</h2>
+          <div style="display:flex;align-items:flex-start;gap:3rem;max-width:1200px;margin:0;">
+            <div style="width:400px;flex-shrink:0;">
+              <img src="{{ section['image_url'] or '/static/Picture/test.jpg' }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
+            </div>
+            <div style="flex:1;">
+              <p style="font-size:1.1rem;line-height:1.8;">
+                {{ section['content'] }}
+              </p>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </section>
+      <section id="members" class="about-section tab-content">
+        
+        <!-- 하위 탭 메뉴 -->
+        <nav class="member-sub-nav" style="display:flex;gap:2rem;margin-bottom:3rem;justify-content:center;border-bottom:2px solid #e0e0e0;padding-bottom:1rem;">
+          <a href="#" data-member-tab="commander" class="member-tab-link active" style="text-decoration:none;color:#333;padding:0.5rem 1rem;border-bottom:3px solid #007bff;font-weight:bold;">전대장 인사말</a>
+          <a href="#" data-member-tab="pilots" class="member-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">조종사</a>
+          <a href="#" data-member-tab="maintenance" class="member-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">정비사</a>
+          <a href="#" data-member-tab="support" class="member-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">후보자</a>
+        </nav>
+
+        <!-- 전대장 인사말 -->
+        <div id="commander" class="member-content active">
+          {% for commander in commanders %}
+          <div style="max-width:1200px;margin:0 auto;padding:2rem 0;">
+            <h2 style="text-align:center;font-size:2rem;margin-bottom:3rem;color:#333;">블랙이글스 홈페이지<br>방문을 진심으로 환영합니다</h2>
+
+            <div style="display:flex;gap:4rem;align-items:flex-start;margin-bottom:3rem;">
+              <!-- 왼쪽: 사진 -->
+              <div style="flex-shrink:0;">
+                <img src="{{ commander.photo_url }}" alt="{{ commander.callsign }}"
+                     style="width:400px;height:auto;object-fit:cover;border-radius:8px;">
+              </div>
+
+              <!-- 오른쪽: 인사말 텍스트 -->
+              <div style="flex:1;">
+                <h3 style="font-size:1.3rem;font-weight:bold;margin-bottom:1.5rem;color:#333;"></h3>
+                {% if commander.greeting_text %}
+                  {% set paragraphs = commander.greeting_text.split('\n\n') %}
+                  {% for paragraph in paragraphs %}
+                    <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">{{ paragraph }}</p>
+                  {% endfor %}
+                {% else %}
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    공군 제53특수비행전대장 ㄴㄴ님서 대령입니다.
+                  </p>
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    먼저, 이곳없는 시공과 지지로 응원해 주시는 여러분들께 깊이 감사 드립니다.
+                  </p>
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    대로 없도 시가도 있었건만 블랙이글스는 여러분들의 신뢰와 지지 속에서 많은 성장을 해 왔습니다. 이제 한 계단 더 발전하기 위해 초심을 상기하며 나아가겠 합니다.
+                  </p>
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    최상의 안전속에 최고의 에어쇼는 결과 취득받이 아닐을 잘 알기에 한시도 인주하지 않고 최선을 다하겠습니다.
+                  </p>
+                  <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">
+                    안으로는 철저한 기본과 원칙에 입각한 임무수행을 통해 최상의 안전을 도모하고 밖으로는 최고의 에어쇼를 통해 여러분들께 행복과 기쁨을 드리는 "대한민국을 빛내는 가장 멋진 블랙이글스가" 되도록 53전대원 모두와 함께 노력하겠습니다.
+                  </p>
+                {% endif %}
+
+                <p style="text-align:right;margin-top:2rem;font-weight:bold;color:#333;font-size:1.05rem;"></p>
+                <p style="text-align:right;margin-top:1rem;color:#666;font-size:1rem;">- {{ commander.rank }} {{ commander.callsign }}</p>
+              </div>
+            </div>
+
+            <div style="border-top:2px solid #e0e0e0;padding-top:0.5rem;">
+              <!-- 하단 라인 -->
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- 조종사 목록 -->
+        <div id="pilots" class="member-content" style="display:none;">
+          {% for pilot in pilots %}
+          <h3 style="text-align:left;margin-bottom:2rem;">#{{ pilot.number }} {{ pilot.position }}</h3>
+          <div class="member-card" style="max-width:600px;margin:0 0 2rem 0;background:#f8f9fa;padding:2rem;border-radius:8px;display:flex;align-items:center;gap:2rem;">
+            <img src="{{ pilot.photo_url }}" alt="{{ pilot.callsign }}" style="width:150px;height:150px;object-fit:cover;flex-shrink:0;">
+            <div style="text-align:left;">
+              <h4 style="color:#007bff;margin:0 0 0.5rem 0;">#{{ pilot.number }} {{ pilot.callsign }}</h4>
+              <p style="margin:0.5rem 0;color:#666;">기수 : {{ pilot.generation }}</p>
+              <p style="margin:0.5rem 0;color:#666;">주 기종 : {{ pilot.aircraft }}</p>
+            </div>
+          </div>
+          {% if not loop.last %}
+          <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 2rem 0;">
+          {% endif %}
+          {% endfor %}
+
+          <!-- 추가 조종사들을 여기에 추가 -->
+        </div>
+
+        <!-- 정비사 -->
+        <div id="maintenance" class="member-content" style="display:none;">
+          {% if maintenance_crew %}
+          {% for member in maintenance_crew %}
+          <h3 style="text-align:left;margin-bottom:2rem;">{{ member.name }}</h3>
+          <div class="member-card" style="max-width:600px;margin:0 0 2rem 0;background:#f8f9fa;padding:2rem;border-radius:8px;display:flex;align-items:center;gap:2rem;">
+            <img src="{{ member.photo_url }}" alt="{{ member.callsign }}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <div style="text-align:left;">
+              <h4 style="color:#007bff;margin:0 0 0.5rem 0;">{{ member.callsign }}</h4>
+              {% if member.role %}
+              <p style="margin:0.5rem 0;color:#666;">역할 : {{ member.role }}</p>
+              {% endif %}
+              {% if member.bio %}
+              <p style="margin:0.5rem 0;color:#333;">{{ member.bio }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if not loop.last %}
+          <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 2rem 0;">
+          {% endif %}
+          {% endfor %}
+          {% else %}
+          <p style="text-align:center;color:#666;margin-top:2rem;">등록된 정비사가 없습니다.</p>
+          {% endif %}
+        </div>
+
+        <!-- 후보자 -->
+        <div id="support" class="member-content" style="display:none;">
+          {% if candidates %}
+          {% for candidate in candidates %}
+          <h3 style="text-align:left;margin-bottom:2rem;">{{ candidate.name }}</h3>
+          <div class="member-card" style="max-width:600px;margin:0 0 2rem 0;background:#f8f9fa;padding:2rem;border-radius:8px;display:flex;align-items:center;gap:2rem;">
+            <img src="{{ candidate.photo_url }}" alt="{{ candidate.callsign }}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <div style="text-align:left;">
+              <h4 style="color:#007bff;margin:0 0 0.5rem 0;">{{ candidate.callsign }}</h4>
+              {% if candidate.bio %}
+              <p style="margin:0.5rem 0;color:#333;">{{ candidate.bio }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if not loop.last %}
+          <hr style="border:none;border-top:1px solid #e0e0e0;margin:0 0 2rem 0;">
+          {% endif %}
+          {% endfor %}
+          {% else %}
+          <p style="text-align:center;color:#666;margin-top:2rem;">등록된 후보자가 없습니다.</p>
+          {% endif %}
+        </div>
+      </section>
+      <section id="aircraft" class="about-section tab-content">
+        <h2 style="text-align:center;margin-bottom:3rem;font-size:2.5rem;">항공기</h2>
+        
+        <!-- T-50B 소개 -->
+        <div style="display:flex;align-items:center;gap:3rem;max-width:1200px;margin:0 auto 4rem auto;">
+          <div style="flex:1;">
+            <img src="/static/images/t50b.jpg" alt="T-50B Golden Eagle" style="width:100%;height:auto;border-radius:8px;">
+          </div>
+          <div style="flex:1;">
+            <h3 style="font-size:1.8rem;margin-bottom:1.5rem;">T-50B 골든이글</h3>
+            <p style="font-size:1.1rem;line-height:1.8;margin-bottom:1rem;">
+              T-50B는 대한민국이 독자 개발한 초음속 고등훈련기로, 블랙이글스 특수비행팀의 공식 기종입니다.
+            </p>
+            <ul style="font-size:1rem;line-height:1.8;color:#666;list-style:none;padding:0;">
+              <li style="margin-bottom:0.5rem;">• 최대속도: 마하 1.5</li>
+              <li style="margin-bottom:0.5rem;">• 엔진: F404-GE-102 터보팬 엔진</li>
+              <li style="margin-bottom:0.5rem;">• 승무원: 2명 (조종사, 부조종사)</li>
+              <li style="margin-bottom:0.5rem;">• 전장: 13.14m / 전폭: 9.45m</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 블랙이글스 설명 -->
+        <div style="border-top:2px dotted #ccc;padding:3rem 0;margin:3rem 0;">
+          <p style="font-size:1.1rem;line-height:1.8;max-width:1200px;margin:0 auto;color:#333;">
+            블랙이글스는 전용 예약 T-50B 항공기는 흰색의 검은색과 황색, 아래면은 노란색으로 도색되어 있으며, 독수리를 형상화한 냉정하여 
+            있어 기존의 T-50B 항공기의 비해 에어쇼 가동분석과 연막 자료 확보에 편의성이다. T-50B 항공기는 조종석 내부와 항공기 외부에 
+            피 카메라가 설치되어 있어 기동 중인 T-50B 항공기 주변에 메이커스 비행기가 수록하여 편 카메라와 내장되어 있습니다.
+          </p>
+        </div>
+
+        <!-- T-50B 제원표 -->
+        <div style="border-top:2px dotted #ccc;padding-top:3rem;margin-top:3rem;">
+          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">T-50B 제원</h3>
+          <table style="width:100%;max-width:900px;margin:0 auto 3rem auto;border-collapse:collapse;border:1px solid #ddd;">
+            <thead>
+              <tr style="background:#4a90e2;color:white;">
+                <th style="padding:1rem;text-align:center;border:1px solid #ddd;width:30%;">구분</th>
+                <th style="padding:1rem;text-align:center;border:1px solid #ddd;">T-50B</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">길이</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">13.4M</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">폭</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">9.45M</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">높이</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">4.91M</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">타입</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">초음속 항공기</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">제작국</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">대한민국</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">이륙중량</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">13,454KG</td>
+              </tr>
+              <tr>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;background:#f5f5f5;">최대속도</td>
+                <td style="padding:1rem;text-align:center;border:1px solid #ddd;">MACH 1.5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 특징 -->
+        <div style="border-top:2px dotted #ccc;padding-top:3rem;margin-top:3rem;">
+          <h3 style="text-align:center;font-size:1.8rem;margin-bottom:2rem;">특징</h3>
+          <div style="display:flex;gap:2rem;max-width:1200px;margin:0 auto;">
+            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
+              <h4 style="color:#007bff;margin-bottom:1rem;">뛰어난 기동성</h4>
+              <p style="line-height:1.6;color:#666;">
+                고출력 엔진과 최신 항공전자장비를 탑재하여 다양한 특수비행 기동을 완벽하게 수행할 수 있습니다.
+              </p>
+            </div>
+            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
+              <h4 style="color:#007bff;margin-bottom:1rem;">국산 기술</h4>
+              <p style="line-height:1.6;color:#666;">
+                대한민국 항공우주산업(KAI)이 개발한 국산 항공기로, 우리의 기술력을 전 세계에 알리는 역할을 합니다.
+              </p>
+            </div>
+            <div style="flex:1;background:#f8f9fa;padding:2rem;border-radius:8px;">
+              <h4 style="color:#007bff;margin-bottom:1rem;">다목적 활용</h4>
+              <p style="line-height:1.6;color:#666;">
+                고등훈련기로서의 역할뿐만 아니라 경공격기로도 운용 가능한 다목적 항공기입니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="maneuvers" class="about-section tab-content">
+        
+        <!-- 기동 하위 탭 메뉴 -->
+        <nav class="maneuver-sub-nav" style="display:flex;gap:2rem;margin-bottom:3rem;justify-content:center;border-bottom:2px solid #e0e0e0;padding-bottom:1rem;">
+          <a href="#" data-maneuver-tab="highshow" class="maneuver-tab-link active" style="text-decoration:none;color:#007bff;padding:0.5rem 1rem;border-bottom:3px solid #007bff;font-weight:bold;">High Show</a>
+          <a href="#" data-maneuver-tab="lowshow" class="maneuver-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">Low Show</a>
+          <a href="#" data-maneuver-tab="flatshow" class="maneuver-tab-link" style="text-decoration:none;color:#666;padding:0.5rem 1rem;">Flat Show</a>
+        </nav>
+
+        <!-- High Show -->
+        <div id="highshow" class="maneuver-content active">
+          
+          <!-- Change Loop -->
+          <div style="max-width:1000px;margin:0 auto 4rem auto;">
+            <div style="text-align:center;margin-bottom:2rem;">
+              <img id="highshow-main-image" src="/static/images/01-Change-Loop.jpg" alt="Change Loop" style="max-width:600px;width:100%;height:auto;cursor:pointer;transition:opacity 0.3s;" onclick="openImageModal(this.src)">
+            </div>
+          </div>
+
+          <!-- 이미지 갤러리 -->
+          <div style="padding:2rem 0;margin-top:3rem;">
+            <div style="display:grid;grid-template-columns:repeat(8, 1fr);gap:0.5rem;max-width:600px;margin:0 auto;">
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/01-Change-Loop.jpg')">
+                <img src="/static/images/01-Change-Loop.jpg" alt="기동 1" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/02-Change-Turn.jpg')">
+                <img src="/static/images/02-Change-Turn.jpg" alt="기동 2" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/03-Wedge-Roll.jpg')">
+                <img src="/static/images/03-Wedge-Roll.jpg" alt="기동 3" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/04-Roll-Bon-ton-rollue.jpg')">
+                <img src="/static/images/04-Roll-Bon-ton-rollue.jpg" alt="기동 4" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/05-Rain-Fall.jpg')">
+                <img src="/static/images/05-Rain-Fall.jpg" alt="기동 5" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/06-Scissor-Pass.jpg')">
+                <img src="/static/images/06-Scissor-Pass.jpg" alt="기동 6" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/07-Vortex-Manuever.jpg')">
+                <img src="/static/images/07-Vortex-Manuever.jpg" alt="기동 7" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/08-Double-Cross-Turn.jpg')">
+                <img src="/static/images/08-Double-Cross-Turn.jpg" alt="기동 8" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/09-Goose.jpg')">
+                <img src="/static/images/09-Goose.jpg" alt="기동 9" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/10-Heart.jpg')">
+                <img src="/static/images/10-Heart.jpg" alt="기동 10" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/11-Orchid.jpg')">
+                <img src="/static/images/11-Orchid.jpg" alt="기동 11" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/12-2-Ship-High-a-Loop.jpg')">
+                <img src="/static/images/12-2-Ship-High-a-Loop.jpg" alt="기동 12" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/13-Rollback-AB-Loop.jpg')">
+                <img src="/static/images/13-Rollback-AB-Loop.jpg" alt="기동 13" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/14-Taeguek.jpg')">
+                <img src="/static/images/14-Taeguek.jpg" alt="기동 14" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/15-Clover-Leaf.jpg')">
+                <img src="/static/images/15-Clover-Leaf.jpg" alt="기동 15" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/16-Rock-Roll.jpg')">
+                <img src="/static/images/16-Rock-Roll.jpg" alt="기동 16" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/17-Inverted-BUP.jpg')">
+                <img src="/static/images/17-Inverted-BUP.jpg" alt="기동 17" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/18-Echelon-Review.jpg')">
+                <img src="/static/images/18-Echelon-Review.jpg" alt="기동 18" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/19-Double-Helix.jpg')">
+                <img src="/static/images/19-Double-Helix.jpg" alt="기동 19" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/20-Eagle-Snatch.jpg')">
+                <img src="/static/images/20-Eagle-Snatch.jpg" alt="기동 20" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/21-Dizzying-Break.jpg')">
+                <img src="/static/images/21-Dizzying-Break.jpg" alt="기동 21" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/22-Twist-Roll.jpg')">
+                <img src="/static/images/22-Twist-Roll.jpg" alt="기동 22" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/23-Double-Loop-Spiral.jpg')">
+                <img src="/static/images/23-Double-Loop-Spiral.jpg" alt="기동 23" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('highshow', '/static/images/24-Victory.jpg')">
+                <img src="/static/images/24-Victory.jpg" alt="기동 24" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Low Show -->
+        <div id="lowshow" class="maneuver-content" style="display:none;">
+          <!-- Low Show 메인 이미지 -->
+          <div style="max-width:1000px;margin:0 auto 4rem auto;">
+            <div style="text-align:center;margin-bottom:2rem;">
+              <img id="lowshow-main-image" src="/static/images/01-Change-Loop.jpg" alt="Low Show" style="max-width:600px;width:100%;height:auto;cursor:pointer;transition:opacity 0.3s;" onclick="openImageModal(this.src)">
+            </div>
+          </div>
+          
+          <!-- Low Show 이미지 갤러리 -->
+          <div style="padding:2rem 0;margin-top:3rem;">
+            <div style="display:grid;grid-template-columns:repeat(8, 1fr);gap:0.5rem;max-width:600px;margin:0 auto;">
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/low show/01-BUP.jpg')">
+                <img src="/static/low show/01-BUP.jpg" alt="Low Show 1" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/02-Change-Turn.jpg" alt="Low Show 2" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/03-Wedge-Roll.jpg" alt="Low Show 3" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/04-Roll-Bon-ton-rollue.jpg" alt="Low Show 4" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/05-Blooming-Break.jpg" alt="Low Show 5" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/06-Scissor-Pass.jpg" alt="Low Show 6" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/07-Vortex-Manuever.jpg" alt="Low Show 7" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/08-Double-Cross-Turn.jpg" alt="Low Show 8" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/09-Goose.jpg" alt="Low Show 9" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/10-Heart.jpg" alt="Low Show 10" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/11-Orchid.jpg" alt="Low Show 11" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/12-2-Ship-High-a-Loop.jpg" alt="Low Show 12" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/13-Rollback-AB-Loop.jpg" alt="Low Show 13" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/14-Taeguek.jpg" alt="Low Show 14" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/15-Level-Split-Cross.jpg" alt="Low Show 15" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('lowshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/16-Rock-Roll.jpg" alt="Low Show 16" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/17-Inverted-BUP.jpg" alt="Low Show 17" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/18-Echelon-Review.jpg" alt="Low Show 18" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/19-Double-Helix.jpg" alt="Low Show 19" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/20-Eagle-Snatch.jpg" alt="Low Show 20" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/21-Dizzying-Break.jpg" alt="Low Show 21" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/22-Twist-Roll.jpg" alt="Low Show 22" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/23-Max-maneuver.jpg" alt="Low Show 23" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/24-Victory.jpg" alt="Low Show 24" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flat Show -->
+        <div id="flatshow" class="maneuver-content" style="display:none;">
+          <!-- Flat Show 메인 이미지 -->
+          <div style="max-width:1000px;margin:0 auto 4rem auto;">
+            <div style="text-align:center;margin-bottom:2rem;">
+              <img id="flatshow-main-image" src="/static/images/01-Change-Loop.jpg" alt="Flat Show" style="max-width:600px;width:100%;height:auto;cursor:pointer;transition:opacity 0.3s;" onclick="openImageModal(this.src)">
+            </div>
+          </div>
+          
+          <!-- Flat Show 이미지 갤러리 -->
+          <div style="padding:2rem 0;margin-top:3rem;">
+            <div style="display:grid;grid-template-columns:repeat(8, 1fr);gap:0.5rem;max-width:600px;margin:0 auto;">
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/01-BUP.jpg" alt="Flat Show 1" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/02-Change-Turn.jpg" alt="Flat Show 2" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/03-Wedge-Roll.jpg" alt="Flat Show 3" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/04-Roll-Bon-ton-rollue.jpg" alt="Flat Show 4" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/05-Blooming-Break.jpg" alt="Flat Show 5" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/06-Scissor-Pass.jpg" alt="Flat Show 6" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="changeMainImage('flatshow', '/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/07-Vortex-Manuever.jpg" alt="Flat Show 7" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/08-Double-Cross-Turn.jpg" alt="Flat Show 8" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/09-Goose.jpg" alt="Flat Show 9" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/10-Heart.jpg" alt="Flat Show 10" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/11-Orchid.jpg" alt="Flat Show 11" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/12-2-Ship-High-a-Loop.jpg" alt="Flat Show 12" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/13-Rollback-AB-Loop.jpg" alt="Flat Show 13" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/14-Gear-Down-Roll.jpg" alt="Flat Show 14" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/15-Level-Split-Cross.jpg" alt="Flat Show 15" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/16-Rock-Roll.jpg" alt="Flat Show 16" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/17-Inverted-BUP.jpg" alt="Flat Show 17" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/18-Echelon-Review.jpg" alt="Flat Show 18" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/19-Double-Helix.jpg" alt="Flat Show 19" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/20-Eagle-Snatch.jpg" alt="Flat Show 20" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/21-Dizzying-Break.jpg" alt="Flat Show 21" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/22-Twist-Roll.jpg" alt="Flat Show 22" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/23-Max-maneuver.jpg" alt="Flat Show 23" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="aspect-ratio:1;background:#2a2a2a;border-radius:4px;overflow:hidden;cursor:pointer;" onclick="openImageModal('/static/images/maneuvers/change-loop.jpg')">
+                <img src="/static/low show/24-Victory.jpg" alt="Flat Show 24" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+<!-- Contact Us + Footer Section -->
+<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+		<h3 data-i18n="contact.title" style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
+		<p data-i18n="contact.text" style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord ㅣ Johnson#4553</p>
+		
+		<div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 2rem; margin-top: 2rem; text-align: center;">
+			<p style="color: white; font-size: 1rem; margin: 0;">© 2025 Virtual Black Eagles</p>
+		</div>
+	</div>
+</section>
+
+<style>
+.site-footer {
+	display: none;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  /* 이미지 모달 스타일 */
+  .image-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    animation: fadeIn 0.3s;
+  }
+  
+  .image-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 90%;
+    max-height: 90%;
+  }
+  
+  .image-modal-content img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  
+  .close-modal {
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    color: #fff;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  .close-modal:hover {
+    color: #bbb;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* 모바일 반응형 추가 */
+  @media (max-width: 768px) {
+    .close-modal {
+      top: 10px;
+      right: 15px;
+      font-size: 30px;
+    }
+
+    .image-modal-content {
+      max-width: 95%;
+      max-height: 85%;
+    }
+  }
+</style>
+
+<!-- 이미지 모달 HTML -->
+<div id="imageModal" class="image-modal" onclick="closeImageModal()">
+  <span class="close-modal">&times;</span>
+  <div class="image-modal-content" onclick="event.stopPropagation()">
+    <img id="modalImage" src="" alt="확대 이미지">
+  </div>
+</div>
+
+<script>
+  // 이미지 모달 열기
+  function openImageModal(imageSrc) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    modal.style.display = 'block';
+    modalImg.src = imageSrc;
+    document.body.style.overflow = 'hidden'; // 스크롤 방지
+  }
+
+  // 이미지 모달 닫기
+  function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto'; // 스크롤 복원
+  }
+
+  // ESC 키로 모달 닫기
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeImageModal();
+    }
+  });
+
+  // 메인 탭 클릭 시 해당 내용만 보이게
+  document.addEventListener('DOMContentLoaded', function() {
+    const links = document.querySelectorAll('.tab-link');
+    const tabs = document.querySelectorAll('.tab-content');
+    links.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        links.forEach(l => l.classList.remove('active'));
+        tabs.forEach(tab => tab.classList.remove('active'));
+        this.classList.add('active');
+        const target = this.getAttribute('data-tab');
+        document.getElementById(target).classList.add('active');
+      });
+    });
+
+    // 멤버 하위 탭 전환
+    const memberLinks = document.querySelectorAll('.member-tab-link');
+    const memberContents = document.querySelectorAll('.member-content');
+    memberLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        // 모든 링크와 콘텐츠 비활성화
+        memberLinks.forEach(l => {
+          l.style.borderBottom = 'none';
+          l.style.color = '#666';
+          l.style.fontWeight = 'normal';
+          l.classList.remove('active');
+        });
+        memberContents.forEach(content => {
+          content.style.display = 'none';
+        });
+        
+        // 클릭된 링크 활성화
+        this.style.borderBottom = '3px solid #007bff';
+        this.style.color = '#333';
+        this.style.fontWeight = 'bold';
+        this.classList.add('active');
+        
+        // 해당 콘텐츠 표시
+        const target = this.getAttribute('data-member-tab');
+        document.getElementById(target).style.display = 'block';
+      });
+    });
+
+    // 기동 하위 탭 전환
+    const maneuverLinks = document.querySelectorAll('.maneuver-tab-link');
+    const maneuverContents = document.querySelectorAll('.maneuver-content');
+    maneuverLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        // 모든 링크와 콘텐츠 비활성화
+        maneuverLinks.forEach(l => {
+          l.style.borderBottom = 'none';
+          l.style.color = '#666';
+          l.style.fontWeight = 'normal';
+          l.classList.remove('active');
+        });
+        maneuverContents.forEach(content => {
+          content.style.display = 'none';
+        });
+        
+        // 클릭된 링크 활성화
+        this.style.borderBottom = '3px solid #007bff';
+        this.style.color = '#007bff';
+        this.style.fontWeight = 'bold';
+        this.classList.add('active');
+        
+        // 해당 콘텐츠 표시
+        const target = this.getAttribute('data-maneuver-tab');
+        document.getElementById(target).style.display = 'block';
+      });
+    });
+  });
+</script>
+{% endblock %}

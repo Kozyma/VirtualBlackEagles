@@ -1,0 +1,280 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}채팅 - {{ session['user_name'] }}{% endblock %}
+{% block page_title %}{{ session['user_name'] or '익명' }}님과의 대화{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_chats') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> 목록으로
+    </a>
+    {% if session['status'] == 'active' %}
+    <button onclick="closeSession()" class="btn btn-danger">
+        <i class="fas fa-times-circle"></i> 대화 종료
+    </button>
+    {% else %}
+    <span class="badge" style="background:#f5f5f5;color:#757575;padding:0.5rem 1rem;font-size:0.9rem;">종료된 대화</span>
+    {% endif %}
+{% endblock %}
+
+{% block head %}
+<style>
+    .chat-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 200px);
+        min-height: 500px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f8f9fa;
+    }
+
+    .chat-message {
+        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-message.user {
+        align-items: flex-start;
+    }
+
+    .chat-message.admin {
+        align-items: flex-end;
+    }
+
+    .message-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .sender-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+    }
+
+    .message-time {
+        font-size: 11px;
+        color: #999;
+    }
+
+    .message-content {
+        max-width: 70%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+    }
+
+    .chat-message.user .message-content {
+        background: white;
+        color: #333;
+        border: 1px solid #e0e0e0;
+        border-bottom-left-radius: 4px;
+    }
+
+    .chat-message.admin .message-content {
+        background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+        color: #333;
+        border-bottom-right-radius: 4px;
+    }
+
+    .chat-input-container {
+        padding: 16px;
+        background: white;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        gap: 12px;
+    }
+
+    .chat-input-container textarea {
+        flex: 1;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 14px;
+        resize: none;
+        font-family: inherit;
+    }
+
+    .chat-input-container textarea:focus {
+        outline: none;
+        border-color: #ffd700;
+    }
+
+    .chat-input-container button {
+        padding: 10px 24px;
+        white-space: nowrap;
+    }
+
+    /* Scrollbar styles */
+    .chat-messages::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <p style="color:#666;margin-bottom:1rem;">세션 ID: {{ session['session_id'] }}</p>
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            {% for message in messages %}
+            <div class="chat-message {{ message['sender_type'] }}">
+                <div class="message-header">
+                    <span class="sender-name">
+                        {% if message['sender_type'] == 'user' %}
+                            {{ message['sender_name'] }}
+                        {% else %}
+                            관리자
+                        {% endif %}
+                    </span>
+                    <span class="message-time">{{ message['created_at'] }}</span>
+                </div>
+                <div class="message-content">{{ message['message'] }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if session['status'] == 'active' %}
+        <div class="chat-input-container">
+            <textarea id="messageInput" placeholder="메시지를 입력하세요..." rows="3"></textarea>
+            <button onclick="sendMessage()" class="btn btn-primary">전송</button>
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const sessionId = '{{ session['session_id'] }}';
+const isActive = {{ 'true' if session['status'] == 'active' else 'false' }};
+
+// 메시지 전송
+function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+
+    if (!message) {
+        alert('메시지를 입력해주세요.');
+        return;
+    }
+
+    fetch('/api/admin/chat/send', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            session_id: sessionId,
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            input.value = '';
+            loadMessages();
+        } else {
+            alert('메시지 전송 실패: ' + (data.error || '알 수 없는 오류'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('메시지 전송 중 오류가 발생했습니다.');
+    });
+}
+
+// 메시지 로드
+function loadMessages() {
+    fetch(`/api/chat/messages/${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateMessages(data.messages);
+            }
+        })
+        .catch(error => console.error('Error loading messages:', error));
+}
+
+// 메시지 업데이트
+function updateMessages(messages) {
+    const container = document.getElementById('chatMessages');
+    const currentScroll = container.scrollTop;
+    const isScrolledToBottom = container.scrollHeight - container.scrollTop === container.clientHeight;
+
+    container.innerHTML = messages.map(msg => `
+        <div class="chat-message ${msg.sender_type}">
+            <div class="message-header">
+                <span class="sender-name">
+                    ${msg.sender_type === 'user' ? msg.sender_name : '관리자'}
+                </span>
+                <span class="message-time">${msg.created_at}</span>
+            </div>
+            <div class="message-content">${escapeHtml(msg.message)}</div>
+        </div>
+    `).join('');
+
+    if (isScrolledToBottom) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+// HTML 이스케이프
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 세션 종료
+function closeSession() {
+    if (!confirm('정말로 이 대화를 종료하시겠습니까?')) return;
+
+    fetch(`/admin/chats/${sessionId}/close`, {
+        method: 'POST'
+    })
+    .then(() => {
+        window.location.href = '{{ url_for('admin_chats') }}';
+    });
+}
+
+// Enter 키로 전송
+document.getElementById('messageInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+// 3초마다 새 메시지 확인 (활성 세션인 경우)
+if (isActive) {
+    setInterval(loadMessages, 3000);
+}
+
+// 초기 스크롤을 맨 아래로
+document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+</script>
+{% endblock %}

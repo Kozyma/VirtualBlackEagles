@@ -1,0 +1,72 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}전대장 관리{% endblock %}
+{% block page_title %}전대장 관리{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_commander_new') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 새 전대장</a>
+{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    {% if commanders %}
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>사진</th>
+                <th>이름</th>
+                <th>계급</th>
+                <th>콜사인</th>
+                <th>기수</th>
+                <th>기종</th>
+                <th>순서</th>
+                <th>활성</th>
+                <th>작업</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for commander in commanders %}
+            <tr>
+                <td>
+                    {% if commander.photo_url %}
+                    <img src="{{ commander.photo_url }}" alt="{{ commander.callsign }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>{{ commander.name }}</td>
+                <td>{{ commander.rank }}</td>
+                <td>{{ commander.callsign }}</td>
+                <td>{{ commander.generation }}</td>
+                <td>{{ commander.aircraft }}</td>
+                <td>{{ commander.order_num }}</td>
+                <td>
+                    {% if commander.is_active %}
+                    <span class="badge bg-success">활성</span>
+                    {% else %}
+                    <span class="badge bg-secondary">비활성</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('admin_commander_edit', commander_id=commander.id) }}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-edit"></i> 수정
+                    </a>
+                    <form method="POST" action="{{ url_for('admin_commander_delete', commander_id=commander.id) }}"
+                          style="display:inline;"
+                          onsubmit="return confirm('정말 이 전대장을 삭제하시겠습니까?');">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>등록된 전대장이 없습니다.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

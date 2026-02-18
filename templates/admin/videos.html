@@ -1,0 +1,59 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}영상 갤러리 관리{% endblock %}
+{% block page_title %}영상 갤러리 관리{% endblock %}
+{% block top_actions %}
+    <a href="{{ url_for('admin_video_new') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 새 영상</a>
+{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    {% if videos %}
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th style="width:60px;">번호</th>
+                <th>제목</th>
+                <th>영상 URL</th>
+                <th style="width:80px;">순서</th>
+                <th style="width:80px;">상태</th>
+                <th style="width:100px;">등록일</th>
+                <th style="width:160px;">관리</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for video in videos %}
+            <tr>
+                <td>{{ video.id }}</td>
+                <td>{{ video.title }}</td>
+                <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    <a href="{{ video.video_url }}" target="_blank" style="color:#007bff;">{{ video.video_url[:50] }}...</a>
+                </td>
+                <td>{{ video.order_num }}</td>
+                <td>
+                    {% if video.is_active %}
+                    <span class="badge badge-success">활성</span>
+                    {% else %}
+                    <span class="badge badge-danger">비활성</span>
+                    {% endif %}
+                </td>
+                <td>{{ video.created_at[:10] if video.created_at else '' }}</td>
+                <td>
+                    <div class="actions">
+                        <a href="{{ url_for('admin_video_edit', video_id=video.id) }}" class="btn btn-sm btn-primary">수정</a>
+                        <form method="POST" action="{{ url_for('admin_video_delete', video_id=video.id) }}" style="display:inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                            <button type="submit" class="btn btn-sm btn-danger">삭제</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>등록된 영상이 없습니다.</p>
+        <a href="{{ url_for('admin_video_new') }}" class="btn btn-primary">첫 영상 추가하기</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

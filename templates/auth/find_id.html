@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}아이디 찾기 - Virtual Black Eagles{% endblock %}
+
+{% block content %}
+<main class="container section" style="max-width:420px;margin:4rem auto;padding:2rem;">
+  <div style="background:#fff;padding:2.5rem;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
+    <h2 style="text-align:center;margin:0 0 0.5rem;color:#333;">아이디 찾기</h2>
+    <p style="text-align:center;color:#999;font-size:0.9rem;margin:0 0 2rem;">가입 시 등록한 이메일을 입력하세요</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div style="padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-size:0.9rem;
+                background:{{ '#f8d7da' if category == 'error' else '#d4edda' }};
+                color:{{ '#721c24' if category == 'error' else '#155724' }};">
+      {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">이메일</label>
+        <input type="email" name="email" required
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;"
+               placeholder="가입 시 등록한 이메일">
+      </div>
+      <button type="submit"
+              style="width:100%;padding:0.75rem;background:#007bff;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;transition:background 0.15s;"
+              onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+        아이디 찾기
+      </button>
+    </form>
+
+    <div style="margin-top:1.5rem;text-align:center;font-size:0.85rem;color:#888;">
+      <a href="{{ url_for('auth_login') }}" style="color:#007bff;text-decoration:none;">로그인으로 돌아가기</a>
+      <span style="margin:0 0.6rem;color:#ddd;">|</span>
+      <a href="{{ url_for('auth_find_password') }}" style="color:#666;text-decoration:none;">비밀번호 찾기</a>
+    </div>
+  </div>
+</main>
+{% endblock %}

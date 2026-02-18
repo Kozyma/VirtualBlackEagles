@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}관리자{% endblock %} - VBE Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/admin.css?v=1">
+    {% block head %}{% endblock %}
+</head>
+<body class="admin-body">
+    <aside class="admin-sidebar">
+        <div class="sidebar-brand">
+            <a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-plane"></i> VBE Admin</a>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt"></i> 대시보드
+            </a>
+
+            <div class="sidebar-group">
+                <span class="sidebar-group-title">콘텐츠</span>
+                <a href="{{ url_for('admin_notices') }}" class="sidebar-link {% if 'notice' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-bullhorn"></i> 공지사항
+                </a>
+                <a href="{{ url_for('admin_schedules') }}" class="sidebar-link {% if 'schedule' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-calendar-alt"></i> 일정
+                </a>
+                <a href="{{ url_for('admin_gallery') }}" class="sidebar-link {% if request.endpoint|default('') in ['admin_gallery', 'admin_gallery_new', 'admin_gallery_edit'] %}active{% endif %}">
+                    <i class="fas fa-camera"></i> 사진 갤러리
+                </a>
+                <a href="{{ url_for('admin_videos') }}" class="sidebar-link {% if 'video' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-video"></i> 영상 갤러리
+                </a>
+            </div>
+
+            <div class="sidebar-group">
+                <span class="sidebar-group-title">팀</span>
+                <a href="{{ url_for('admin_pilots') }}" class="sidebar-link {% if 'pilot' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-jet-fighter"></i> 조종사
+                </a>
+                <a href="{{ url_for('admin_commanders') }}" class="sidebar-link {% if 'commander' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-star"></i> 전대장
+                </a>
+                <a href="{{ url_for('admin_maintenance') }}" class="sidebar-link {% if 'maintenance' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-wrench"></i> 정비사
+                </a>
+                <a href="{{ url_for('admin_candidates') }}" class="sidebar-link {% if 'candidate' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-user-graduate"></i> 후보자
+                </a>
+            </div>
+
+            <div class="sidebar-group">
+                <span class="sidebar-group-title">설정</span>
+                <a href="{{ url_for('admin_pages') }}" class="sidebar-link {% if 'page' in request.endpoint|default('') and 'home' not in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-file-alt"></i> 페이지 콘텐츠
+                </a>
+                <a href="{{ url_for('admin_banner') }}" class="sidebar-link {% if 'banner' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-image"></i> 배너 설정
+                </a>
+                <a href="{{ url_for('admin_about_sections') }}" class="sidebar-link {% if 'about_section' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-info-circle"></i> 팀소개 섹션
+                </a>
+                <a href="{{ url_for('admin_site_images') }}" class="sidebar-link {% if 'site_image' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-images"></i> 사이트 이미지
+                </a>
+                <a href="{{ url_for('admin_home_contents') }}" class="sidebar-link {% if 'home_content' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-home"></i> 홈 콘텐츠
+                </a>
+                <a href="{{ url_for('admin_donate_settings') }}" class="sidebar-link {% if 'donate_setting' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-hand-holding-heart"></i> 후원 설정
+                </a>
+            </div>
+
+            <div class="sidebar-group">
+                <span class="sidebar-group-title">커뮤니케이션</span>
+                <a href="{{ url_for('admin_messages') }}" class="sidebar-link {% if 'message' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-envelope"></i> 문의 관리
+                </a>
+                <a href="{{ url_for('admin_chats') }}" class="sidebar-link {% if 'chat' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-comments"></i> 채팅 관리
+                </a>
+            </div>
+
+            <div class="sidebar-group">
+                <span class="sidebar-group-title">회원</span>
+                <a href="{{ url_for('admin_users') }}" class="sidebar-link {% if 'user' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-users"></i> 회원 관리
+                </a>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('index') }}" target="_blank" class="sidebar-link">
+                <i class="fas fa-external-link-alt"></i> 홈페이지 보기
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="sidebar-link sidebar-logout">
+                <i class="fas fa-sign-out-alt"></i> 로그아웃
+            </a>
+        </div>
+    </aside>
+
+    <div class="admin-main">
+        <header class="admin-top-bar">
+            <h1 class="admin-page-title">{% block page_title %}{% endblock %}</h1>
+            <div class="admin-top-actions">
+                {% block top_actions %}{% endblock %}
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="admin-flash-messages">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="admin-content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

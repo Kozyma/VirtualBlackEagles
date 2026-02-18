@@ -1,0 +1,78 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}{{ '영상 수정' if video else '영상 추가' }}{% endblock %}
+{% block page_title %}{{ '영상 수정' if video else '새 영상 추가' }}{% endblock %}
+{% block top_actions %}
+    <a href="{{ url_for('admin_videos') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 목록</a>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="POST">
+        <div class="form-group">
+            <label for="title">제목 *</label>
+            <input type="text" id="title" name="title" class="form-control" required
+                   value="{{ video.title if video else '' }}" placeholder="영상 제목">
+        </div>
+
+        <div class="form-group">
+            <label for="video_url">영상 URL *</label>
+            <input type="url" id="video_url" name="video_url" class="form-control" required
+                   value="{{ video.video_url if video else '' }}" placeholder="https://www.youtube.com/watch?v=...">
+            <div class="help-text">YouTube URL 또는 embed URL을 입력하세요.</div>
+        </div>
+
+        <div id="video-preview" style="margin-bottom:1.25rem; {% if not video %}display:none;{% endif %}">
+            <label>미리보기</label>
+            <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px; max-width:560px;">
+                <iframe id="preview-iframe"
+                        src="{{ video.video_url|youtube_embed if video else '' }}"
+                        style="position:absolute; top:0; left:0; width:100%; height:100%;"
+                        frameborder="0" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">설명</label>
+            <textarea id="description" name="description" class="form-control" rows="3"
+                      placeholder="영상 설명 (선택)">{{ video.description if video else '' }}</textarea>
+        </div>
+
+        <div style="display:flex; gap:1rem;">
+            <div class="form-group" style="flex:1;">
+                <label for="order_num">순서</label>
+                <input type="number" id="order_num" name="order_num" class="form-control"
+                       value="{{ video.order_num if video else 0 }}">
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label>활성화</label>
+                <div class="form-check" style="margin-top:0.5rem;">
+                    <input type="checkbox" id="is_active" name="is_active" {% if not video or video.is_active %}checked{% endif %}>
+                    <label for="is_active">홈페이지에 표시</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('admin_videos') }}" class="btn btn-secondary">취소</a>
+            <button type="submit" class="btn btn-primary">{{ '수정하기' if video else '추가하기' }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('video_url').addEventListener('change', function() {
+    var url = this.value;
+    if (!url) { document.getElementById('video-preview').style.display = 'none'; return; }
+    var embedUrl = url;
+    if (url.includes('youtube.com/watch')) {
+        var vid = url.split('v=')[1]; if (vid) { vid = vid.split('&')[0]; embedUrl = 'https://www.youtube.com/embed/' + vid; }
+    } else if (url.includes('youtu.be/')) {
+        var vid = url.split('youtu.be/')[1]; if (vid) { vid = vid.split('?')[0]; embedUrl = 'https://www.youtube.com/embed/' + vid; }
+    }
+    document.getElementById('preview-iframe').src = embedUrl;
+    document.getElementById('video-preview').style.display = '';
+});
+</script>
+{% endblock %}

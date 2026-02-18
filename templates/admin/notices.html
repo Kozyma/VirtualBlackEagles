@@ -1,0 +1,49 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}공지사항 관리{% endblock %}
+{% block page_title %}공지사항 관리{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_notice_new') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 새 공지사항</a>
+{% endblock %}
+
+{% block content %}
+<div class="table-container">
+    {% if notices %}
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th style="width:60px;">번호</th>
+                <th>제목</th>
+                <th style="width:120px;">작성자</th>
+                <th style="width:150px;">작성일</th>
+                <th style="width:200px;">관리</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for notice in notices %}
+            <tr>
+                <td>{{ notice.id }}</td>
+                <td>{{ notice.title }}</td>
+                <td>{{ notice.author }}</td>
+                <td>{{ notice.created_at[:10] }}</td>
+                <td>
+                    <div class="actions">
+                        <a href="{{ url_for('admin_notice_edit', notice_id=notice.id) }}" class="btn btn-sm btn-primary">수정</a>
+                        <form method="POST" action="{{ url_for('admin_notice_delete', notice_id=notice.id) }}" style="display:inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                            <button type="submit" class="btn btn-sm btn-danger">삭제</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>등록된 공지사항이 없습니다.</p>
+        <a href="{{ url_for('admin_notice_new') }}" class="btn btn-primary">첫 공지사항 작성하기</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
