@@ -3345,6 +3345,18 @@ def admin_test_email():
 	return redirect(url_for('admin_donate_settings'))
 
 
+# 헬스 체크 & 환경 진단 (배포 문제 디버깅용)
+@app.route('/health')
+def health_check():
+	return jsonify({
+		'status': 'ok',
+		'has_oauth': HAS_OAUTH,
+		'has_sendgrid': HAS_SENDGRID,
+		'google_client_id_set': bool(os.environ.get('GOOGLE_CLIENT_ID')),
+		'sendgrid_key_set': bool(SENDGRID_API_KEY),
+		'mail_password_set': bool(app.config.get('MAIL_PASSWORD')),
+	})
+
 # 에러 핸들러 추가 (디버깅용)
 @app.errorhandler(500)
 def internal_error(error):
