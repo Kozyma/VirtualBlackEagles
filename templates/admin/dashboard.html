@@ -217,7 +217,7 @@
                     <td>{{ message.email }}</td>
                     <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                         <a href="{{ url_for('admin_message_detail', message_id=message.id) }}" style="color: #007bff; text-decoration: none;">
-                            {{ message.message[:50] }}...
+                            {{ message.message|striptags|truncate(50) }}
                         </a>
                     </td>
                     <td style="text-align: center;">

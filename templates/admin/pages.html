@@ -116,7 +116,7 @@
                     </div>
                     <h3>{{ section.title or section.section_id }}</h3>
                     {% if section.content %}
-                    <p><strong>내용:</strong> {{ section.content[:150] }}{{ '...' if section.content|length > 150 else '' }}</p>
+                    <p><strong>내용:</strong> {{ section.content|striptags|truncate(150) }}</p>
                     {% endif %}
                     {% if section.image_url %}
                     <p><strong>이미지:</strong> {{ section.image_url }}</p>

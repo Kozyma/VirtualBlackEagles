@@ -99,7 +99,7 @@
                 <td>{{ message.name }}</td>
                 <td>{{ message.email }}</td>
                 <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                    {{ message.message[:100] }}...
+                    {{ message.message|striptags|truncate(100) }}
                 </td>
                 <td style="text-align:center;">
                     {% if message.is_read %}

@@ -1288,7 +1288,8 @@ def auth_google():
 	if not HAS_OAUTH or not os.environ.get('GOOGLE_CLIENT_ID'):
 		flash('Google 로그인이 설정되지 않았습니다.', 'error')
 		return redirect(url_for('index'))
-	redirect_uri = url_for('auth_google_callback', _external=True, _scheme='https')
+	# 프록시 뒤에서도 올바른 HTTPS redirect_uri 생성
+	redirect_uri = 'https://' + request.host + '/auth/google/callback'
 	return google.authorize_redirect(redirect_uri)
 
 
@@ -3445,6 +3446,8 @@ def health_check():
 		'sendgrid_key_set': bool(SENDGRID_API_KEY),
 		'mail_password_set': bool(app.config.get('MAIL_PASSWORD')),
 		'request_host': request.host,
+		'request_scheme': request.scheme,
+		'oauth_redirect_uri': 'https://' + request.host + '/auth/google/callback',
 		'env_keys_count': len([k for k in os.environ.keys() if 'GOOGLE' in k or 'RENDER' in k]),
 	})
 
