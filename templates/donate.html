@@ -347,16 +347,16 @@
                 </div>
               </div>
 
-              {% if donate_settings.get('bank_name') %}
+              {% if donate_settings.get('donate_bank_name') %}
               <div class="donate-method">
                 <div class="donate-method-icon">
                   <svg fill="currentColor" viewBox="0 0 24 24"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z"/></svg>
                 </div>
                 <div class="donate-method-content">
                   <h4>계좌이체</h4>
-                  <p>{{ donate_settings.get('bank_name', '') }} {{ donate_settings.get('account_number', '') }}</p>
-                  {% if donate_settings.get('account_holder') %}
-                  <p style="opacity:0.7; font-size:0.9rem;">예금주: {{ donate_settings.get('account_holder', '') }}</p>
+                  <p>{{ donate_settings.get('donate_bank_name', '') }} {{ donate_settings.get('donate_account_number', '') }}</p>
+                  {% if donate_settings.get('donate_account_holder') %}
+                  <p style="opacity:0.7; font-size:0.9rem;">예금주: {{ donate_settings.get('donate_account_holder', '') }}</p>
                   {% endif %}
                 </div>
               </div>
@@ -404,7 +404,7 @@
               <input type="number" id="customAmount" class="custom-amount-input" placeholder="금액을 입력하세요 (원)" min="1000" step="1000" oninput="customAmountChanged()">
             </div>
 
-            {% if donate_settings.get('kakaopay_link') %}
+            {% if donate_settings.get('donate_kakaopay_link') %}
             <button type="button" class="donate-btn" id="kakaopayBtn" onclick="openKakaoPay()" disabled>
               카카오페이로 후원하기
             </button>
@@ -412,10 +412,10 @@
             {% else %}
             <div class="bank-info-box">
               <h4>후원 계좌 안내</h4>
-              {% if donate_settings.get('bank_name') %}
-              <p><strong>{{ donate_settings.get('bank_name', '') }}</strong> {{ donate_settings.get('account_number', '') }}</p>
-              {% if donate_settings.get('account_holder') %}
-              <p>예금주: {{ donate_settings.get('account_holder', '') }}</p>
+              {% if donate_settings.get('donate_bank_name') %}
+              <p><strong>{{ donate_settings.get('donate_bank_name', '') }}</strong> {{ donate_settings.get('donate_account_number', '') }}</p>
+              {% if donate_settings.get('donate_account_holder') %}
+              <p>예금주: {{ donate_settings.get('donate_account_holder', '') }}</p>
               {% endif %}
               {% else %}
               <p>후원 계좌 정보가 준비 중입니다.</p>
@@ -450,7 +450,7 @@
 
 <script>
 let selectedAmount = 0;
-const kakaopayLink = "{{ donate_settings.get('kakaopay_link', '') }}";
+const kakaopayLink = "{{ donate_settings.get('donate_kakaopay_link', '') }}";
 
 function selectAmount(btn, amount) {
     document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));

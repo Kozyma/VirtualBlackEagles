@@ -3366,13 +3366,18 @@ def admin_test_email():
 # 헬스 체크 & 환경 진단 (배포 문제 디버깅용)
 @app.route('/health')
 def health_check():
+	gid = os.environ.get('GOOGLE_CLIENT_ID', '')
 	return jsonify({
 		'status': 'ok',
 		'has_oauth': HAS_OAUTH,
 		'has_sendgrid': HAS_SENDGRID,
-		'google_client_id_set': bool(os.environ.get('GOOGLE_CLIENT_ID')),
+		'google_client_id_set': bool(gid),
+		'google_client_id_len': len(gid),
+		'google_client_id_preview': gid[:15] + '...' if len(gid) > 15 else gid,
 		'sendgrid_key_set': bool(SENDGRID_API_KEY),
 		'mail_password_set': bool(app.config.get('MAIL_PASSWORD')),
+		'request_host': request.host,
+		'env_keys_count': len([k for k in os.environ.keys() if 'GOOGLE' in k or 'RENDER' in k]),
 	})
 
 # 에러 핸들러 추가 (디버깅용)
