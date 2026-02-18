@@ -55,6 +55,34 @@ if HAS_OAUTH:
 # 파일 업로드 크기 제한 (16MB)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
+# 업로드 파일 영구 저장 경로 설정
+# Render 배포 시: RENDER_DISK_PATH/uploads/ 에 저장 → /uploads/ 라우트로 서빙
+# 로컬 개발 시: static/ 폴더에 저장 (기존과 동일)
+if os.environ.get('RENDER_DISK_PATH'):
+	UPLOAD_BASE = os.path.join(PERSISTENT_DIR, 'uploads')
+	os.makedirs(os.path.join(UPLOAD_BASE, 'gallery'), exist_ok=True)
+	os.makedirs(os.path.join(UPLOAD_BASE, 'members'), exist_ok=True)
+	os.makedirs(os.path.join(UPLOAD_BASE, 'images'), exist_ok=True)
+	USE_PERSISTENT_UPLOADS = True
+else:
+	UPLOAD_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+	USE_PERSISTENT_UPLOADS = False
+
+# Render 영구 디스크에서 업로드 파일 서빙
+if USE_PERSISTENT_UPLOADS:
+	from flask import send_from_directory as _send_from_dir
+	@app.route('/static/gallery/<path:filename>')
+	def serve_gallery(filename):
+		return _send_from_dir(os.path.join(UPLOAD_BASE, 'gallery'), filename)
+
+	@app.route('/static/members/<path:filename>')
+	def serve_members(filename):
+		return _send_from_dir(os.path.join(UPLOAD_BASE, 'members'), filename)
+
+	@app.route('/static/images/<path:filename>')
+	def serve_images(filename):
+		return _send_from_dir(os.path.join(UPLOAD_BASE, 'images'), filename)
+
 
 # 페이지 방문 트래킹
 @app.before_request
@@ -157,7 +185,11 @@ def autolink_filter(text):
 	return Markup(linked)
 
 # 데이터베이스 설정
-DATABASE = 'blackeagles.db'
+# Render 영구 디스크: RENDER_DISK_PATH 환경변수가 설정된 경우 해당 경로 사용
+# 로컬 개발: 현재 디렉토리에 저장
+PERSISTENT_DIR = os.environ.get('RENDER_DISK_PATH', os.path.dirname(os.path.abspath(__file__)))
+os.makedirs(PERSISTENT_DIR, exist_ok=True)
+DATABASE = os.path.join(PERSISTENT_DIR, 'blackeagles.db')
 
 def get_db():
 	"""데이터베이스 연결"""
@@ -2050,7 +2082,7 @@ def admin_pilot_new():
 		file = request.files.get('photo')
 		if file and file.filename:
 			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_pilot_{callsign}.jpg"  # 최종 파일은 항상 .jpg
-			filepath = os.path.join('static', 'members', filename)
+			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
 			
@@ -2108,7 +2140,7 @@ def admin_pilot_edit(pilot_id):
 		file = request.files.get('photo')
 		if file and file.filename:
 			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_pilot_{callsign}.jpg"  # 최종 파일은 항상 .jpg
-			filepath = os.path.join('static', 'members', filename)
+			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
 			
@@ -2518,7 +2550,7 @@ def admin_commander_new():
 			# 안전한 파일명 생성 (공백, 특수문자 제거)
 			safe_callsign = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
 			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_commander_{safe_callsign}.jpg"  # 최종 파일은 항상 .jpg
-			filepath = os.path.join('static', 'members', filename)
+			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
 			
@@ -2578,7 +2610,7 @@ def admin_commander_edit(commander_id):
 			# 안전한 파일명 생성 (공백, 특수문자 제거)
 			safe_callsign = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
 			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_commander_{safe_callsign}.jpg"  # 최종 파일은 항상 .jpg
-			filepath = os.path.join('static', 'members', filename)
+			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
 			
@@ -2864,7 +2896,7 @@ def admin_gallery_new():
 		file = request.files.get('image_file')
 		if file and file.filename:
 			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_gallery_{file.filename}"
-			gallery_dir = os.path.join('static', 'gallery')
+			gallery_dir = os.path.join(UPLOAD_BASE, 'gallery')
 			os.makedirs(gallery_dir, exist_ok=True)
 			filepath = os.path.join(gallery_dir, filename)
 			file.save(filepath)
@@ -2905,7 +2937,7 @@ def admin_gallery_edit(photo_id):
 		file = request.files.get('image_file')
 		if file and file.filename:
 			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_gallery_{file.filename}"
-			gallery_dir = os.path.join('static', 'gallery')
+			gallery_dir = os.path.join(UPLOAD_BASE, 'gallery')
 			os.makedirs(gallery_dir, exist_ok=True)
 			filepath = os.path.join(gallery_dir, filename)
 			file.save(filepath)
@@ -2985,7 +3017,7 @@ def admin_site_image_edit(image_id):
 		if file and file.filename:
 			# 파일 저장
 			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
-			filepath = os.path.join('static', 'images', filename)
+			filepath = os.path.join(UPLOAD_BASE, 'images', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
 			
