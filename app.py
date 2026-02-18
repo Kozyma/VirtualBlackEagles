@@ -939,6 +939,69 @@ def api_traffic():
 	return jsonify(data)
 
 
+# ─── 관리자: 방문자 로그 ───
+@app.route('/admin/visitors')
+@login_required
+def admin_visitors():
+	page = request.args.get('page', 1, type=int)
+	per_page = 50
+	date_filter = request.args.get('date', '')
+	ip_filter = request.args.get('ip', '')
+
+	conn = get_db()
+
+	# 필터 조건 구성
+	where_clauses = []
+	params = []
+	if date_filter:
+		where_clauses.append("DATE(visited_at) = ?")
+		params.append(date_filter)
+	if ip_filter:
+		where_clauses.append("ip_address LIKE ?")
+		params.append(f'%{ip_filter}%')
+
+	where_sql = (' WHERE ' + ' AND '.join(where_clauses)) if where_clauses else ''
+
+	# 총 개수
+	total = conn.execute(f'SELECT COUNT(*) as count FROM page_views{where_sql}', params).fetchone()['count']
+	total_pages = (total + per_page - 1) // per_page
+
+	# 페이지네이션된 데이터
+	offset = (page - 1) * per_page
+	rows = conn.execute(f'''
+		SELECT id, page_path, ip_address, user_agent, visited_at
+		FROM page_views{where_sql}
+		ORDER BY visited_at DESC
+		LIMIT ? OFFSET ?
+	''', params + [per_page, offset]).fetchall()
+
+	# 오늘 통계
+	today_total = conn.execute("SELECT COUNT(*) as count FROM page_views WHERE DATE(visited_at) = DATE('now')").fetchone()['count']
+	today_unique = conn.execute("SELECT COUNT(DISTINCT ip_address) as count FROM page_views WHERE DATE(visited_at) = DATE('now')").fetchone()['count']
+
+	# 상위 IP (오늘)
+	top_ips = conn.execute('''
+		SELECT ip_address, COUNT(*) as count
+		FROM page_views WHERE DATE(visited_at) = DATE('now')
+		GROUP BY ip_address ORDER BY count DESC LIMIT 10
+	''').fetchall()
+
+	# 상위 페이지 (오늘)
+	top_pages = conn.execute('''
+		SELECT page_path, COUNT(*) as count
+		FROM page_views WHERE DATE(visited_at) = DATE('now')
+		GROUP BY page_path ORDER BY count DESC LIMIT 10
+	''').fetchall()
+
+	conn.close()
+
+	return render_template('admin/visitors.html',
+		visitors=rows, page=page, total_pages=total_pages, total=total,
+		today_total=today_total, today_unique=today_unique,
+		top_ips=top_ips, top_pages=top_pages,
+		date_filter=date_filter, ip_filter=ip_filter)
+
+
 @app.route('/notice')
 def notice():
 	lang = request.args.get('lang', 'ko')

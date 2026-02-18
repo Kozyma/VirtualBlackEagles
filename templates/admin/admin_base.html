@@ -87,6 +87,9 @@
                 <a href="{{ url_for('admin_users') }}" class="sidebar-link {% if 'user' in request.endpoint|default('') %}active{% endif %}">
                     <i class="fas fa-users"></i> 회원 관리
                 </a>
+                <a href="{{ url_for('admin_visitors') }}" class="sidebar-link {% if 'visitor' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-chart-line"></i> 방문자 로그
+                </a>
             </div>
         </nav>
         <div class="sidebar-footer">

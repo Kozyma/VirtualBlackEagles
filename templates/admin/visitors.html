@@ -1,0 +1,142 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}방문자 로그{% endblock %}
+{% block page_title %}방문자 로그{% endblock %}
+
+{% block head %}
+<style>
+.visitor-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.visitor-stat { background: #fff; padding: 1.25rem; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); text-align: center; }
+.visitor-stat .stat-num { font-size: 2rem; font-weight: 700; color: #007bff; }
+.visitor-stat .stat-txt { font-size: 0.85rem; color: #999; margin-top: 0.25rem; }
+.top-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.top-list { background: #fff; padding: 1.25rem; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+.top-list h4 { margin: 0 0 0.75rem; font-size: 0.95rem; color: #333; }
+.top-list table { width: 100%; font-size: 0.85rem; }
+.top-list td { padding: 0.35rem 0.5rem; border-bottom: 1px solid #f0f0f0; }
+.top-list td:last-child { text-align: right; font-weight: 600; color: #007bff; }
+.filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap; }
+.filter-bar input { padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+.filter-bar button { padding: 0.5rem 1rem; background: #007bff; color: #fff; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+.filter-bar button:hover { background: #0056b3; }
+.filter-bar .btn-reset { background: #6c757d; }
+.log-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+.log-table th { background: #f8f9fa; padding: 0.75rem; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid #e9ecef; }
+.log-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f0f0f0; color: #333; }
+.log-table tr:hover { background: #f8f9fa; }
+.log-table .ua-cell { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; color: #888; }
+.log-table .ip-cell { font-family: monospace; font-size: 0.85rem; color: #007bff; cursor: pointer; }
+.log-table .ip-cell:hover { text-decoration: underline; }
+.pagination { display: flex; justify-content: center; gap: 0.25rem; margin-top: 1.5rem; }
+.pagination a, .pagination span { padding: 0.4rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #333; font-size: 0.85rem; }
+.pagination a:hover { background: #007bff; color: #fff; border-color: #007bff; }
+.pagination .active { background: #007bff; color: #fff; border-color: #007bff; }
+@media (max-width: 768px) {
+  .visitor-stats { grid-template-columns: 1fr; }
+  .top-lists { grid-template-columns: 1fr; }
+  .filter-bar { flex-direction: column; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 오늘 통계 -->
+<div class="visitor-stats">
+  <div class="visitor-stat">
+    <div class="stat-num">{{ "{:,}".format(today_total) }}</div>
+    <div class="stat-txt"><i class="fas fa-eye"></i> 오늘 총 조회수</div>
+  </div>
+  <div class="visitor-stat">
+    <div class="stat-num">{{ "{:,}".format(today_unique) }}</div>
+    <div class="stat-txt"><i class="fas fa-user"></i> 오늘 고유 방문자 (IP)</div>
+  </div>
+</div>
+
+<!-- 상위 IP / 상위 페이지 -->
+<div class="top-lists">
+  <div class="top-list">
+    <h4><i class="fas fa-network-wired"></i> 오늘 상위 IP (조회수 순)</h4>
+    <table>
+      {% for row in top_ips %}
+      <tr>
+        <td><a href="?ip={{ row.ip_address }}" class="ip-cell" style="color:#007bff;text-decoration:none;">{{ row.ip_address }}</a></td>
+        <td>{{ row.count }}회</td>
+      </tr>
+      {% endfor %}
+      {% if not top_ips %}
+      <tr><td colspan="2" style="color:#999;text-align:center;">데이터 없음</td></tr>
+      {% endif %}
+    </table>
+  </div>
+  <div class="top-list">
+    <h4><i class="fas fa-file-alt"></i> 오늘 상위 페이지 (조회수 순)</h4>
+    <table>
+      {% for row in top_pages %}
+      <tr>
+        <td>{{ row.page_path }}</td>
+        <td>{{ row.count }}회</td>
+      </tr>
+      {% endfor %}
+      {% if not top_pages %}
+      <tr><td colspan="2" style="color:#999;text-align:center;">데이터 없음</td></tr>
+      {% endif %}
+    </table>
+  </div>
+</div>
+
+<!-- 필터 -->
+<form class="filter-bar" method="GET" action="{{ url_for('admin_visitors') }}">
+  <input type="date" name="date" value="{{ date_filter }}" placeholder="날짜 선택">
+  <input type="text" name="ip" value="{{ ip_filter }}" placeholder="IP 주소 검색">
+  <button type="submit"><i class="fas fa-search"></i> 검색</button>
+  <a href="{{ url_for('admin_visitors') }}" class="btn-reset" style="padding:0.5rem 1rem;background:#6c757d;color:#fff;border-radius:6px;text-decoration:none;font-size:0.9rem;">초기화</a>
+  <span style="color:#999;font-size:0.85rem;margin-left:auto;">총 {{ "{:,}".format(total) }}건</span>
+</form>
+
+<!-- 방문 로그 테이블 -->
+<table class="log-table">
+  <thead>
+    <tr>
+      <th style="width:50px;">#</th>
+      <th>시간</th>
+      <th>IP 주소</th>
+      <th>페이지</th>
+      <th>브라우저 / 기기</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for v in visitors %}
+    <tr>
+      <td style="color:#999;">{{ v.id }}</td>
+      <td style="white-space:nowrap;">{{ v.visited_at[:19] if v.visited_at else '-' }}</td>
+      <td><a href="?ip={{ v.ip_address }}" class="ip-cell">{{ v.ip_address }}</a></td>
+      <td>{{ v.page_path }}</td>
+      <td class="ua-cell" title="{{ v.user_agent }}">{{ v.user_agent[:80] if v.user_agent else '-' }}</td>
+    </tr>
+    {% endfor %}
+    {% if not visitors %}
+    <tr><td colspan="5" style="text-align:center;color:#999;padding:2rem;">방문 기록이 없습니다.</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<!-- 페이지네이션 -->
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="?page={{ page - 1 }}&date={{ date_filter }}&ip={{ ip_filter }}">&laquo;</a>
+  {% endif %}
+  {% for p in range(1, total_pages + 1) %}
+    {% if p == page %}
+    <span class="active">{{ p }}</span>
+    {% elif p <= 3 or p > total_pages - 3 or (p >= page - 2 and p <= page + 2) %}
+    <a href="?page={{ p }}&date={{ date_filter }}&ip={{ ip_filter }}">{{ p }}</a>
+    {% elif p == 4 or p == total_pages - 3 %}
+    <span>...</span>
+    {% endif %}
+  {% endfor %}
+  {% if page < total_pages %}
+  <a href="?page={{ page + 1 }}&date={{ date_filter }}&ip={{ ip_filter }}">&raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
