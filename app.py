@@ -47,6 +47,14 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 
+# 세션 쿠키 설정: www 포함/미포함 도메인 간 세션 공유
+# SESSION_COOKIE_DOMAIN을 .virtualblackeagles.kr로 설정하면
+# virtualblackeagles.kr 과 www.virtualblackeagles.kr 모두에서 세션 쿠키 유효
+if os.environ.get('SESSION_COOKIE_DOMAIN'):
+	app.config['SESSION_COOKIE_DOMAIN'] = os.environ.get('SESSION_COOKIE_DOMAIN')
+app.config['SESSION_COOKIE_SECURE'] = True   # HTTPS에서만 쿠키 전송
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 # 프록시 뒤에서 HTTPS를 올바르게 감지하도록 설정
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
@@ -1421,8 +1429,10 @@ def auth_google():
 	if not HAS_OAUTH or not os.environ.get('GOOGLE_CLIENT_ID'):
 		flash('Google 로그인이 설정되지 않았습니다.', 'error')
 		return redirect(url_for('index'))
-	# 프록시 뒤에서도 올바른 HTTPS redirect_uri 생성
-	redirect_uri = 'https://' + request.host + '/auth/google/callback'
+	# Google OAuth redirect_uri를 고정 도메인으로 통일
+	# OAUTH_REDIRECT_DOMAIN 환경변수가 있으면 사용, 없으면 현재 호스트 사용
+	oauth_domain = os.environ.get('OAUTH_REDIRECT_DOMAIN', request.host)
+	redirect_uri = 'https://' + oauth_domain + '/auth/google/callback'
 	return google.authorize_redirect(redirect_uri)
 
 
