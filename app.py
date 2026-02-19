@@ -315,6 +315,9 @@ def init_db():
 	"""데이터베이스 초기화"""
 	conn = get_db()
 
+	# PostgreSQL에서는 DDL(CREATE TABLE)과 DML(INSERT) 사이에 commit이 필요
+	# 테이블 생성 → commit → 데이터 삽입 → commit 패턴으로 안정적 초기화
+
 	# 공지사항 테이블
 	conn.execute('''
 		CREATE TABLE IF NOT EXISTS notices (
@@ -372,20 +375,6 @@ def init_db():
 		)
 	''')
 
-	# 기본 페이지 섹션 생성
-	default_sections = [
-		('home', 'about', 'text', 'About Us', '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.', None, None, None, 1, 1),
-		('about', 'intro', 'text', '팀 소개', '블랙이글스는 대한민국 공군의 자랑입니다.', None, None, None, 1, 1),
-		('contact', 'discord', 'text', 'Contact Us', 'Discord ㅣ Johnson#4553', None, None, None, 1, 1),
-	]
-
-	for section in default_sections:
-		conn.execute('''
-			INSERT OR IGNORE INTO page_sections
-			(page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		''', section)
-
 	# 배너 설정 테이블
 	conn.execute('''
 		CREATE TABLE IF NOT EXISTS banner_settings (
@@ -407,15 +396,34 @@ def init_db():
 		)
 	''')
 
-	# 기존 테이블에 컬럼 추가 (이미 있으면 무시)
+	# 모든 CREATE TABLE을 commit하여 테이블이 확실히 존재하도록 함
+	conn.commit()
+
+	# 기존 테이블에 컬럼 추가 (이미 있으면 무시, PostgreSQL은 rollback 필요)
 	try:
 		conn.execute("ALTER TABLE banner_settings ADD COLUMN vertical_position TEXT DEFAULT 'center'")
+		conn.commit()
 	except:
-		pass
+		conn.rollback()
 	try:
 		conn.execute('ALTER TABLE banner_settings ADD COLUMN padding_top INTEGER DEFAULT 250')
+		conn.commit()
 	except:
-		pass
+		conn.rollback()
+
+	# 기본 페이지 섹션 생성
+	default_sections = [
+		('home', 'about', 'text', 'About Us', '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.', None, None, None, 1, 1),
+		('about', 'intro', 'text', '팀 소개', '블랙이글스는 대한민국 공군의 자랑입니다.', None, None, None, 1, 1),
+		('contact', 'discord', 'text', 'Contact Us', 'Discord ㅣ Johnson#4553', None, None, None, 1, 1),
+	]
+
+	for section in default_sections:
+		conn.execute('''
+			INSERT OR IGNORE INTO page_sections
+			(page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		''', section)
 
 	# 기본 홈페이지 배너 설정
 	conn.execute('''
@@ -424,6 +432,8 @@ def init_db():
 		        '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.',
 		        'more', '#about')
 	''')
+
+	conn.commit()
 
 	# 조종사 정보 테이블
 	conn.execute('''
@@ -441,6 +451,45 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
+
+	# 홈 콘텐츠 테이블 (유튜브, SNS 피드 등)
+	conn.execute('''
+		CREATE TABLE IF NOT EXISTS home_contents (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			content_type TEXT NOT NULL,
+			title TEXT,
+			content_data TEXT,
+			order_num INTEGER DEFAULT 0,
+			is_active INTEGER DEFAULT 1,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	''')
+
+	# 팀소개 섹션 테이블 (개요, 항공기 등)
+	conn.execute('''
+		CREATE TABLE IF NOT EXISTS about_sections (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			section_type TEXT NOT NULL,
+			title TEXT,
+			content TEXT,
+			image_url TEXT,
+			order_num INTEGER DEFAULT 0,
+			is_active INTEGER DEFAULT 1,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	''')
+
+	# DDL commit - pilots, home_contents, about_sections 테이블 확정
+	conn.commit()
+
+	# about_sections 테이블에 lang 컬럼이 없을 수 있으므로 동적으로 추가
+	try:
+		conn.execute("ALTER TABLE about_sections ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
 
 	# 기본 조종사 데이터 삽입 (중복 방지)
 	default_pilots = [
@@ -466,84 +515,13 @@ def init_db():
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 			''', pilot)
 
-	# 홈 콘텐츠 테이블 (유튜브, SNS 피드 등)
-	conn.execute('''
-		CREATE TABLE IF NOT EXISTS home_contents (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			content_type TEXT NOT NULL,
-			title TEXT,
-			content_data TEXT,
-			order_num INTEGER DEFAULT 0,
-			is_active INTEGER DEFAULT 1,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-		)
-	''')
-
 	# 기본 유튜브 콘텐츠 삽입
 	conn.execute('''
 		INSERT OR IGNORE INTO home_contents (id, content_type, title, content_data, order_num, is_active)
 		VALUES (1, 'youtube', 'Latest Video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 1, 1)
 	''')
 
-	# 팀소개 섹션 테이블 (개요, 항공기 등)
-	conn.execute('''
-		CREATE TABLE IF NOT EXISTS about_sections (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			section_type TEXT NOT NULL,
-			title TEXT,
-			content TEXT,
-			image_url TEXT,
-			order_num INTEGER DEFAULT 0,
-			is_active INTEGER DEFAULT 1,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-		)
-	''')
-
-	# about_sections 테이블에 lang 컬럼이 없을 수 있으므로 동적으로 추가
-	try:
-		conn.execute("ALTER TABLE about_sections ADD COLUMN lang TEXT DEFAULT 'ko'")
-	except Exception:
-		# 이미 컬럼이 있을 경우 에러를 무시
-		pass
-
-	# 기본 개요 섹션 추가
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (1, 'overview', '가상 블랙이글스 소개',
-		'가상 블랙이글스는 DCS World에서 활동하는 대한민국 가상 공군 특수비행팀입니다. 실제 블랙이글스의 정신과 전통을 계승하며, 정교한 편대비행과 에어쇼를 통해 뛰어난 비행실력을 선보입니다.',
-		0, 1)
-	''')
-
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (2, 'mission', '임무',
-		'우리의 임무는 대한민국 공군의 우수성을 전 세계에 알리고, 가상 비행 시뮬레이션을 통해 항공에 대한 관심과 이해를 높이는 것입니다. 또한 팀원들의 비행 실력 향상과 팀워크 강화를 목표로 합니다.',
-		1, 1)
-	''')
-
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (3, 'aircraft_intro', 'T-50B 골든이글',
-		'T-50B는 대한민국이 자체 개발한 초음속 고등훈련기로, 블랙이글스 팀이 사용하는 항공기입니다. 우수한 기동성과 안정성을 자랑하며, 다양한 편대비행 기동을 수행할 수 있습니다.',
-		2, 1)
-	''')
-
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, image_url, order_num, is_active)
-		VALUES (4, 'aircraft_specs', 'T-50B 제원',
-		'최대속도: 마하 1.5|전투행동반경: 1,851km|최대이륙중량: 12,300kg|엔진: F404-GE-102 터보팬|승무원: 2명|무장: 20mm 기관포, 공대공 미사일',
-		'/static/images/t50b.jpg',
-		3, 1)
-	''')
-
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (5, 'aircraft_features', '특징',
-		'우수한 기동성|높은 안정성|효율적인 연료 소비|조종사 친화적 설계|다목적 운용 가능',
-		4, 1)
-	''')
+	conn.commit()
 
 	# 전대장 인사말 테이블
 	conn.execute('''
@@ -562,23 +540,6 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-
-	# commander_greeting 테이블에 lang 컬럼이 없을 수 있으므로 동적으로 추가
-	try:
-		conn.execute("ALTER TABLE commander_greeting ADD COLUMN lang TEXT DEFAULT 'ko'")
-	except Exception:
-		# 이미 컬럼이 있을 경우 에러를 무시
-		pass
-
-	# 기본 전대장 데이터 삽입 (데이터가 없을 때만)
-	existing_commanders = _get_count(conn.execute('SELECT COUNT(*) as count FROM commander_greeting').fetchone())
-	if existing_commanders == 0:
-		conn.execute('''
-			INSERT INTO commander_greeting (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num, is_active)
-			VALUES ('Bulta', 'COMMANDER', '#1 Bulta', 'VBE 1기', 'F-5', '/static/images/default-pilot.jpg',
-			'안녕하십니까. 가상 블랙이글스 전대장입니다. 우리 팀은 대한민국 공군의 자랑스러운 전통을 계승하며, 최고의 비행 실력을 갖춘 정예 조종사들로 구성되어 있습니다.',
-			1, 1)
-		''')
 
 	# 정비사 테이블
 	conn.execute('''
@@ -626,16 +587,65 @@ def init_db():
 		)
 	''')
 
-	# 기본 샘플 이미지 추가
+	# DDL commit - commander_greeting, maintenance_crew, candidates, gallery 테이블 확정
+	conn.commit()
+
+	# commander_greeting 테이블에 lang 컬럼이 없을 수 있으므로 동적으로 추가
+	try:
+		conn.execute("ALTER TABLE commander_greeting ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
+	# 기본 개요 섹션 추가
 	conn.execute('''
-		INSERT OR IGNORE INTO gallery (id, title, description, image_url, order_num, is_active)
-		VALUES (1, '편대비행 훈련', 'T-50B 4기 편대비행 훈련 모습', '/static/Picture/20251207_173919_section_formation.png', 1, 1)
+		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
+		VALUES (1, 'overview', '가상 블랙이글스 소개',
+		'가상 블랙이글스는 DCS World에서 활동하는 대한민국 가상 공군 특수비행팀입니다. 실제 블랙이글스의 정신과 전통을 계승하며, 정교한 편대비행과 에어쇼를 통해 뛰어난 비행실력을 선보입니다.',
+		0, 1)
 	''')
 
 	conn.execute('''
-		INSERT OR IGNORE INTO gallery (id, title, description, image_url, order_num, is_active)
-		VALUES (2, '에어쇼 공연', '2024 서울 에어쇼 블랙이글스 공연', '/static/Picture/Formation.png', 2, 1)
+		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
+		VALUES (2, 'mission', '임무',
+		'우리의 임무는 대한민국 공군의 우수성을 전 세계에 알리고, 가상 비행 시뮬레이션을 통해 항공에 대한 관심과 이해를 높이는 것입니다. 또한 팀원들의 비행 실력 향상과 팀워크 강화를 목표로 합니다.',
+		1, 1)
 	''')
+
+	conn.execute('''
+		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
+		VALUES (3, 'aircraft_intro', 'T-50B 골든이글',
+		'T-50B는 대한민국이 자체 개발한 초음속 고등훈련기로, 블랙이글스 팀이 사용하는 항공기입니다. 우수한 기동성과 안정성을 자랑하며, 다양한 편대비행 기동을 수행할 수 있습니다.',
+		2, 1)
+	''')
+
+	conn.execute('''
+		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, image_url, order_num, is_active)
+		VALUES (4, 'aircraft_specs', 'T-50B 제원',
+		'최대속도: 마하 1.5|전투행동반경: 1,851km|최대이륙중량: 12,300kg|엔진: F404-GE-102 터보팬|승무원: 2명|무장: 20mm 기관포, 공대공 미사일',
+		'/static/images/t50b.jpg',
+		3, 1)
+	''')
+
+	conn.execute('''
+		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
+		VALUES (5, 'aircraft_features', '특징',
+		'우수한 기동성|높은 안정성|효율적인 연료 소비|조종사 친화적 설계|다목적 운용 가능',
+		4, 1)
+	''')
+
+	# 기본 전대장 데이터 삽입 (데이터가 없을 때만)
+	existing_commanders = _get_count(conn.execute('SELECT COUNT(*) as count FROM commander_greeting').fetchone())
+	if existing_commanders == 0:
+		conn.execute('''
+			INSERT INTO commander_greeting (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num, is_active)
+			VALUES ('Bulta', 'COMMANDER', '#1 Bulta', 'VBE 1기', 'F-5', '/static/images/default-pilot.jpg',
+			'안녕하십니까. 가상 블랙이글스 전대장입니다. 우리 팀은 대한민국 공군의 자랑스러운 전통을 계승하며, 최고의 비행 실력을 갖춘 정예 조종사들로 구성되어 있습니다.',
+			1, 1)
+		''')
+
+	# DML commit - about_sections, commander_greeting 데이터 확정
+	conn.commit()
 
 	# 사이트 이미지 관리 테이블
 	conn.execute('''
@@ -650,30 +660,6 @@ def init_db():
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	''')
-
-	# 기본 이미지 키 등록
-	default_images = [
-		('hero_banner', '홈 배너 이미지', '/static/images/hero.jpg', '메인 페이지 상단 배너', 'home'),
-		('about_banner', '팀소개 배너 이미지', '/static/images/hero.jpg', '팀소개 페이지 상단 배너', 'about'),
-		('default_pilot', '기본 파일럿 이미지', '/static/members/moon.jpeg', '파일럿 기본 프로필', 'about'),
-		('t50b_main', 'T-50B 메인 이미지', '/static/Picture/Formation.png', '항공기 소개 이미지', 'about'),
-	]
-
-	for img_key, img_name, img_path, desc, cat in default_images:
-		conn.execute('''
-			INSERT OR IGNORE INTO site_images (image_key, image_name, image_path, description, category)
-			VALUES (?, ?, ?, ?, ?)
-		''', (img_key, img_name, img_path, desc, cat))
-
-	# 기존 DB에 이미 t50b_main 이 있다면 경로를 실제 존재하는 이미지로 교체
-	try:
-		conn.execute('''
-			UPDATE site_images
-			SET image_path = '/static/Picture/Formation.png'
-			WHERE image_key = 't50b_main'
-		''')
-	except Exception:
-		pass
 
 	# 영상 갤러리 테이블
 	conn.execute('''
@@ -700,42 +686,6 @@ def init_db():
 			description TEXT,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
-	''')
-
-	# 기본 후원 설정
-	conn.execute('''
-		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
-		VALUES ('donate_kakaopay_link', '', '카카오페이 송금 링크')
-	''')
-	conn.execute('''
-		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
-		VALUES ('donate_bank_name', '', '후원 계좌 은행명')
-	''')
-	conn.execute('''
-		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
-		VALUES ('donate_account_number', '', '후원 계좌번호')
-	''')
-	conn.execute('''
-		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
-		VALUES ('donate_account_holder', '', '후원 계좌 예금주')
-	''')
-	conn.execute('''
-		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
-		VALUES ('contact_email', '', '문의 수신 이메일 주소')
-	''')
-
-	# 배너 기본값 (notice, schedule, gallery 추가)
-	conn.execute('''
-		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
-		VALUES ('notice', '/static/images/hero.jpg', '공지사항', 'Announcements')
-	''')
-	conn.execute('''
-		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
-		VALUES ('schedule', '/static/images/hero.jpg', '일정', 'Schedule')
-	''')
-	conn.execute('''
-		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
-		VALUES ('gallery', '/static/images/hero.jpg', '활동', 'Activities')
 	''')
 
 	# 실시간 채팅 테이블
@@ -789,6 +739,82 @@ def init_db():
 			user_agent TEXT,
 			visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
+	''')
+
+	# DDL commit - 나머지 테이블 모두 확정
+	conn.commit()
+
+	# ---- 여기부터 DML (INSERT/UPDATE) ----
+
+	# 기본 샘플 이미지 추가
+	conn.execute('''
+		INSERT OR IGNORE INTO gallery (id, title, description, image_url, order_num, is_active)
+		VALUES (1, '편대비행 훈련', 'T-50B 4기 편대비행 훈련 모습', '/static/Picture/20251207_173919_section_formation.png', 1, 1)
+	''')
+
+	conn.execute('''
+		INSERT OR IGNORE INTO gallery (id, title, description, image_url, order_num, is_active)
+		VALUES (2, '에어쇼 공연', '2024 서울 에어쇼 블랙이글스 공연', '/static/Picture/Formation.png', 2, 1)
+	''')
+
+	# 기본 이미지 키 등록
+	default_images = [
+		('hero_banner', '홈 배너 이미지', '/static/images/hero.jpg', '메인 페이지 상단 배너', 'home'),
+		('about_banner', '팀소개 배너 이미지', '/static/images/hero.jpg', '팀소개 페이지 상단 배너', 'about'),
+		('default_pilot', '기본 파일럿 이미지', '/static/members/moon.jpeg', '파일럿 기본 프로필', 'about'),
+		('t50b_main', 'T-50B 메인 이미지', '/static/Picture/Formation.png', '항공기 소개 이미지', 'about'),
+	]
+
+	for img_key, img_name, img_path, desc, cat in default_images:
+		conn.execute('''
+			INSERT OR IGNORE INTO site_images (image_key, image_name, image_path, description, category)
+			VALUES (?, ?, ?, ?, ?)
+		''', (img_key, img_name, img_path, desc, cat))
+
+	# 기존 DB에 이미 t50b_main 이 있다면 경로를 실제 존재하는 이미지로 교체
+	try:
+		conn.execute('''
+			UPDATE site_images
+			SET image_path = '/static/Picture/Formation.png'
+			WHERE image_key = 't50b_main'
+		''')
+	except Exception:
+		conn.rollback()
+
+	# 기본 후원 설정
+	conn.execute('''
+		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
+		VALUES ('donate_kakaopay_link', '', '카카오페이 송금 링크')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
+		VALUES ('donate_bank_name', '', '후원 계좌 은행명')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
+		VALUES ('donate_account_number', '', '후원 계좌번호')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
+		VALUES ('donate_account_holder', '', '후원 계좌 예금주')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO site_settings (setting_key, setting_value, description)
+		VALUES ('contact_email', '', '문의 수신 이메일 주소')
+	''')
+
+	# 배너 기본값 (notice, schedule, gallery 추가)
+	conn.execute('''
+		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
+		VALUES ('notice', '/static/images/hero.jpg', '공지사항', 'Announcements')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
+		VALUES ('schedule', '/static/images/hero.jpg', '일정', 'Schedule')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
+		VALUES ('gallery', '/static/images/hero.jpg', '활동', 'Activities')
 	''')
 
 	conn.commit()
