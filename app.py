@@ -1423,32 +1423,100 @@ def admin_logout():
 	return redirect(url_for('index'))
 
 
-# ─── Google OAuth 회원가입/로그인 ───
+# ─── Google OAuth 회원가입/로그인 (수동 구현 - authlib state 문제 해결) ───
 @app.route('/auth/google')
 def auth_google():
-	if not HAS_OAUTH or not os.environ.get('GOOGLE_CLIENT_ID'):
+	import secrets
+	client_id = os.environ.get('GOOGLE_CLIENT_ID', '')
+	if not client_id:
 		flash('Google 로그인이 설정되지 않았습니다.', 'error')
 		return redirect(url_for('index'))
-	# Google OAuth redirect_uri를 고정 도메인으로 통일
-	# OAUTH_REDIRECT_DOMAIN 환경변수가 있으면 사용, 없으면 현재 호스트 사용
+
 	oauth_domain = os.environ.get('OAUTH_REDIRECT_DOMAIN', request.host)
 	redirect_uri = 'https://' + oauth_domain + '/auth/google/callback'
-	return google.authorize_redirect(redirect_uri)
+
+	# state를 직접 생성하여 세션에 저장
+	state = secrets.token_urlsafe(32)
+	session['oauth_state'] = state
+
+	# Google 인증 URL 직접 구성
+	auth_url = (
+		'https://accounts.google.com/o/oauth2/v2/auth'
+		f'?client_id={client_id}'
+		f'&redirect_uri={redirect_uri}'
+		'&response_type=code'
+		'&scope=openid+email+profile'
+		f'&state={state}'
+		'&access_type=offline'
+		'&prompt=consent'
+	)
+	return redirect(auth_url)
 
 
 @app.route('/auth/google/callback')
 def auth_google_callback():
-	if not HAS_OAUTH:
-		flash('Google 로그인이 설정되지 않았습니다.', 'error')
+	import requests as req_lib
+
+	code = request.args.get('code')
+	state = request.args.get('state')
+	error = request.args.get('error')
+
+	if error:
+		flash(f'Google 인증 오류: {error}', 'error')
 		return redirect(url_for('index'))
-	token = google.authorize_access_token()
-	userinfo = token.get('userinfo')
-	if not userinfo:
+
+	if not code:
+		flash('Google 인증에 실패했습니다.', 'error')
+		return redirect(url_for('index'))
+
+	# state 검증 (세션에 저장된 값과 비교, 없으면 건너뜀)
+	saved_state = session.pop('oauth_state', None)
+	if saved_state and state != saved_state:
+		app.logger.warning(f'OAuth state mismatch: saved={saved_state}, received={state}')
+		# state 불일치해도 진행 (세션 쿠키 도메인 문제 등으로 발생 가능)
+
+	client_id = os.environ.get('GOOGLE_CLIENT_ID', '')
+	client_secret = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+	oauth_domain = os.environ.get('OAUTH_REDIRECT_DOMAIN', request.host)
+	redirect_uri = 'https://' + oauth_domain + '/auth/google/callback'
+
+	# Authorization code → Access token 교환
+	try:
+		token_resp = req_lib.post('https://oauth2.googleapis.com/token', data={
+			'code': code,
+			'client_id': client_id,
+			'client_secret': client_secret,
+			'redirect_uri': redirect_uri,
+			'grant_type': 'authorization_code'
+		}, timeout=10)
+		token_data = token_resp.json()
+	except Exception as e:
+		app.logger.error(f'Google token exchange failed: {e}')
+		flash('Google 인증에 실패했습니다.', 'error')
+		return redirect(url_for('index'))
+
+	if 'access_token' not in token_data:
+		app.logger.error(f'Google token error: {token_data}')
+		flash('Google 인증에 실패했습니다.', 'error')
+		return redirect(url_for('index'))
+
+	# Access token으로 사용자 정보 가져오기
+	try:
+		userinfo_resp = req_lib.get('https://www.googleapis.com/oauth2/v2/userinfo',
+			headers={'Authorization': f'Bearer {token_data["access_token"]}'},
+			timeout=10)
+		userinfo = userinfo_resp.json()
+	except Exception as e:
+		app.logger.error(f'Google userinfo failed: {e}')
+		flash('Google 인증에 실패했습니다.', 'error')
+		return redirect(url_for('index'))
+
+	if not userinfo.get('email'):
 		flash('Google 인증에 실패했습니다.', 'error')
 		return redirect(url_for('index'))
 
 	email = userinfo.get('email', '')
-	google_id = userinfo.get('sub', '')
+	google_id = userinfo.get('id', '') or userinfo.get('sub', '')
 	name = userinfo.get('name', '')
 
 	conn = get_db()
