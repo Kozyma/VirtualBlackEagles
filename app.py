@@ -1413,7 +1413,7 @@ def admin_login():
 		# 1) users 테이블에 있는 관리자 계정(role='admin')으로 로그인 시도
 		conn = get_db()
 		user = conn.execute(
-			'SELECT * FROM users WHERE username = ? AND is_active = 1 AND role = "admin"',
+			"SELECT * FROM users WHERE username = ? AND is_active = 1 AND role = 'admin'",
 			(username,)
 		).fetchone()
 		conn.close()
