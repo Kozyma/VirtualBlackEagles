@@ -77,7 +77,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 UPLOAD_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 
 
-# 페이지 방문 트래킹
+# 페이지 방문 트래킹 (하루에 IP당 1회만 기록)
 @app.before_request
 def track_page_view():
 	# 정적 파일이나 API, 관리자 페이지는 트래킹 제외
@@ -85,9 +85,15 @@ def track_page_view():
 		return
 	try:
 		conn = get_db()
-		conn.execute('INSERT INTO page_views (page_path, ip_address, user_agent) VALUES (?, ?, ?)',
-			(request.path, request.remote_addr, str(request.user_agent)[:200]))
-		conn.commit()
+		# 오늘 같은 IP가 이미 기록되어 있으면 중복 삽입 안 함
+		existing = conn.execute(
+			"SELECT id FROM page_views WHERE ip_address = ? AND DATE(visited_at) = DATE('now')",
+			(request.remote_addr,)
+		).fetchone()
+		if not existing:
+			conn.execute('INSERT INTO page_views (page_path, ip_address, user_agent) VALUES (?, ?, ?)',
+				(request.path, request.remote_addr, str(request.user_agent)[:200]))
+			conn.commit()
 		conn.close()
 	except Exception:
 		pass
@@ -841,11 +847,6 @@ def init_db():
 		VALUES ('gallery', '/static/images/hero.jpg', '활동', 'Activities')
 	''')
 
-	# 방문 트래픽 초기화 (0부터 시작) — 배포 후 이 줄을 제거하세요
-	try:
-		conn.execute('DELETE FROM page_views')
-	except Exception:
-		pass
 
 	conn.commit()
 	conn.close()
@@ -1127,10 +1128,10 @@ def api_schedules():
 @app.route('/api/traffic')
 @login_required
 def api_traffic():
-	"""최근 30일 트래픽 데이터"""
+	"""최근 30일 트래픽 데이터 (고유 IP 기준)"""
 	conn = get_db()
 	rows = conn.execute('''
-		SELECT DATE(visited_at) as date, COUNT(*) as count
+		SELECT DATE(visited_at) as date, COUNT(DISTINCT ip_address) as count
 		FROM page_views
 		WHERE visited_at >= DATE('now', '-30 days')
 		GROUP BY DATE(visited_at)
@@ -1858,23 +1859,23 @@ def admin_dashboard():
 		SELECT COUNT(*) as count FROM chat_sessions WHERE status = 'active'
 	''').fetchone()['count']
 
-	# 오늘 방문자 수
+	# 오늘 방문자 수 (고유 IP 기준)
 	today_views = conn.execute('''
-		SELECT COUNT(*) as count FROM page_views WHERE DATE(visited_at) = DATE('now')
+		SELECT COUNT(DISTINCT ip_address) as count FROM page_views WHERE DATE(visited_at) = DATE('now')
 	''').fetchone()['count']
 
-	# 총 방문 수
-	total_views = conn.execute('SELECT COUNT(*) as count FROM page_views').fetchone()['count']
+	# 총 방문 수 (고유 IP 기준)
+	total_views = conn.execute('SELECT COUNT(DISTINCT ip_address || DATE(visited_at)) as count FROM page_views').fetchone()['count']
 
-	# 이번 주 방문 수
+	# 이번 주 방문 수 (고유 IP 기준)
 	week_views = conn.execute('''
-		SELECT COUNT(*) as count FROM page_views
+		SELECT COUNT(DISTINCT ip_address || DATE(visited_at)) as count FROM page_views
 		WHERE visited_at >= DATE('now', '-7 days')
 	''').fetchone()['count']
 
-	# 이번 달 방문 수
+	# 이번 달 방문 수 (고유 IP 기준)
 	month_views = conn.execute('''
-		SELECT COUNT(*) as count FROM page_views
+		SELECT COUNT(DISTINCT ip_address || DATE(visited_at)) as count FROM page_views
 		WHERE visited_at >= DATE('now', 'start of month')
 	''').fetchone()['count']
 
