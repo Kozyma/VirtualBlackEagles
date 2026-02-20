@@ -124,7 +124,7 @@
                     {% if section.link_url %}
                     <p><strong>링크:</strong> {{ section.link_url }} ({{ section.link_text or '링크 텍스트 없음' }})</p>
                     {% endif %}
-                    <p style="font-size: 0.8rem; color: #999;">섹션 ID: {{ section.section_id }} | 수정일: {{ section.updated_at[:16] }}</p>
+                    <p style="font-size: 0.8rem; color: #999;">섹션 ID: {{ section.section_id }} | 수정일: {{ section.updated_at|datefmt }}</p>
                 </div>
                 <div class="section-actions">
                     <a href="{{ url_for('admin_page_section_form', section_id=section.id) }}" class="btn btn-sm btn-primary">수정</a>

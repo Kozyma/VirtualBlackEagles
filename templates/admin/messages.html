@@ -108,7 +108,7 @@
                     <span class="status-unread">새 문의</span>
                     {% endif %}
                 </td>
-                <td style="text-align:center;">{{ message.created_at[:16] }}</td>
+                <td style="text-align:center;">{{ message.created_at|datefmt }}</td>
                 <td style="text-align:center;">
                     <a href="{{ url_for('admin_message_detail', message_id=message.id) }}" class="btn btn-sm btn-primary">보기</a>
                 </td>

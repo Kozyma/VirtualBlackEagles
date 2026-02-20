@@ -53,9 +53,9 @@
     {% if schedule.created_at %}
     <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem; color: #666;">
       <div style="display: flex; gap: 2rem;">
-        <div><strong>등록일:</strong> {{ schedule.created_at[:10] }}</div>
+        <div><strong>등록일:</strong> {{ schedule.created_at|datefmt('%Y-%m-%d') }}</div>
         {% if schedule.updated_at != schedule.created_at %}
-        <div><strong>수정일:</strong> {{ schedule.updated_at[:10] }}</div>
+        <div><strong>수정일:</strong> {{ schedule.updated_at|datefmt('%Y-%m-%d') }}</div>
         {% endif %}
       </div>
     </div>

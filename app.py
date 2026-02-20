@@ -132,6 +132,27 @@ def optimize_image(file_path, max_width=1200, max_height=1200, quality=85):
 		return False
 
 # Jinja2 필터 추가
+
+@app.template_filter('datefmt')
+def datefmt_filter(value, fmt='%Y-%m-%d %H:%M'):
+	"""datetime 객체나 문자열을 안전하게 포맷팅 (PostgreSQL datetime 호환)"""
+	if not value:
+		return '-'
+	# 이미 문자열이면 그냥 잘라서 반환
+	if isinstance(value, str):
+		if fmt == '%Y-%m-%d':
+			return value[:10]
+		elif fmt == '%Y-%m-%d %H:%M':
+			return value[:16]
+		elif fmt == '%Y-%m-%d %H:%M:%S':
+			return value[:19]
+		return value
+	# datetime 객체이면 포맷팅
+	try:
+		return value.strftime(fmt)
+	except Exception:
+		return str(value)
+
 @app.template_filter('youtube_embed')
 def youtube_embed_filter(url):
 	"""YouTube URL을 embed URL로 변환"""
@@ -819,6 +840,12 @@ def init_db():
 		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
 		VALUES ('gallery', '/static/images/hero.jpg', '활동', 'Activities')
 	''')
+
+	# 방문 트래픽 초기화 (0부터 시작) — 배포 후 이 줄을 제거하세요
+	try:
+		conn.execute('DELETE FROM page_views')
+	except Exception:
+		pass
 
 	conn.commit()
 	conn.close()

@@ -36,7 +36,7 @@
                     <span class="badge badge-danger">비활성</span>
                     {% endif %}
                 </td>
-                <td>{{ video.created_at[:10] if video.created_at else '' }}</td>
+                <td>{{ video.created_at|datefmt('%Y-%m-%d') }}</td>
                 <td>
                     <div class="actions">
                         <a href="{{ url_for('admin_video_edit', video_id=video.id) }}" class="btn btn-sm btn-primary">수정</a>

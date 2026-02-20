@@ -26,7 +26,7 @@
                 <td>{{ notice.id }}</td>
                 <td>{{ notice.title }}</td>
                 <td>{{ notice.author }}</td>
-                <td>{{ notice.created_at[:10] }}</td>
+                <td>{{ notice.created_at|datefmt('%Y-%m-%d') }}</td>
                 <td>
                     <div class="actions">
                         <a href="{{ url_for('admin_notice_edit', notice_id=notice.id) }}" class="btn btn-sm btn-primary">수정</a>

@@ -48,7 +48,7 @@
                             </div>
                         </td>
                         <td>
-                            {{ photo.upload_date[:10] }}
+                            {{ photo.upload_date|datefmt('%Y-%m-%d') }}
                         </td>
                         <td>
                             <span class="badge badge-info">{{ photo.order_num }}</span>

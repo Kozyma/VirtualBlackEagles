@@ -132,7 +132,7 @@
                 {% else %}
                 <p class="last-message no-message">메시지가 없습니다</p>
                 {% endif %}
-                <p class="session-time">{{ session['created_at'] }}</p>
+                <p class="session-time">{{ session['created_at']|datefmt }}</p>
             </div>
         </div>
         {% endfor %}

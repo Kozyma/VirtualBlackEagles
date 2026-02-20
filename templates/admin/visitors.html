@@ -107,7 +107,7 @@
     {% for v in visitors %}
     <tr>
       <td style="color:#999;">{{ v.id }}</td>
-      <td style="white-space:nowrap;">{{ v.visited_at[:19] if v.visited_at else '-' }}</td>
+      <td style="white-space:nowrap;">{{ v.visited_at|datefmt('%Y-%m-%d %H:%M:%S') }}</td>
       <td><a href="?ip={{ v.ip_address }}" class="ip-cell">{{ v.ip_address }}</a></td>
       <td>{{ v.page_path }}</td>
       <td class="ua-cell" title="{{ v.user_agent }}">{{ v.user_agent[:80] if v.user_agent else '-' }}</td>

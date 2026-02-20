@@ -21,11 +21,11 @@
           <strong>작성자:</strong> {{ notice.author }}
         </div>
         <div>
-          <strong>작성일:</strong> {{ notice.created_at[:10] }}
+          <strong>작성일:</strong> {{ notice.created_at|datefmt('%Y-%m-%d') }}
         </div>
         {% if notice.updated_at != notice.created_at %}
         <div>
-          <strong>수정일:</strong> {{ notice.updated_at[:10] }}
+          <strong>수정일:</strong> {{ notice.updated_at|datefmt('%Y-%m-%d') }}
         </div>
         {% endif %}
       </div>

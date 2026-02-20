@@ -227,7 +227,7 @@
                         <span class="status-unread">새 문의</span>
                         {% endif %}
                     </td>
-                    <td style="text-align: center;">{{ message.created_at[:16] }}</td>
+                    <td style="text-align: center;">{{ message.created_at|datefmt }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -42,7 +42,7 @@
                             {% if photo.description %}
                             <p class="gallery-description">{{ photo.description }}</p>
                             {% endif %}
-                            <p class="gallery-date">{{ photo.upload_date[:10] if photo.upload_date else '' }}</p>
+                            <p class="gallery-date">{{ photo.upload_date|datefmt('%Y-%m-%d') }}</p>
                         </div>
                     </div>
                 </div>
@@ -73,7 +73,7 @@
                     {% if video.description %}
                     <p>{{ video.description }}</p>
                     {% endif %}
-                    <span class="video-date">{{ video.upload_date[:10] if video.upload_date else '' }}</span>
+                    <span class="video-date">{{ video.upload_date|datefmt('%Y-%m-%d') }}</span>
                 </div>
             </div>
             {% endfor %}

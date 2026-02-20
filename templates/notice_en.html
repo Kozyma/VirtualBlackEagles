@@ -53,7 +53,7 @@
             <td style="padding:0.8rem 1rem;text-align:center;color:#999;font-size:0.9rem;">{{ notice.id }}</td>
             <td style="padding:0.8rem 1rem;text-align:left;color:#333;font-size:0.95rem;">{{ notice.title }}</td>
             <td style="padding:0.8rem 1rem;text-align:center;color:#666;font-size:0.9rem;">{{ notice.author }}</td>
-            <td style="padding:0.8rem 1rem;text-align:center;color:#999;font-size:0.9rem;">{{ notice.created_at[:10] }}</td>
+            <td style="padding:0.8rem 1rem;text-align:center;color:#999;font-size:0.9rem;">{{ notice.created_at|datefmt('%Y-%m-%d') }}</td>
           </tr>
           {% endfor %}
         {% else %}
