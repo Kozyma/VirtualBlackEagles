@@ -11,7 +11,7 @@
 
 {% block content %}
     <div class="form-container">
-        <form method="POST" class="form">
+        <form method="POST" enctype="multipart/form-data" class="form">
             <div class="form-group">
                 <label for="title">제목 *</label>
                 <input type="text"
@@ -36,18 +36,31 @@
             </div>
 
             <div class="form-group">
-                <label for="image_url">이미지 URL *</label>
+                <label for="image_file">이미지 파일 업로드 *</label>
+                <input type="file"
+                       id="image_file"
+                       name="image_file"
+                       class="form-control"
+                       accept="image/*">
+                <span class="help-text">JPG, PNG, GIF 등 이미지 파일을 선택하세요. (최대 16MB)</span>
+                <div id="file-preview" style="margin-top:1rem;display:none;">
+                    <img id="file-preview-img" src="" alt="미리보기" style="max-width:300px;max-height:200px;border-radius:8px;border:1px solid #ddd;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="image_url">또는 이미지 URL 직접 입력</label>
                 <input type="url"
                        id="image_url"
                        name="image_url"
                        class="form-control"
                        value="{{ photo.image_url if photo else '' }}"
-                       required
                        placeholder="https://example.com/images/photo.jpg">
-                <span class="help-text">이미지 파일의 URL을 입력하세요. (예: /static/images/photo.jpg 또는 https://...)</span>
+                <span class="help-text">파일 업로드 대신 외부 이미지 URL을 입력할 수도 있습니다. 파일을 업로드하면 URL은 자동으로 설정됩니다.</span>
                 {% if photo and photo.image_url %}
                 <div class="image-preview" style="margin-top:1rem;">
-                    <img src="{{ photo.image_url }}" alt="미리보기" onerror="this.style.display='none'">
+                    <p style="font-size:0.85rem;color:#666;margin-bottom:0.5rem;">현재 이미지:</p>
+                    <img src="{{ photo.image_url }}" alt="현재 이미지" style="max-width:300px;max-height:200px;border-radius:8px;border:1px solid #ddd;" onerror="this.style.display='none'">
                 </div>
                 {% endif %}
             </div>
@@ -94,22 +107,40 @@
 
 {% block scripts %}
 <script>
-// 이미지 URL 입력시 실시간 미리보기
+// 파일 선택 시 미리보기
+document.getElementById('image_file').addEventListener('change', function() {
+    const file = this.files[0];
+    const preview = document.getElementById('file-preview');
+    const previewImg = document.getElementById('file-preview-img');
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+// 이미지 URL 입력 시 미리보기
 document.getElementById('image_url').addEventListener('change', function() {
     const url = this.value;
-    let preview = document.querySelector('.image-preview');
+    let preview = document.querySelector('.url-preview');
 
     if (!preview) {
         preview = document.createElement('div');
-        preview.className = 'image-preview';
+        preview.className = 'url-preview';
         preview.style.marginTop = '1rem';
         this.parentElement.appendChild(preview);
     }
 
     if (url) {
-        preview.innerHTML = `<img src="${url}" alt="미리보기" onerror="this.style.display='none'">`;
+        preview.innerHTML = '<img src="' + url + '" alt="미리보기" style="max-width:300px;max-height:200px;border-radius:8px;border:1px solid #ddd;" onerror="this.style.display=\'none\'">';
     } else {
-        preview.remove();
+        preview.innerHTML = '';
     }
 });
 </script>
