@@ -1864,18 +1864,18 @@ def admin_dashboard():
 		SELECT COUNT(DISTINCT ip_address) as count FROM page_views WHERE DATE(visited_at) = DATE('now')
 	''').fetchone()['count']
 
-	# 총 방문 수 (고유 IP 기준)
-	total_views = conn.execute('SELECT COUNT(DISTINCT ip_address || DATE(visited_at)) as count FROM page_views').fetchone()['count']
+	# 총 방문 수 (고유 IP+날짜 기준)
+	total_views = conn.execute('SELECT COUNT(DISTINCT ip_address || CAST(DATE(visited_at) AS TEXT)) as count FROM page_views').fetchone()['count']
 
-	# 이번 주 방문 수 (고유 IP 기준)
+	# 이번 주 방문 수 (고유 IP+날짜 기준)
 	week_views = conn.execute('''
-		SELECT COUNT(DISTINCT ip_address || DATE(visited_at)) as count FROM page_views
+		SELECT COUNT(DISTINCT ip_address || CAST(DATE(visited_at) AS TEXT)) as count FROM page_views
 		WHERE visited_at >= DATE('now', '-7 days')
 	''').fetchone()['count']
 
-	# 이번 달 방문 수 (고유 IP 기준)
+	# 이번 달 방문 수 (고유 IP+날짜 기준)
 	month_views = conn.execute('''
-		SELECT COUNT(DISTINCT ip_address || DATE(visited_at)) as count FROM page_views
+		SELECT COUNT(DISTINCT ip_address || CAST(DATE(visited_at) AS TEXT)) as count FROM page_views
 		WHERE visited_at >= DATE('now', 'start of month')
 	''').fetchone()['count']
 
@@ -2770,17 +2770,18 @@ def admin_commander_new():
 		greeting_text = request.form.get('greeting_text', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
-		
+		lang = request.form.get('lang', 'ko').strip()
+
 		if not all([name, rank, callsign, generation, aircraft]):
 			flash('모든 필수 항목을 입력해주세요.', 'error')
 			return redirect(url_for('admin_commander_new'))
-		
+
 		try:
 			order_num_int = int(order_num)
 		except:
 			flash('정렬 순서는 숫자여야 합니다.', 'error')
 			return redirect(url_for('admin_commander_new'))
-		
+
 		# 파일 업로드 처리
 		photo_url = '/static/images/default-pilot.jpg'  # 기본 이미지
 		file = request.files.get('photo')
@@ -2791,18 +2792,18 @@ def admin_commander_new():
 			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
-			
+
 			# 이미지 최적화
 			if optimize_image(filepath):
 				photo_url = f'/static/members/{filename}'
 			else:
 				flash('이미지 처리 중 오류가 발생했습니다.', 'warning')
-		
+
 		conn = get_db()
 		conn.execute('''
-			INSERT INTO commander_greeting (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num, is_active)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		''', (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num_int, is_active))
+			INSERT INTO commander_greeting (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num, is_active, lang)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		''', (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num_int, is_active, lang))
 		conn.commit()
 		conn.close()
 		
@@ -2827,21 +2828,22 @@ def admin_commander_edit(commander_id):
 		greeting_text = request.form.get('greeting_text', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
-		
+		lang = request.form.get('lang', 'ko').strip()
+
 		if not all([name, rank, callsign, generation, aircraft]):
 			flash('모든 필수 항목을 입력해주세요.', 'error')
 			return redirect(url_for('admin_commander_edit', commander_id=commander_id))
-		
+
 		try:
 			order_num_int = int(order_num)
 		except:
 			flash('정렬 순서는 숫자여야 합니다.', 'error')
 			return redirect(url_for('admin_commander_edit', commander_id=commander_id))
-		
+
 		# 기존 사진 URL 가져오기
 		commander = conn.execute('SELECT photo_url FROM commander_greeting WHERE id = ?', (commander_id,)).fetchone()
 		photo_url = commander['photo_url'] if commander else '/static/images/default-pilot.jpg'
-		
+
 		# 파일 업로드 처리
 		file = request.files.get('photo')
 		if file and file.filename:
@@ -2851,19 +2853,19 @@ def admin_commander_edit(commander_id):
 			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
-			
+
 			# 이미지 최적화
 			if optimize_image(filepath):
 				photo_url = f'/static/members/{filename}'
 			else:
 				flash('이미지 처리 중 오류가 발생했습니다.', 'warning')
-		
+
 		conn.execute('''
-			UPDATE commander_greeting 
-			SET name = ?, rank = ?, callsign = ?, generation = ?, aircraft = ?, 
-			    photo_url = ?, greeting_text = ?, order_num = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP 
+			UPDATE commander_greeting
+			SET name = ?, rank = ?, callsign = ?, generation = ?, aircraft = ?,
+			    photo_url = ?, greeting_text = ?, order_num = ?, is_active = ?, lang = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		''', (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num_int, is_active, commander_id))
+		''', (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num_int, is_active, lang, commander_id))
 		conn.commit()
 		conn.close()
 		
@@ -3011,13 +3013,17 @@ def admin_about_section_new():
 		section_type = request.form.get('section_type', '').strip()
 		title = request.form.get('title', '').strip()
 		content = request.form.get('content', '').strip()
-		order_num = int(request.form.get('order_num', 0))
+		try:
+			order_num = int(request.form.get('order_num', 0) or 0)
+		except (ValueError, TypeError):
+			order_num = 0
 		is_active = 1 if request.form.get('is_active') else 0
-		
+		lang = request.form.get('lang', 'ko').strip()
+
 		if not section_type or not title:
 			flash('섹션 유형과 제목은 필수입니다.', 'error')
 			return redirect(url_for('admin_about_section_new'))
-		
+
 		# 사진 업로드 처리
 		image_url = ''
 		if 'photo' in request.files:
@@ -3028,20 +3034,20 @@ def admin_about_section_new():
 				safe_section = ''.join(c for c in section_type if c.isalnum() or c in ('-', '_'))
 				file_ext = os.path.splitext(file.filename)[1].lower()
 				filename = f"{timestamp}_section_{safe_section}{file_ext}"
-				
+
 				# 저장 경로
 				upload_folder = os.path.join(app.static_folder, 'Picture')
 				os.makedirs(upload_folder, exist_ok=True)
 				filepath = os.path.join(upload_folder, filename)
-				
+
 				file.save(filepath)
 				image_url = f'/static/Picture/{filename}'
-		
+
 		conn = get_db()
 		conn.execute('''
-			INSERT INTO about_sections (section_type, title, content, image_url, order_num, is_active, updated_at)
-			VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-		''', (section_type, title, content, image_url, order_num, is_active))
+			INSERT INTO about_sections (section_type, title, content, image_url, order_num, is_active, lang, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+		''', (section_type, title, content, image_url, order_num, is_active, lang))
 		conn.commit()
 		conn.close()
 		
@@ -3060,17 +3066,21 @@ def admin_about_section_edit(section_id):
 		section_type = request.form.get('section_type', '').strip()
 		title = request.form.get('title', '').strip()
 		content = request.form.get('content', '').strip()
-		order_num = int(request.form.get('order_num', 0))
+		try:
+			order_num = int(request.form.get('order_num', 0) or 0)
+		except (ValueError, TypeError):
+			order_num = 0
 		is_active = 1 if request.form.get('is_active') else 0
-		
+		lang = request.form.get('lang', 'ko').strip()
+
 		if not section_type or not title:
 			flash('섹션 유형과 제목은 필수입니다.', 'error')
 			return redirect(url_for('admin_about_section_edit', section_id=section_id))
-		
+
 		# 기존 섹션 정보 가져오기
 		section = conn.execute('SELECT * FROM about_sections WHERE id = ?', (section_id,)).fetchone()
 		image_url = section['image_url'] if section else ''
-		
+
 		# 사진 업로드 처리
 		if 'photo' in request.files:
 			file = request.files['photo']
@@ -3080,20 +3090,20 @@ def admin_about_section_edit(section_id):
 				safe_section = ''.join(c for c in section_type if c.isalnum() or c in ('-', '_'))
 				file_ext = os.path.splitext(file.filename)[1].lower()
 				filename = f"{timestamp}_section_{safe_section}{file_ext}"
-				
+
 				# 저장 경로
 				upload_folder = os.path.join(app.static_folder, 'Picture')
 				os.makedirs(upload_folder, exist_ok=True)
 				filepath = os.path.join(upload_folder, filename)
-				
+
 				file.save(filepath)
 				image_url = f'/static/Picture/{filename}'
-		
+
 		conn.execute('''
-			UPDATE about_sections 
-			SET section_type = ?, title = ?, content = ?, image_url = ?, order_num = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+			UPDATE about_sections
+			SET section_type = ?, title = ?, content = ?, image_url = ?, order_num = ?, is_active = ?, lang = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		''', (section_type, title, content, image_url, order_num, is_active, section_id))
+		''', (section_type, title, content, image_url, order_num, is_active, lang, section_id))
 		conn.commit()
 		conn.close()
 		
