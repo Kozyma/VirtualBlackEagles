@@ -227,6 +227,9 @@ class DBWrapper:
 			r"DATE_TRUNC('month', \1) = DATE_TRUNC('month', CURRENT_TIMESTAMP)", sql)
 		# DEFAULT "center" → DEFAULT 'center' (쌍따옴표를 홑따옴표로)
 		sql = re.sub(r'DEFAULT\s+"([^"]*)"', r"DEFAULT '\1'", sql)
+		# 일반 SQL의 쌍따옴표 문자열을 홑따옴표로 변환 (= "value" → = 'value')
+		# PostgreSQL에서 쌍따옴표는 식별자(컬럼명)용이므로 문자열 값은 홑따옴표 사용 필요
+		sql = re.sub(r'=\s*"([^"]*)"', r"= '\1'", sql)
 		# SQL 주석 제거 (PostgreSQL 멀티라인 실행 시 문제 방지)
 		sql = re.sub(r'--[^\n]*', '', sql)
 		# INSERT OR IGNORE였던 쿼리에 ON CONFLICT DO NOTHING 추가
@@ -3388,7 +3391,7 @@ def chat_close():
 		''', (session_id, '방문자', ''))
 	else:
 		# 세션 상태를 closed 로 변경
-		cursor.execute('UPDATE chat_sessions SET status = "closed", updated_at = CURRENT_TIMESTAMP WHERE session_id = ?', (session_id,))
+		cursor.execute("UPDATE chat_sessions SET status = 'closed', updated_at = CURRENT_TIMESTAMP WHERE session_id = ?", (session_id,))
 	
 	# 시스템 메시지(선택) - 관리자 화면에서도 종료 시점을 확인할 수 있도록
 	cursor.execute('''
