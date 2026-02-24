@@ -43,10 +43,17 @@ jobs:
             SERVICE_NAME="virtualblackeagles"
             
             cd $APP_DIR
-            
+
+            echo ">>> DB 백업..."
+            mkdir -p /tmp/db_backup
+            cp -f *.db /tmp/db_backup/ 2>/dev/null || true
+
             echo ">>> Git pull..."
             git fetch origin
             git reset --hard origin/main
+
+            echo ">>> DB 복원..."
+            cp -f /tmp/db_backup/*.db . 2>/dev/null || true
             
             echo ">>> 의존성 설치..."
             source .venv/bin/activate
