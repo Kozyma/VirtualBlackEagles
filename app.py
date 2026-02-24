@@ -55,7 +55,7 @@ if os.environ.get('SESSION_COOKIE_DOMAIN'):
 app.config['SESSION_COOKIE_SECURE'] = True   # HTTPS에서만 쿠키 전송
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-# 프록시 뒤에서 HTTPS를 올바르게 감지하도록 설정
+# 프록시 뒤에서 HTTPS를 올바르게 감지하도록 설정 
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
