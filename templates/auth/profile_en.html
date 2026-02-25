@@ -22,21 +22,21 @@
     <div style="background:#f8f9fa;border-radius:8px;padding:1.2rem;margin-bottom:1.5rem;">
       <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
         <span style="font-size:0.85rem;color:#666;">Username</span>
-        <span style="font-size:0.85rem;color:#333;font-weight:500;">{{ user.username or '-' }}</span>
+        <span style="font-size:0.85rem;color:#333;font-weight:500;">{{ user.get('username', '-') or '-' }}</span>
       </div>
       <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
         <span style="font-size:0.85rem;color:#666;">Google Account</span>
-        <span style="font-size:0.85rem;color:{{ '#28a745' if user.google_id else '#999' }};font-weight:500;">
-          {{ 'Linked' if user.google_id else 'Not linked' }}
+        <span style="font-size:0.85rem;color:{{ '#28a745' if user.get('google_id') else '#999' }};font-weight:500;">
+          {{ 'Linked' if user.get('google_id') else 'Not linked' }}
         </span>
       </div>
       <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
         <span style="font-size:0.85rem;color:#666;">Joined</span>
-        <span style="font-size:0.85rem;color:#333;">{{ user.created_at[:10] if user.created_at else '-' }}</span>
+        <span style="font-size:0.85rem;color:#333;">{{ (user.get('created_at', '') or '')[:10] or '-' }}</span>
       </div>
       <div style="display:flex;justify-content:space-between;">
         <span style="font-size:0.85rem;color:#666;">Last Updated</span>
-        <span style="font-size:0.85rem;color:#333;">{{ user.updated_at[:10] if user.updated_at else '-' }}</span>
+        <span style="font-size:0.85rem;color:#333;">{{ (user.get('updated_at', '') or '')[:10] or '-' }}</span>
       </div>
     </div>
 
@@ -44,14 +44,14 @@
     <form method="POST" action="{{ url_for('auth_profile') }}?lang=en">
       <div style="margin-bottom:1rem;">
         <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">Display Name</label>
-        <input type="text" name="display_name" value="{{ user.display_name or '' }}"
+        <input type="text" name="display_name" value="{{ user.get('display_name', '') or '' }}"
                placeholder="Enter your display name"
                style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
       </div>
 
       <div style="margin-bottom:1.5rem;">
         <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">Email</label>
-        <input type="email" name="email" value="{{ user.email or '' }}" required
+        <input type="email" name="email" value="{{ user.get('email', '') or '' }}" required
                placeholder="example@email.com"
                style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
       </div>
@@ -61,7 +61,7 @@
         <h3 style="font-size:0.95rem;color:#333;margin:0 0 1rem;">Change Password</h3>
         <p style="font-size:0.8rem;color:#999;margin:-0.5rem 0 1rem;">Leave blank if you don't want to change it.</p>
 
-        {% if user.password_hash %}
+        {% if user.get('password_hash') %}
         <div style="margin-bottom:1rem;">
           <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">Current Password</label>
           <input type="password" name="current_password"

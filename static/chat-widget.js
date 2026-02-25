@@ -321,6 +321,11 @@ class ChatWidget {
             this.pollInterval = null;
         }
 
+        // 세션 정보 삭제
+        localStorage.removeItem('chat_session_id');
+        localStorage.removeItem('chat_user_name');
+        this.sessionId = null;
+
         // 입력창 숨기고 종료 메시지 표시
         const inputArea = document.getElementById('chat-input-area');
         if (inputArea) {
@@ -328,6 +333,7 @@ class ChatWidget {
         }
 
         // 종료 메시지 추가
+        const lang = this.getLanguage();
         const messagesContainer = document.getElementById('chat-messages');
         if (messagesContainer && !document.getElementById('chat-closed-notice')) {
             const closedNotice = document.createElement('div');
@@ -335,8 +341,8 @@ class ChatWidget {
             closedNotice.className = 'chat-closed-notice';
             closedNotice.innerHTML = `
                 <div class="closed-notice-content">
-                    <p>⚠️ 채팅이 종료되었습니다</p>
-                    <button onclick="chatWidget.startNewChat()" class="new-chat-btn">새로운 문의 시작</button>
+                    <p>${lang === 'en' ? '⚠️ Chat has been closed' : '⚠️ 채팅이 종료되었습니다'}</p>
+                    <button onclick="chatWidget.startNewChat()" class="new-chat-btn">${lang === 'en' ? 'Start new inquiry' : '새로운 문의 시작'}</button>
                 </div>
             `;
             messagesContainer.appendChild(closedNotice);
@@ -359,8 +365,19 @@ class ChatWidget {
         this.sessionId = null;
         this.userName = '방문자';
 
-        // 영역 초기화
+        // 메시지 영역 초기화
         const messagesArea = document.getElementById('chat-messages');
+        if (messagesArea) {
+            messagesArea.innerHTML = '';
+        }
+
+        // 로그인 유저는 자동으로 새 채팅 시작
+        if (this.loggedInUser && this.loggedInUser.loggedIn) {
+            this.autoStartChat();
+            return;
+        }
+
+        // 비로그인 유저는 이름 입력 폼 표시
         const inputArea = document.getElementById('chat-input-area');
         const nameForm = document.getElementById('chat-name-form');
 
@@ -372,10 +389,6 @@ class ChatWidget {
             const emailInput = document.getElementById('chat-user-email');
             if (nameInput) nameInput.value = '';
             if (emailInput) emailInput.value = '';
-        }
-
-        if (messagesArea) {
-            messagesArea.innerHTML = '';
         }
     }
 

@@ -121,7 +121,7 @@
             email: {{ '"' + (session.get('user_email', '')|e) + '"' if session.get('user_id') else 'null' }}
         };
     </script>
-    <script src="/static/chat-widget.js?v=8"></script>
+    <script src="/static/chat-widget.js?v=9"></script>
     <script src="/static/chat-widget-en.js?v=2"></script>
     <script>document.addEventListener('click',function(e){var d=document.getElementById('userDropdown');if(d&&!e.target.closest('#userMenuWrap'))d.style.display='none';});</script>
     {% block scripts %}
