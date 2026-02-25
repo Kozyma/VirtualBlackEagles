@@ -441,27 +441,31 @@ def init_db():
 	except:
 		conn.rollback()
 
-	# 기본 페이지 섹션 생성
-	default_sections = [
-		('home', 'about', 'text', 'About Us', '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.', None, None, None, 1, 1),
-		('about', 'intro', 'text', '팀 소개', '블랙이글스는 대한민국 공군의 자랑입니다.', None, None, None, 1, 1),
-		('contact', 'discord', 'text', 'Contact Us', 'Discord ㅣ Johnson#4553', None, None, None, 1, 1),
-	]
+	# 기본 페이지 섹션 생성 (데이터가 없을 때만)
+	existing_page_sections = _get_count(conn.execute('SELECT COUNT(*) FROM page_sections').fetchone())
+	if existing_page_sections == 0:
+		default_sections = [
+			('home', 'about', 'text', 'About Us', '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.', None, None, None, 1, 1),
+			('about', 'intro', 'text', '팀 소개', '블랙이글스는 대한민국 공군의 자랑입니다.', None, None, None, 1, 1),
+			('contact', 'discord', 'text', 'Contact Us', 'Discord ㅣ Johnson#4553', None, None, None, 1, 1),
+		]
 
-	for section in default_sections:
+		for section in default_sections:
+			conn.execute('''
+				INSERT INTO page_sections
+				(page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			''', section)
+
+	# 기본 홈페이지 배너 설정 (데이터가 없을 때만)
+	existing_banner = _get_count(conn.execute('SELECT COUNT(*) FROM banner_settings').fetchone())
+	if existing_banner == 0:
 		conn.execute('''
-			INSERT OR IGNORE INTO page_sections
-			(page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		''', section)
-
-	# 기본 홈페이지 배너 설정
-	conn.execute('''
-		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle, description, button_text, button_link)
-		VALUES ('home', '/static/images/hero.jpg', 'Black Eagles', 'Republic Of Korea AirForce',
-		        '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.',
-		        'more', '#about')
-	''')
+			INSERT INTO banner_settings (page_name, background_image, title, subtitle, description, button_text, button_link)
+			VALUES ('home', '/static/images/hero.jpg', 'Black Eagles', 'Republic Of Korea AirForce',
+			        '가상블랙이글스는 대한민국 블랙이글스의 다양한 특수비행을 통해 고도의 비행기량을 뽐내는 대한민국 가상 특수비행팀입니다.',
+			        'more', '#about')
+		''')
 
 	conn.commit()
 
@@ -546,11 +550,13 @@ def init_db():
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 			''', pilot)
 
-	# 기본 유튜브 콘텐츠 삽입
-	conn.execute('''
-		INSERT OR IGNORE INTO home_contents (id, content_type, title, content_data, order_num, is_active)
-		VALUES (1, 'youtube', 'Latest Video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 1, 1)
-	''')
+	# 기본 유튜브 콘텐츠 삽입 (데이터가 없을 때만)
+	existing_home_contents = _get_count(conn.execute('SELECT COUNT(*) FROM home_contents').fetchone())
+	if existing_home_contents == 0:
+		conn.execute('''
+			INSERT INTO home_contents (id, content_type, title, content_data, order_num, is_active)
+			VALUES (1, 'youtube', 'Latest Video', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 1, 1)
+		''')
 
 	conn.commit()
 
@@ -629,42 +635,44 @@ def init_db():
 	except Exception:
 		conn.rollback()
 
-	# 기본 개요 섹션 추가
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (1, 'overview', '가상 블랙이글스 소개',
-		'가상 블랙이글스는 DCS World에서 활동하는 대한민국 가상 공군 특수비행팀입니다. 실제 블랙이글스의 정신과 전통을 계승하며, 정교한 편대비행과 에어쇼를 통해 뛰어난 비행실력을 선보입니다.',
-		0, 1)
-	''')
+	# 기본 개요 섹션 추가 (데이터가 없을 때만)
+	existing_about_sections = _get_count(conn.execute('SELECT COUNT(*) FROM about_sections').fetchone())
+	if existing_about_sections == 0:
+		conn.execute('''
+			INSERT INTO about_sections (id, section_type, title, content, order_num, is_active)
+			VALUES (1, 'overview', '가상 블랙이글스 소개',
+			'가상 블랙이글스는 DCS World에서 활동하는 대한민국 가상 공군 특수비행팀입니다. 실제 블랙이글스의 정신과 전통을 계승하며, 정교한 편대비행과 에어쇼를 통해 뛰어난 비행실력을 선보입니다.',
+			0, 1)
+		''')
 
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (2, 'mission', '임무',
-		'우리의 임무는 대한민국 공군의 우수성을 전 세계에 알리고, 가상 비행 시뮬레이션을 통해 항공에 대한 관심과 이해를 높이는 것입니다. 또한 팀원들의 비행 실력 향상과 팀워크 강화를 목표로 합니다.',
-		1, 1)
-	''')
+		conn.execute('''
+			INSERT INTO about_sections (id, section_type, title, content, order_num, is_active)
+			VALUES (2, 'mission', '임무',
+			'우리의 임무는 대한민국 공군의 우수성을 전 세계에 알리고, 가상 비행 시뮬레이션을 통해 항공에 대한 관심과 이해를 높이는 것입니다. 또한 팀원들의 비행 실력 향상과 팀워크 강화를 목표로 합니다.',
+			1, 1)
+		''')
 
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (3, 'aircraft_intro', 'T-50B 골든이글',
-		'T-50B는 대한민국이 자체 개발한 초음속 고등훈련기로, 블랙이글스 팀이 사용하는 항공기입니다. 우수한 기동성과 안정성을 자랑하며, 다양한 편대비행 기동을 수행할 수 있습니다.',
-		2, 1)
-	''')
+		conn.execute('''
+			INSERT INTO about_sections (id, section_type, title, content, order_num, is_active)
+			VALUES (3, 'aircraft_intro', 'T-50B 골든이글',
+			'T-50B는 대한민국이 자체 개발한 초음속 고등훈련기로, 블랙이글스 팀이 사용하는 항공기입니다. 우수한 기동성과 안정성을 자랑하며, 다양한 편대비행 기동을 수행할 수 있습니다.',
+			2, 1)
+		''')
 
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, image_url, order_num, is_active)
-		VALUES (4, 'aircraft_specs', 'T-50B 제원',
-		'최대속도: 마하 1.5|전투행동반경: 1,851km|최대이륙중량: 12,300kg|엔진: F404-GE-102 터보팬|승무원: 2명|무장: 20mm 기관포, 공대공 미사일',
-		'/static/images/t50b.jpg',
-		3, 1)
-	''')
+		conn.execute('''
+			INSERT INTO about_sections (id, section_type, title, content, image_url, order_num, is_active)
+			VALUES (4, 'aircraft_specs', 'T-50B 제원',
+			'최대속도: 마하 1.5|전투행동반경: 1,851km|최대이륙중량: 12,300kg|엔진: F404-GE-102 터보팬|승무원: 2명|무장: 20mm 기관포, 공대공 미사일',
+			'/static/images/t50b.jpg',
+			3, 1)
+		''')
 
-	conn.execute('''
-		INSERT OR IGNORE INTO about_sections (id, section_type, title, content, order_num, is_active)
-		VALUES (5, 'aircraft_features', '특징',
-		'우수한 기동성|높은 안정성|효율적인 연료 소비|조종사 친화적 설계|다목적 운용 가능',
-		4, 1)
-	''')
+		conn.execute('''
+			INSERT INTO about_sections (id, section_type, title, content, order_num, is_active)
+			VALUES (5, 'aircraft_features', '특징',
+			'우수한 기동성|높은 안정성|효율적인 연료 소비|조종사 친화적 설계|다목적 운용 가능',
+			4, 1)
+		''')
 
 	# 기본 전대장 데이터 삽입 (데이터가 없을 때만)
 	existing_commanders = _get_count(conn.execute('SELECT COUNT(*) as count FROM commander_greeting').fetchone())
@@ -778,16 +786,18 @@ def init_db():
 
 	# ---- 여기부터 DML (INSERT/UPDATE) ----
 
-	# 기본 샘플 이미지 추가
-	conn.execute('''
-		INSERT OR IGNORE INTO gallery (id, title, description, image_url, order_num, is_active)
-		VALUES (1, '편대비행 훈련', 'T-50B 4기 편대비행 훈련 모습', '/static/Picture/20251207_173919_section_formation.png', 1, 1)
-	''')
+	# 기본 샘플 이미지 추가 (데이터가 없을 때만)
+	existing_gallery = _get_count(conn.execute('SELECT COUNT(*) FROM gallery').fetchone())
+	if existing_gallery == 0:
+		conn.execute('''
+			INSERT INTO gallery (id, title, description, image_url, order_num, is_active)
+			VALUES (1, '편대비행 훈련', 'T-50B 4기 편대비행 훈련 모습', '/static/Picture/20251207_173919_section_formation.png', 1, 1)
+		''')
 
-	conn.execute('''
-		INSERT OR IGNORE INTO gallery (id, title, description, image_url, order_num, is_active)
-		VALUES (2, '에어쇼 공연', '2024 서울 에어쇼 블랙이글스 공연', '/static/Picture/Formation.png', 2, 1)
-	''')
+		conn.execute('''
+			INSERT INTO gallery (id, title, description, image_url, order_num, is_active)
+			VALUES (2, '에어쇼 공연', '2024 서울 에어쇼 블랙이글스 공연', '/static/Picture/Formation.png', 2, 1)
+		''')
 
 	# 기본 이미지 키 등록
 	default_images = [
@@ -797,21 +807,13 @@ def init_db():
 		('t50b_main', 'T-50B 메인 이미지', '/static/Picture/Formation.png', '항공기 소개 이미지', 'about'),
 	]
 
-	for img_key, img_name, img_path, desc, cat in default_images:
-		conn.execute('''
-			INSERT OR IGNORE INTO site_images (image_key, image_name, image_path, description, category)
-			VALUES (?, ?, ?, ?, ?)
-		''', (img_key, img_name, img_path, desc, cat))
-
-	# 기존 DB에 이미 t50b_main 이 있다면 경로를 실제 존재하는 이미지로 교체
-	try:
-		conn.execute('''
-			UPDATE site_images
-			SET image_path = '/static/Picture/Formation.png'
-			WHERE image_key = 't50b_main'
-		''')
-	except Exception:
-		conn.rollback()
+	existing_site_images = _get_count(conn.execute('SELECT COUNT(*) FROM site_images').fetchone())
+	if existing_site_images == 0:
+		for img_key, img_name, img_path, desc, cat in default_images:
+			conn.execute('''
+				INSERT INTO site_images (image_key, image_name, image_path, description, category)
+				VALUES (?, ?, ?, ?, ?)
+			''', (img_key, img_name, img_path, desc, cat))
 
 	# 기본 후원 설정
 	conn.execute('''
