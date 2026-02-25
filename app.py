@@ -851,6 +851,19 @@ def init_db():
 
 
 	conn.commit()
+
+	# PostgreSQL: 명시적 ID 삽입 후 SERIAL 시퀀스 리셋
+	# INSERT OR IGNORE로 id를 직접 지정하면 PostgreSQL 시퀀스가 갱신되지 않아
+	# 이후 새 레코드 삽입 시 ID 충돌(UniqueViolation) 500 에러가 발생함
+	if USE_POSTGRES:
+		try:
+			conn.execute("SELECT setval('about_sections_id_seq', COALESCE((SELECT MAX(id) FROM about_sections), 1))")
+			conn.execute("SELECT setval('home_contents_id_seq', COALESCE((SELECT MAX(id) FROM home_contents), 1))")
+			conn.execute("SELECT setval('gallery_id_seq', COALESCE((SELECT MAX(id) FROM gallery), 1))")
+			conn.commit()
+		except Exception:
+			conn.rollback()
+
 	conn.close()
 
 # 관리자 계정 (실제 운영시에는 데이터베이스나 환경변수 사용 권장)
