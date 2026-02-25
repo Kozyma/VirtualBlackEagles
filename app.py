@@ -506,6 +506,7 @@ def init_db():
 			image_url TEXT,
 			order_num INTEGER DEFAULT 0,
 			is_active INTEGER DEFAULT 1,
+			lang TEXT DEFAULT 'ko',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
@@ -566,6 +567,7 @@ def init_db():
 			greeting_text TEXT,
 			order_num INTEGER DEFAULT 0,
 			is_active INTEGER DEFAULT 1,
+			lang TEXT DEFAULT 'ko',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
@@ -2185,8 +2187,11 @@ def admin_page_section_save():
 	image_url = request.form.get('image_url', '').strip()
 	link_url = request.form.get('link_url', '').strip()
 	link_text = request.form.get('link_text', '').strip()
-	order_num = request.form.get('order_num', '0').strip()
-	is_active = 1 if request.form.get('is_active') == 'on' else 0
+	try:
+		order_num = int(request.form.get('order_num', 0) or 0)
+	except (ValueError, TypeError):
+		order_num = 0
+	is_active = 1 if request.form.get('is_active') else 0
 	
 	if not page_name or not section_identifier:
 		flash('페이지 이름과 섹션 ID는 필수입니다.', 'error')
@@ -3160,7 +3165,10 @@ def admin_gallery_new():
 		title = request.form.get('title', '').strip()
 		description = request.form.get('description', '').strip()
 		image_url = request.form.get('image_url', '').strip()
-		order_num = request.form.get('order_num', 0)
+		try:
+			order_num = int(request.form.get('order_num', 0) or 0)
+		except (ValueError, TypeError):
+			order_num = 0
 		is_active = 1 if request.form.get('is_active') else 0
 
 		# 파일 업로드 처리
@@ -3201,7 +3209,10 @@ def admin_gallery_edit(photo_id):
 		title = request.form.get('title', '').strip()
 		description = request.form.get('description', '').strip()
 		image_url = request.form.get('image_url', '').strip()
-		order_num = request.form.get('order_num', 0)
+		try:
+			order_num = int(request.form.get('order_num', 0) or 0)
+		except (ValueError, TypeError):
+			order_num = 0
 		is_active = 1 if request.form.get('is_active') else 0
 
 		# 파일 업로드 처리
@@ -3598,7 +3609,10 @@ def admin_video_new():
 		title = request.form.get('title', '').strip()
 		description = request.form.get('description', '').strip()
 		video_url = request.form.get('video_url', '').strip()
-		order_num = request.form.get('order_num', 0)
+		try:
+			order_num = int(request.form.get('order_num', 0) or 0)
+		except (ValueError, TypeError):
+			order_num = 0
 		is_active = 1 if request.form.get('is_active') else 0
 
 		if not title or not video_url:
@@ -3628,7 +3642,10 @@ def admin_video_edit(video_id):
 		title = request.form.get('title', '').strip()
 		description = request.form.get('description', '').strip()
 		video_url = request.form.get('video_url', '').strip()
-		order_num = request.form.get('order_num', 0)
+		try:
+			order_num = int(request.form.get('order_num', 0) or 0)
+		except (ValueError, TypeError):
+			order_num = 0
 		is_active = 1 if request.form.get('is_active') else 0
 
 		if not title or not video_url:
