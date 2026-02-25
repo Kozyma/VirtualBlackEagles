@@ -41,7 +41,17 @@
 </style>
 {% endblock %}
 
+{% block top_actions %}
+    <a href="{{ url_for('admin_banner_new') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 새 배너</a>
+{% endblock %}
+
 {% block content %}
+<div style="margin-bottom:1rem;display:flex;gap:0.5rem;">
+    <a href="?" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if not lang_filter else '#e9ecef' }};color:{{ '#fff' if not lang_filter else '#333' }};">전체</a>
+    <a href="?lang=ko" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if lang_filter == 'ko' else '#e9ecef' }};color:{{ '#fff' if lang_filter == 'ko' else '#333' }};">한국어</a>
+    <a href="?lang=en" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if lang_filter == 'en' else '#e9ecef' }};color:{{ '#fff' if lang_filter == 'en' else '#333' }};">English</a>
+</div>
+
 <div class="banner-list">
     <h2 style="margin-top: 0;">배너 목록</h2>
 
@@ -53,7 +63,10 @@
                 <div class="banner-preview" style="background-image: url('{{ banner.background_image }}');"></div>
                 {% endif %}
                 <div class="banner-info">
-                    <h3>{{ banner.page_name|upper }} 페이지</h3>
+                    <h3>
+                        <span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.75rem;font-weight:600;color:#fff;background:{{ '#28a745' if banner.lang == 'en' else '#007bff' }};">{{ banner.lang|upper if banner.lang else 'KO' }}</span>
+                        {{ banner.page_name|upper }} 페이지
+                    </h3>
                     <p><strong>제목:</strong> {{ banner.title }}</p>
                     <p><strong>부제목:</strong> {{ banner.subtitle or '없음' }}</p>
                     <p><strong>설명:</strong> {{ (banner.description or '')[:50] }}{{ '...' if (banner.description or '')|length > 50 else '' }}</p>

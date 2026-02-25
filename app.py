@@ -341,6 +341,13 @@ def _get_count(row):
 	except (IndexError, KeyError):
 		return 0
 
+def get_banner_for_lang(conn, page_name, lang):
+	"""언어별 배너를 가져오고, 해당 언어가 없으면 한국어 폴백"""
+	banner = conn.execute('SELECT * FROM banner_settings WHERE page_name = ? AND lang = ?', (page_name, lang)).fetchone()
+	if not banner and lang != 'ko':
+		banner = conn.execute('SELECT * FROM banner_settings WHERE page_name = ? AND lang = ?', (page_name, 'ko')).fetchone()
+	return banner
+
 def init_db():
 	"""데이터베이스 초기화"""
 	conn = get_db()
@@ -634,6 +641,129 @@ def init_db():
 		conn.commit()
 	except Exception:
 		conn.rollback()
+
+	# page_sections 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE page_sections ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
+	# banner_settings 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE banner_settings ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
+	# home_contents 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE home_contents ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
+	# gallery 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE gallery ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
+	# notices 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE notices ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
+	# page_sections UNIQUE 제약조건 변경: (page_name, section_id) → (page_name, section_id, lang)
+	if USE_POSTGRES:
+		try:
+			conn.execute("ALTER TABLE page_sections DROP CONSTRAINT IF EXISTS page_sections_page_name_section_id_key")
+			conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_page_sections_lang ON page_sections(page_name, section_id, lang)")
+			conn.commit()
+		except Exception:
+			conn.rollback()
+	else:
+		try:
+			# SQLite: 테이블 재생성으로 UNIQUE 제약조건 변경
+			existing_cols = conn.execute("PRAGMA table_info(page_sections)").fetchall()
+			col_names = [col[1] if isinstance(col, tuple) else col['name'] for col in existing_cols]
+			if 'lang' in col_names:
+				conn.execute('ALTER TABLE page_sections RENAME TO page_sections_old')
+				conn.execute('''
+					CREATE TABLE page_sections (
+						id INTEGER PRIMARY KEY AUTOINCREMENT,
+						page_name TEXT NOT NULL,
+						section_id TEXT NOT NULL,
+						section_type TEXT NOT NULL,
+						title TEXT,
+						content TEXT,
+						image_url TEXT,
+						link_url TEXT,
+						link_text TEXT,
+						order_num INTEGER DEFAULT 0,
+						is_active INTEGER DEFAULT 1,
+						lang TEXT DEFAULT 'ko',
+						updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+						UNIQUE(page_name, section_id, lang)
+					)
+				''')
+				conn.execute('''
+					INSERT INTO page_sections (id, page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active, lang, updated_at)
+					SELECT id, page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active, COALESCE(lang, 'ko'), updated_at
+					FROM page_sections_old
+				''')
+				conn.execute('DROP TABLE page_sections_old')
+				conn.commit()
+		except Exception:
+			conn.rollback()
+
+	# banner_settings UNIQUE 제약조건 변경: page_name UNIQUE → (page_name, lang) UNIQUE
+	if USE_POSTGRES:
+		try:
+			conn.execute("ALTER TABLE banner_settings DROP CONSTRAINT IF EXISTS banner_settings_page_name_key")
+			conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_banner_settings_lang ON banner_settings(page_name, lang)")
+			conn.commit()
+		except Exception:
+			conn.rollback()
+	else:
+		try:
+			existing_cols = conn.execute("PRAGMA table_info(banner_settings)").fetchall()
+			col_names = [col[1] if isinstance(col, tuple) else col['name'] for col in existing_cols]
+			if 'lang' in col_names:
+				conn.execute('ALTER TABLE banner_settings RENAME TO banner_settings_old')
+				conn.execute('''
+					CREATE TABLE banner_settings (
+						id INTEGER PRIMARY KEY AUTOINCREMENT,
+						page_name TEXT NOT NULL,
+						background_image TEXT,
+						title TEXT NOT NULL,
+						subtitle TEXT,
+						description TEXT,
+						button_text TEXT,
+						button_link TEXT,
+						title_font TEXT DEFAULT 'Arial, sans-serif',
+						title_color TEXT DEFAULT '#ffffff',
+						subtitle_color TEXT DEFAULT '#ffffff',
+						description_color TEXT DEFAULT '#ffffff',
+						vertical_position TEXT DEFAULT 'center',
+						padding_top INTEGER DEFAULT 250,
+						lang TEXT DEFAULT 'ko',
+						updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+						UNIQUE(page_name, lang)
+					)
+				''')
+				conn.execute('''
+					INSERT INTO banner_settings (id, page_name, background_image, title, subtitle, description, button_text, button_link, title_font, title_color, subtitle_color, description_color, vertical_position, padding_top, lang, updated_at)
+					SELECT id, page_name, background_image, title, subtitle, description, button_text, button_link, title_font, title_color, subtitle_color, description_color, vertical_position, padding_top, COALESCE(lang, 'ko'), updated_at
+					FROM banner_settings_old
+				''')
+				conn.execute('DROP TABLE banner_settings_old')
+				conn.commit()
+		except Exception:
+			conn.rollback()
 
 	# 기본 개요 섹션 추가 (데이터가 없을 때만)
 	existing_about_sections = _get_count(conn.execute('SELECT COUNT(*) FROM about_sections').fetchone())
@@ -1016,17 +1146,21 @@ def index():
 	try:
 		conn = get_db()
 		try:
-			banner = conn.execute('SELECT * FROM banner_settings WHERE page_name = ?', ('home',)).fetchone()
+			banner = get_banner_for_lang(conn, 'home', lang)
 		except:
 			banner = None
-		
+
 		try:
-			sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 ORDER BY order_num', ('home',)).fetchall()
+			sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('home', lang)).fetchall()
+			if not sections and lang != 'ko':
+				sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('home', 'ko')).fetchall()
 		except:
 			sections = []
-		
+
 		try:
-			home_contents = conn.execute('SELECT * FROM home_contents WHERE is_active = 1 ORDER BY order_num').fetchall()
+			home_contents = conn.execute('SELECT * FROM home_contents WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang,)).fetchall()
+			if not home_contents and lang != 'ko':
+				home_contents = conn.execute('SELECT * FROM home_contents WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
 		except:
 			home_contents = []
 		
@@ -1231,30 +1365,30 @@ def notice():
 	search_type = request.args.get('search_type', 'title')
 
 	conn = get_db()
-	banner = conn.execute("SELECT * FROM banner_settings WHERE page_name = ?", ('notice',)).fetchone()
+	banner = get_banner_for_lang(conn, 'notice', lang)
 
 	# 검색 쿼리 처리
 	if search_query:
 		if search_type == 'content':
-			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE content LIKE ?', (f'%{search_query}%',)).fetchone()
+			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE content LIKE ? AND lang = ?', (f'%{search_query}%', lang)).fetchone()
 			total = count_row['cnt']
-			notices = conn.execute('SELECT * FROM notices WHERE content LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-				(f'%{search_query}%', per_page, (page - 1) * per_page)).fetchall()
+			notices = conn.execute('SELECT * FROM notices WHERE content LIKE ? AND lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+				(f'%{search_query}%', lang, per_page, (page - 1) * per_page)).fetchall()
 		elif search_type == 'author':
-			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE author LIKE ?', (f'%{search_query}%',)).fetchone()
+			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE author LIKE ? AND lang = ?', (f'%{search_query}%', lang)).fetchone()
 			total = count_row['cnt']
-			notices = conn.execute('SELECT * FROM notices WHERE author LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-				(f'%{search_query}%', per_page, (page - 1) * per_page)).fetchall()
+			notices = conn.execute('SELECT * FROM notices WHERE author LIKE ? AND lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+				(f'%{search_query}%', lang, per_page, (page - 1) * per_page)).fetchall()
 		else:
-			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE title LIKE ?', (f'%{search_query}%',)).fetchone()
+			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE title LIKE ? AND lang = ?', (f'%{search_query}%', lang)).fetchone()
 			total = count_row['cnt']
-			notices = conn.execute('SELECT * FROM notices WHERE title LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-				(f'%{search_query}%', per_page, (page - 1) * per_page)).fetchall()
+			notices = conn.execute('SELECT * FROM notices WHERE title LIKE ? AND lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+				(f'%{search_query}%', lang, per_page, (page - 1) * per_page)).fetchall()
 	else:
-		count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices').fetchone()
+		count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE lang = ?', (lang,)).fetchone()
 		total = count_row['cnt']
-		notices = conn.execute('SELECT * FROM notices ORDER BY created_at DESC LIMIT ? OFFSET ?',
-			(per_page, (page - 1) * per_page)).fetchall()
+		notices = conn.execute('SELECT * FROM notices WHERE lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+			(lang, per_page, (page - 1) * per_page)).fetchall()
 
 	conn.close()
 	total_pages = max(1, (total + per_page - 1) // per_page)
@@ -1283,8 +1417,10 @@ def notice_detail(notice_id):
 def about():
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
-	banner = conn.execute('SELECT * FROM banner_settings WHERE page_name = ?', ('about',)).fetchone()
-	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 ORDER BY order_num', ('about',)).fetchall()
+	banner = get_banner_for_lang(conn, 'about', lang)
+	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('about', lang)).fetchall()
+	if not sections and lang != 'ko':
+		sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('about', 'ko')).fetchall()
 	pilots = conn.execute('SELECT * FROM pilots WHERE is_active = 1 ORDER BY order_num').fetchall()
 	
 	# 정비사 가져오기
@@ -1322,8 +1458,10 @@ def about():
 def contact():
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
-	banner = conn.execute('SELECT * FROM banner_settings WHERE page_name = ?', ('contact',)).fetchone()
-	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 ORDER BY order_num', ('contact',)).fetchall()
+	banner = get_banner_for_lang(conn, 'contact', lang)
+	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('contact', lang)).fetchall()
+	if not sections and lang != 'ko':
+		sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('contact', 'ko')).fetchall()
 	conn.close()
 	
 	if lang == 'en':
@@ -1336,8 +1474,10 @@ def contact():
 def donate():
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
-	banner = conn.execute('SELECT * FROM banner_settings WHERE page_name = ?', ('donate',)).fetchone()
-	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 ORDER BY order_num', ('donate',)).fetchall()
+	banner = get_banner_for_lang(conn, 'donate', lang)
+	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('donate', lang)).fetchall()
+	if not sections and lang != 'ko':
+		sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('donate', 'ko')).fetchall()
 	# 후원 설정 가져오기
 	donate_settings = {}
 	try:
@@ -1363,8 +1503,10 @@ def gallery():
 def gallery_photos():
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
-	photos = conn.execute('SELECT * FROM gallery WHERE is_active = 1 ORDER BY order_num, upload_date DESC').fetchall()
-	banner = conn.execute("SELECT * FROM banner_settings WHERE page_name = ?", ('gallery',)).fetchone()
+	photos = conn.execute('SELECT * FROM gallery WHERE is_active = 1 AND lang = ? ORDER BY order_num, upload_date DESC', (lang,)).fetchall()
+	if not photos and lang != 'ko':
+		photos = conn.execute('SELECT * FROM gallery WHERE is_active = 1 AND lang = ? ORDER BY order_num, upload_date DESC', ('ko',)).fetchall()
+	banner = get_banner_for_lang(conn, 'gallery', lang)
 	conn.close()
 
 	if lang == 'en':
@@ -1378,7 +1520,7 @@ def gallery_videos():
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
 	videos = conn.execute('SELECT * FROM videos WHERE is_active = 1 ORDER BY order_num, upload_date DESC').fetchall()
-	banner = conn.execute("SELECT * FROM banner_settings WHERE page_name = ?", ('gallery',)).fetchone()
+	banner = get_banner_for_lang(conn, 'gallery', lang)
 	conn.close()
 
 	if lang == 'en':
@@ -2028,10 +2170,14 @@ def admin_dashboard():
 @app.route('/admin/notices')
 @login_required
 def admin_notices():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	notices = conn.execute('SELECT * FROM notices ORDER BY created_at DESC').fetchall()
+	if lang_filter:
+		notices = conn.execute('SELECT * FROM notices WHERE lang = ? ORDER BY created_at DESC', (lang_filter,)).fetchall()
+	else:
+		notices = conn.execute('SELECT * FROM notices ORDER BY created_at DESC').fetchall()
 	conn.close()
-	return render_template('admin/notices.html', notices=notices)
+	return render_template('admin/notices.html', notices=notices, lang_filter=lang_filter)
 
 
 # 공지사항 작성 페이지
@@ -2042,14 +2188,15 @@ def admin_notice_new():
 		title = request.form.get('title', '').strip()
 		content = request.form.get('content', '').strip()
 		author = session.get('username', 'admin')
-		
+		lang = request.form.get('lang', 'ko').strip()
+
 		if not title or not content:
 			flash('제목과 내용을 모두 입력해주세요.', 'error')
 			return redirect(url_for('admin_notice_new'))
-		
+
 		conn = get_db()
-		conn.execute('INSERT INTO notices (title, content, author) VALUES (?, ?, ?)',
-					 (title, content, author))
+		conn.execute('INSERT INTO notices (title, content, author, lang) VALUES (?, ?, ?, ?)',
+					 (title, content, author, lang))
 		conn.commit()
 		conn.close()
 		
@@ -2064,17 +2211,18 @@ def admin_notice_new():
 @login_required
 def admin_notice_edit(notice_id):
 	conn = get_db()
-	
+
 	if request.method == 'POST':
 		title = request.form.get('title', '').strip()
 		content = request.form.get('content', '').strip()
-		
+		lang = request.form.get('lang', 'ko').strip()
+
 		if not title or not content:
 			flash('제목과 내용을 모두 입력해주세요.', 'error')
 			return redirect(url_for('admin_notice_edit', notice_id=notice_id))
-		
-		conn.execute('UPDATE notices SET title = ?, content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-					 (title, content, notice_id))
+
+		conn.execute('UPDATE notices SET title = ?, content = ?, lang = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+					 (title, content, lang, notice_id))
 		conn.commit()
 		conn.close()
 		
@@ -2244,10 +2392,14 @@ def admin_message_delete(message_id):
 @app.route('/admin/pages')
 @login_required
 def admin_pages():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	sections = conn.execute('SELECT * FROM page_sections ORDER BY page_name, order_num').fetchall()
+	if lang_filter:
+		sections = conn.execute('SELECT * FROM page_sections WHERE lang = ? ORDER BY page_name, order_num', (lang_filter,)).fetchall()
+	else:
+		sections = conn.execute('SELECT * FROM page_sections ORDER BY page_name, order_num').fetchall()
 	conn.close()
-	
+
 	# 페이지별로 그룹화
 	pages = {}
 	for section in sections:
@@ -2255,8 +2407,8 @@ def admin_pages():
 		if page not in pages:
 			pages[page] = []
 		pages[page].append(section)
-	
-	return render_template('admin/pages.html', pages=pages)
+
+	return render_template('admin/pages.html', pages=pages, lang_filter=lang_filter)
 
 
 # 페이지 섹션 추가/수정 폼
@@ -2294,38 +2446,39 @@ def admin_page_section_save():
 	except (ValueError, TypeError):
 		order_num = 0
 	is_active = 1 if request.form.get('is_active') else 0
-	
+	lang = request.form.get('lang', 'ko').strip()
+
 	if not page_name or not section_identifier:
 		flash('페이지 이름과 섹션 ID는 필수입니다.', 'error')
 		return redirect(url_for('admin_page_section_form'))
-	
+
 	conn = get_db()
-	
+
 	if section_id:
 		# 업데이트
 		conn.execute('''
-			UPDATE page_sections 
-			SET page_name = ?, section_id = ?, section_type = ?, title = ?, content = ?, 
-			    image_url = ?, link_url = ?, link_text = ?, order_num = ?, is_active = ?, 
-			    updated_at = CURRENT_TIMESTAMP
+			UPDATE page_sections
+			SET page_name = ?, section_id = ?, section_type = ?, title = ?, content = ?,
+			    image_url = ?, link_url = ?, link_text = ?, order_num = ?, is_active = ?,
+			    lang = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		''', (page_name, section_identifier, section_type, title, content, image_url, 
-		      link_url, link_text, order_num, is_active, section_id))
+		''', (page_name, section_identifier, section_type, title, content, image_url,
+		      link_url, link_text, order_num, is_active, lang, section_id))
 		flash('섹션이 수정되었습니다.', 'success')
 	else:
 		# 새로 추가
 		try:
 			conn.execute('''
-				INSERT INTO page_sections 
-				(page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			''', (page_name, section_identifier, section_type, title, content, image_url, 
-			      link_url, link_text, order_num, is_active))
+				INSERT INTO page_sections
+				(page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active, lang)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			''', (page_name, section_identifier, section_type, title, content, image_url,
+			      link_url, link_text, order_num, is_active, lang))
 			flash('섹션이 추가되었습니다.', 'success')
 		except Exception as _integrity_err:
 			if 'IntegrityError' not in type(_integrity_err).__name__ and 'UNIQUE' not in str(_integrity_err).upper():
 				raise
-			flash('이미 존재하는 페이지/섹션 조합입니다.', 'error')
+			flash('이미 존재하는 페이지/섹션/언어 조합입니다.', 'error')
 			conn.close()
 			return redirect(url_for('admin_page_section_form'))
 	
@@ -2350,10 +2503,14 @@ def admin_page_section_delete(section_id):
 @app.route('/admin/banner')
 @login_required
 def admin_banner():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	banners = conn.execute('SELECT * FROM banner_settings ORDER BY page_name').fetchall()
+	if lang_filter:
+		banners = conn.execute('SELECT * FROM banner_settings WHERE lang = ? ORDER BY page_name', (lang_filter,)).fetchall()
+	else:
+		banners = conn.execute('SELECT * FROM banner_settings ORDER BY page_name').fetchall()
 	conn.close()
-	return render_template('admin/banner.html', banners=banners)
+	return render_template('admin/banner.html', banners=banners, lang_filter=lang_filter)
 
 
 # 배너 설정 수정
@@ -2375,26 +2532,27 @@ def admin_banner_edit(banner_id):
 		description_color = request.form.get('description_color', '#ffffff').strip()
 		vertical_position = request.form.get('vertical_position', 'center').strip()
 		padding_top = request.form.get('padding_top', '250').strip()
-		
+		lang = request.form.get('lang', 'ko').strip()
+
 		if not title:
 			flash('제목을 입력해주세요.', 'error')
 			return redirect(url_for('admin_banner_edit', banner_id=banner_id))
-		
+
 		try:
 			padding_top_int = int(padding_top)
 		except:
 			padding_top_int = 250
-		
+
 		conn.execute('''
-			UPDATE banner_settings 
-			SET background_image = ?, title = ?, subtitle = ?, description = ?, 
-			    button_text = ?, button_link = ?, title_font = ?, title_color = ?, 
-			    subtitle_color = ?, description_color = ?, vertical_position = ?, 
-			    padding_top = ?, updated_at = CURRENT_TIMESTAMP 
+			UPDATE banner_settings
+			SET background_image = ?, title = ?, subtitle = ?, description = ?,
+			    button_text = ?, button_link = ?, title_font = ?, title_color = ?,
+			    subtitle_color = ?, description_color = ?, vertical_position = ?,
+			    padding_top = ?, lang = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
 		''', (background_image, title, subtitle, description, button_text, button_link,
 		      title_font, title_color, subtitle_color, description_color, vertical_position,
-		      padding_top_int, banner_id))
+		      padding_top_int, lang, banner_id))
 		conn.commit()
 		conn.close()
 		
@@ -2409,6 +2567,61 @@ def admin_banner_edit(banner_id):
 		return redirect(url_for('admin_banner'))
 	
 	return render_template('admin/banner_form.html', banner=banner)
+
+
+# 배너 새로 추가
+@app.route('/admin/banner/new', methods=['GET', 'POST'])
+@login_required
+def admin_banner_new():
+	if request.method == 'POST':
+		page_name = request.form.get('page_name', '').strip()
+		background_image = request.form.get('background_image', '').strip()
+		title = request.form.get('title', '').strip()
+		subtitle = request.form.get('subtitle', '').strip()
+		description = request.form.get('description', '').strip()
+		button_text = request.form.get('button_text', '').strip()
+		button_link = request.form.get('button_link', '').strip()
+		title_font = request.form.get('title_font', 'Arial, sans-serif').strip()
+		title_color = request.form.get('title_color', '#ffffff').strip()
+		subtitle_color = request.form.get('subtitle_color', '#ffffff').strip()
+		description_color = request.form.get('description_color', '#ffffff').strip()
+		vertical_position = request.form.get('vertical_position', 'center').strip()
+		padding_top = request.form.get('padding_top', '250').strip()
+		lang = request.form.get('lang', 'ko').strip()
+
+		if not page_name or not title:
+			flash('페이지 이름과 제목을 입력해주세요.', 'error')
+			return redirect(url_for('admin_banner_new'))
+
+		try:
+			padding_top_int = int(padding_top)
+		except:
+			padding_top_int = 250
+
+		conn = get_db()
+		conn.execute('''
+			INSERT INTO banner_settings
+			(page_name, background_image, title, subtitle, description, button_text, button_link,
+			 title_font, title_color, subtitle_color, description_color, vertical_position, padding_top, lang)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		''', (page_name, background_image, title, subtitle, description, button_text, button_link,
+		      title_font, title_color, subtitle_color, description_color, vertical_position,
+		      padding_top_int, lang))
+		conn.commit()
+		conn.close()
+
+		flash('배너가 추가되었습니다.', 'success')
+		return redirect(url_for('admin_banner'))
+
+	# GET: 빈 배너 폼 표시
+	empty_banner = {
+		'page_name': '', 'background_image': '', 'title': '', 'subtitle': '',
+		'description': '', 'button_text': '', 'button_link': '',
+		'title_font': 'Arial, sans-serif', 'title_color': '#ffffff',
+		'subtitle_color': '#ffffff', 'description_color': '#ffffff',
+		'vertical_position': 'center', 'padding_top': 250, 'lang': 'ko'
+	}
+	return render_template('admin/banner_form.html', banner=empty_banner, is_new=True)
 
 
 # 조종사 관리
@@ -3029,10 +3242,14 @@ def admin_commander_delete(commander_id):
 @app.route('/admin/home-contents')
 @login_required
 def admin_home_contents():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	contents = conn.execute('SELECT * FROM home_contents ORDER BY order_num').fetchall()
+	if lang_filter:
+		contents = conn.execute('SELECT * FROM home_contents WHERE lang = ? ORDER BY order_num', (lang_filter,)).fetchall()
+	else:
+		contents = conn.execute('SELECT * FROM home_contents ORDER BY order_num').fetchall()
 	conn.close()
-	return render_template('admin/home_contents.html', contents=contents)
+	return render_template('admin/home_contents.html', contents=contents, lang_filter=lang_filter)
 
 
 # 홈 콘텐츠 추가
@@ -3045,21 +3262,22 @@ def admin_home_content_new():
 		content_data = request.form.get('content_data', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
-		
+		lang = request.form.get('lang', 'ko').strip()
+
 		if not all([content_type, content_data]):
 			flash('콘텐츠 유형과 데이터를 입력해주세요.', 'error')
 			return redirect(url_for('admin_home_content_new'))
-		
+
 		try:
 			order_num_int = int(order_num)
 		except:
 			order_num_int = 0
-		
+
 		conn = get_db()
 		conn.execute('''
-			INSERT INTO home_contents (content_type, title, content_data, order_num, is_active)
-			VALUES (?, ?, ?, ?, ?)
-		''', (content_type, title, content_data, order_num_int, is_active))
+			INSERT INTO home_contents (content_type, title, content_data, order_num, is_active, lang)
+			VALUES (?, ?, ?, ?, ?, ?)
+		''', (content_type, title, content_data, order_num_int, is_active, lang))
 		conn.commit()
 		conn.close()
 		
@@ -3074,29 +3292,30 @@ def admin_home_content_new():
 @login_required
 def admin_home_content_edit(content_id):
 	conn = get_db()
-	
+
 	if request.method == 'POST':
 		content_type = request.form.get('content_type', '').strip()
 		title = request.form.get('title', '').strip()
 		content_data = request.form.get('content_data', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
-		
+		lang = request.form.get('lang', 'ko').strip()
+
 		if not all([content_type, content_data]):
 			flash('콘텐츠 유형과 데이터를 입력해주세요.', 'error')
 			return redirect(url_for('admin_home_content_edit', content_id=content_id))
-		
+
 		try:
 			order_num_int = int(order_num)
 		except:
 			order_num_int = 0
-		
+
 		conn.execute('''
-			UPDATE home_contents 
-			SET content_type = ?, title = ?, content_data = ?, order_num = ?, 
-			    is_active = ?, updated_at = CURRENT_TIMESTAMP 
+			UPDATE home_contents
+			SET content_type = ?, title = ?, content_data = ?, order_num = ?,
+			    is_active = ?, lang = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		''', (content_type, title, content_data, order_num_int, is_active, content_id))
+		''', (content_type, title, content_data, order_num_int, is_active, lang, content_id))
 		conn.commit()
 		conn.close()
 		
@@ -3254,10 +3473,14 @@ def admin_about_section_edit(section_id):
 @app.route('/admin/gallery')
 @login_required
 def admin_gallery():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	photos = conn.execute('SELECT * FROM gallery ORDER BY order_num, upload_date DESC').fetchall()
+	if lang_filter:
+		photos = conn.execute('SELECT * FROM gallery WHERE lang = ? ORDER BY order_num, upload_date DESC', (lang_filter,)).fetchall()
+	else:
+		photos = conn.execute('SELECT * FROM gallery ORDER BY order_num, upload_date DESC').fetchall()
 	conn.close()
-	return render_template('admin/gallery.html', photos=photos)
+	return render_template('admin/gallery.html', photos=photos, lang_filter=lang_filter)
 
 
 @app.route('/admin/gallery/new', methods=['GET', 'POST'])
@@ -3272,6 +3495,7 @@ def admin_gallery_new():
 		except (ValueError, TypeError):
 			order_num = 0
 		is_active = 1 if request.form.get('is_active') else 0
+		lang = request.form.get('lang', 'ko').strip()
 
 		# 파일 업로드 처리
 		file = request.files.get('image_file')
@@ -3290,9 +3514,9 @@ def admin_gallery_new():
 
 		conn = get_db()
 		conn.execute('''
-			INSERT INTO gallery (title, description, image_url, order_num, is_active)
-			VALUES (?, ?, ?, ?, ?)
-		''', (title, description, image_url, order_num, is_active))
+			INSERT INTO gallery (title, description, image_url, order_num, is_active, lang)
+			VALUES (?, ?, ?, ?, ?, ?)
+		''', (title, description, image_url, order_num, is_active, lang))
 		conn.commit()
 		conn.close()
 
@@ -3316,6 +3540,7 @@ def admin_gallery_edit(photo_id):
 		except (ValueError, TypeError):
 			order_num = 0
 		is_active = 1 if request.form.get('is_active') else 0
+		lang = request.form.get('lang', 'ko').strip()
 
 		# 파일 업로드 처리
 		file = request.files.get('image_file')
@@ -3334,9 +3559,9 @@ def admin_gallery_edit(photo_id):
 
 		conn.execute('''
 			UPDATE gallery
-			SET title = ?, description = ?, image_url = ?, order_num = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+			SET title = ?, description = ?, image_url = ?, order_num = ?, is_active = ?, lang = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		''', (title, description, image_url, order_num, is_active, photo_id))
+		''', (title, description, image_url, order_num, is_active, lang, photo_id))
 		conn.commit()
 		conn.close()
 

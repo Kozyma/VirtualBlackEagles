@@ -26,6 +26,15 @@
 <div class="form-container">
     <form method="POST" id="noticeForm">
         <div class="form-group">
+            <label for="lang">언어</label>
+            <select id="lang" name="lang" class="form-control">
+                <option value="ko" {% if not notice or notice.lang == 'ko' %}selected{% endif %}>한국어</option>
+                <option value="en" {% if notice and notice.lang == 'en' %}selected{% endif %}>English</option>
+            </select>
+            <span class="help-text">이 항목이 표시될 언어를 선택하세요</span>
+        </div>
+
+        <div class="form-group">
             <label for="title">제목 *</label>
             <input type="text" id="title" name="title" class="form-control" required
                    value="{{ notice.title if notice else '' }}"
