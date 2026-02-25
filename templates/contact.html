@@ -238,8 +238,13 @@
       
       <div class="contact-wrapper">
         <div class="contact-intro">
+          {% if contact_info and contact_info.content %}
+          <h2>{{ contact_info.title if contact_info.title else '문의하기' }}</h2>
+          {{ contact_info.content|safe }}
+          {% else %}
           <h2>문의하기</h2>
           <p>Virtual Black Eagles에 대해 궁금하신 점이 있으신가요?<br>아래 연락처로 언제든지 편하게 문의해 주세요.<br>지원을 원하시는분도 언제든 연락주십요.</p>
+          {% endif %}
         </div>
         
         <div class="contact-content">

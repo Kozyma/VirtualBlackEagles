@@ -677,6 +677,27 @@ def init_db():
 	except Exception:
 		conn.rollback()
 
+	# pilots 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE pilots ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
+	# maintenance_crew 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE maintenance_crew ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
+	# candidates 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE candidates ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
 	# page_sections UNIQUE 제약조건 변경: (page_name, section_id) → (page_name, section_id, lang)
 	if USE_POSTGRES:
 		try:
@@ -1421,20 +1442,25 @@ def about():
 	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('about', lang)).fetchall()
 	if not sections and lang != 'ko':
 		sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('about', 'ko')).fetchall()
-	pilots = conn.execute('SELECT * FROM pilots WHERE is_active = 1 ORDER BY order_num').fetchall()
-	
-	# 정비사 가져오기
-	maintenance_crew = conn.execute('SELECT * FROM maintenance_crew WHERE is_active = 1 ORDER BY order_num').fetchall()
-	
-	# 후보자 가져오기
-	candidates = conn.execute('SELECT * FROM candidates WHERE is_active = 1 ORDER BY order_num').fetchall()
-	
-	# 전대장 인사말 가져오기 - 언어별로 가져오기
 	lang_param = 'en' if lang == 'en' else 'ko'
+	pilots = conn.execute('SELECT * FROM pilots WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
+	if not pilots and lang_param != 'ko':
+		pilots = conn.execute('SELECT * FROM pilots WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
+
+	# 정비사 가져오기
+	maintenance_crew = conn.execute('SELECT * FROM maintenance_crew WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
+	if not maintenance_crew and lang_param != 'ko':
+		maintenance_crew = conn.execute('SELECT * FROM maintenance_crew WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
+
+	# 후보자 가져오기
+	candidates = conn.execute('SELECT * FROM candidates WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
+	if not candidates and lang_param != 'ko':
+		candidates = conn.execute('SELECT * FROM candidates WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
+
+	# 전대장 인사말 가져오기 - 언어별로 가져오기
 	commanders = conn.execute('SELECT * FROM commander_greeting WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
 	
 	# 개요 섹션 가져오기 (임무, 선발, 편대) - 언어별로 가져오기
-	lang_param = 'en' if lang == 'en' else 'ko'
 	overview_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('mission', 'selection', 'formation', lang_param)).fetchall()
 
 	# 항공기 섹션 가져오기
@@ -1462,12 +1488,15 @@ def contact():
 	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('contact', lang)).fetchall()
 	if not sections and lang != 'ko':
 		sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('contact', 'ko')).fetchall()
+	contact_info = conn.execute("SELECT * FROM page_sections WHERE page_name = 'contact' AND section_id = 'info' AND is_active = 1 AND lang = ? ORDER BY order_num", (lang,)).fetchone()
+	if not contact_info and lang != 'ko':
+		contact_info = conn.execute("SELECT * FROM page_sections WHERE page_name = 'contact' AND section_id = 'info' AND is_active = 1 AND lang = ?", ('ko',)).fetchone()
 	conn.close()
-	
+
 	if lang == 'en':
-		return render_template('contact_en.html', banner=banner, sections=sections)
+		return render_template('contact_en.html', banner=banner, sections=sections, contact_info=contact_info)
 	else:
-		return render_template('contact.html', banner=banner, sections=sections)
+		return render_template('contact.html', banner=banner, sections=sections, contact_info=contact_info)
 
 
 @app.route('/donate')
@@ -2628,10 +2657,14 @@ def admin_banner_new():
 @app.route('/admin/pilots')
 @login_required
 def admin_pilots():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	pilots = conn.execute('SELECT * FROM pilots ORDER BY order_num').fetchall()
+	if lang_filter:
+		pilots = conn.execute('SELECT * FROM pilots WHERE lang = ? ORDER BY order_num', (lang_filter,)).fetchall()
+	else:
+		pilots = conn.execute('SELECT * FROM pilots ORDER BY order_num').fetchall()
 	conn.close()
-	return render_template('admin/pilots.html', pilots=pilots)
+	return render_template('admin/pilots.html', pilots=pilots, lang_filter=lang_filter)
 
 
 # 조종사 추가
@@ -2646,6 +2679,7 @@ def admin_pilot_new():
 		aircraft = request.form.get('aircraft', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
+		lang = request.form.get('lang', 'ko')
 		
 		if not all([number, position, callsign, generation, aircraft]):
 			flash('모든 필수 항목을 입력해주세요.', 'error')
@@ -2675,12 +2709,12 @@ def admin_pilot_new():
 		
 		conn = get_db()
 		conn.execute('''
-			INSERT INTO pilots (number, position, callsign, generation, aircraft, photo_url, order_num, is_active)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		''', (number_int, position, callsign, generation, aircraft, photo_url, order_num_int, is_active))
+			INSERT INTO pilots (number, position, callsign, generation, aircraft, photo_url, order_num, is_active, lang)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		''', (number_int, position, callsign, generation, aircraft, photo_url, order_num_int, is_active, lang))
 		conn.commit()
 		conn.close()
-		
+
 		flash('조종사가 추가되었습니다.', 'success')
 		return redirect(url_for('admin_pilots'))
 	
@@ -2692,7 +2726,7 @@ def admin_pilot_new():
 @login_required
 def admin_pilot_edit(pilot_id):
 	conn = get_db()
-	
+
 	if request.method == 'POST':
 		number = request.form.get('number', '').strip()
 		position = request.form.get('position', '').strip()
@@ -2701,6 +2735,7 @@ def admin_pilot_edit(pilot_id):
 		aircraft = request.form.get('aircraft', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
+		lang = request.form.get('lang', 'ko')
 		
 		if not all([number, position, callsign, generation, aircraft]):
 			flash('모든 필수 항목을 입력해주세요.', 'error')
@@ -2732,11 +2767,11 @@ def admin_pilot_edit(pilot_id):
 				flash('이미지 처리 중 오류가 발생했습니다.', 'warning')
 		
 		conn.execute('''
-			UPDATE pilots 
-			SET number = ?, position = ?, callsign = ?, generation = ?, aircraft = ?, 
-			    photo_url = ?, order_num = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP 
+			UPDATE pilots
+			SET number = ?, position = ?, callsign = ?, generation = ?, aircraft = ?,
+			    photo_url = ?, order_num = ?, is_active = ?, lang = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		''', (number_int, position, callsign, generation, aircraft, photo_url, order_num_int, is_active, pilot_id))
+		''', (number_int, position, callsign, generation, aircraft, photo_url, order_num_int, is_active, lang, pilot_id))
 		conn.commit()
 		conn.close()
 		
@@ -2772,10 +2807,14 @@ def admin_pilot_delete(pilot_id):
 @app.route('/admin/maintenance')
 @login_required
 def admin_maintenance():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	crew = conn.execute('SELECT * FROM maintenance_crew ORDER BY order_num').fetchall()
+	if lang_filter:
+		crew = conn.execute('SELECT * FROM maintenance_crew WHERE lang = ? ORDER BY order_num', (lang_filter,)).fetchall()
+	else:
+		crew = conn.execute('SELECT * FROM maintenance_crew ORDER BY order_num').fetchall()
 	conn.close()
-	return render_template('admin/maintenance.html', crew=crew)
+	return render_template('admin/maintenance.html', crew=crew, lang_filter=lang_filter)
 
 
 # 정비사 추가
@@ -2789,6 +2828,7 @@ def admin_maintenance_new():
 		bio = request.form.get('bio', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
+		lang = request.form.get('lang', 'ko')
 		
 		if not all([name, callsign]):
 			flash('이름과 콜사인은 필수 항목입니다.', 'error')
@@ -2831,12 +2871,12 @@ def admin_maintenance_new():
 		# 데이터베이스에 저장
 		conn = get_db()
 		conn.execute('''
-			INSERT INTO maintenance_crew (name, role, callsign, photo_url, bio, order_num, is_active)
-			VALUES (?, ?, ?, ?, ?, ?, ?)
-		''', (name, role, callsign, photo_url, bio, order_num_int, is_active))
+			INSERT INTO maintenance_crew (name, role, callsign, photo_url, bio, order_num, is_active, lang)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		''', (name, role, callsign, photo_url, bio, order_num_int, is_active, lang))
 		conn.commit()
 		conn.close()
-		
+
 		flash('정비사가 추가되었습니다.', 'success')
 		return redirect(url_for('admin_maintenance'))
 	
@@ -2848,7 +2888,7 @@ def admin_maintenance_new():
 @login_required
 def admin_maintenance_edit(crew_id):
 	conn = get_db()
-	
+
 	if request.method == 'POST':
 		name = request.form.get('name', '').strip()
 		role = request.form.get('role', '').strip()
@@ -2856,6 +2896,7 @@ def admin_maintenance_edit(crew_id):
 		bio = request.form.get('bio', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
+		lang = request.form.get('lang', 'ko')
 		
 		if not all([name, callsign]):
 			flash('이름과 콜사인은 필수 항목입니다.', 'error')
@@ -2901,9 +2942,9 @@ def admin_maintenance_edit(crew_id):
 		# 데이터베이스 업데이트
 		conn.execute('''
 			UPDATE maintenance_crew
-			SET name = ?, role = ?, callsign = ?, photo_url = ?, bio = ?, order_num = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+			SET name = ?, role = ?, callsign = ?, photo_url = ?, bio = ?, order_num = ?, is_active = ?, lang = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		''', (name, role, callsign, photo_url, bio, order_num_int, is_active, crew_id))
+		''', (name, role, callsign, photo_url, bio, order_num_int, is_active, lang, crew_id))
 		conn.commit()
 		conn.close()
 		
@@ -2939,10 +2980,14 @@ def admin_maintenance_delete(crew_id):
 @app.route('/admin/candidates')
 @login_required
 def admin_candidates():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	candidates = conn.execute('SELECT * FROM candidates ORDER BY order_num').fetchall()
+	if lang_filter:
+		candidates = conn.execute('SELECT * FROM candidates WHERE lang = ? ORDER BY order_num', (lang_filter,)).fetchall()
+	else:
+		candidates = conn.execute('SELECT * FROM candidates ORDER BY order_num').fetchall()
 	conn.close()
-	return render_template('admin/candidates.html', candidates=candidates)
+	return render_template('admin/candidates.html', candidates=candidates, lang_filter=lang_filter)
 
 
 # 후보자 추가
@@ -2955,6 +3000,7 @@ def admin_candidate_new():
 		bio = request.form.get('bio', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
+		lang = request.form.get('lang', 'ko')
 		
 		if not all([name, callsign]):
 			flash('이름과 콜사인은 필수 항목입니다.', 'error')
@@ -2993,12 +3039,12 @@ def admin_candidate_new():
 		# 데이터베이스에 저장
 		conn = get_db()
 		conn.execute('''
-			INSERT INTO candidates (name, callsign, photo_url, bio, order_num, is_active)
-			VALUES (?, ?, ?, ?, ?, ?)
-		''', (name, callsign, photo_url, bio, order_num_int, is_active))
+			INSERT INTO candidates (name, callsign, photo_url, bio, order_num, is_active, lang)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		''', (name, callsign, photo_url, bio, order_num_int, is_active, lang))
 		conn.commit()
 		conn.close()
-		
+
 		flash('후보자가 추가되었습니다.', 'success')
 		return redirect(url_for('admin_candidates'))
 	
@@ -3010,13 +3056,14 @@ def admin_candidate_new():
 @login_required
 def admin_candidate_edit(candidate_id):
 	conn = get_db()
-	
+
 	if request.method == 'POST':
 		name = request.form.get('name', '').strip()
 		callsign = request.form.get('callsign', '').strip()
 		bio = request.form.get('bio', '').strip()
 		order_num = request.form.get('order_num', '0').strip()
 		is_active = 1 if request.form.get('is_active') else 0
+		lang = request.form.get('lang', 'ko')
 		
 		if not all([name, callsign]):
 			flash('이름과 콜사인은 필수 항목입니다.', 'error')
@@ -3058,9 +3105,9 @@ def admin_candidate_edit(candidate_id):
 		# 데이터베이스 업데이트
 		conn.execute('''
 			UPDATE candidates
-			SET name = ?, callsign = ?, photo_url = ?, bio = ?, order_num = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+			SET name = ?, callsign = ?, photo_url = ?, bio = ?, order_num = ?, is_active = ?, lang = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
-		''', (name, callsign, photo_url, bio, order_num_int, is_active, candidate_id))
+		''', (name, callsign, photo_url, bio, order_num_int, is_active, lang, candidate_id))
 		conn.commit()
 		conn.close()
 		
@@ -3094,10 +3141,14 @@ def admin_candidate_delete(candidate_id):
 @app.route('/admin/commanders')
 @login_required
 def admin_commanders():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	commanders = conn.execute('SELECT * FROM commander_greeting ORDER BY order_num').fetchall()
+	if lang_filter:
+		commanders = conn.execute('SELECT * FROM commander_greeting WHERE lang = ? ORDER BY order_num', (lang_filter,)).fetchall()
+	else:
+		commanders = conn.execute('SELECT * FROM commander_greeting ORDER BY order_num').fetchall()
 	conn.close()
-	return render_template('admin/commanders.html', commanders=commanders)
+	return render_template('admin/commanders.html', commanders=commanders, lang_filter=lang_filter)
 
 
 # 전대장 인사말 추가
@@ -3349,10 +3400,14 @@ def admin_home_content_delete(content_id):
 @app.route('/admin/about-sections')
 @login_required
 def admin_about_sections():
+	lang_filter = request.args.get('lang', '')
 	conn = get_db()
-	sections = conn.execute('SELECT * FROM about_sections ORDER BY order_num').fetchall()
+	if lang_filter:
+		sections = conn.execute('SELECT * FROM about_sections WHERE lang = ? ORDER BY order_num', (lang_filter,)).fetchall()
+	else:
+		sections = conn.execute('SELECT * FROM about_sections ORDER BY order_num').fetchall()
 	conn.close()
-	return render_template('admin/about_sections.html', sections=sections)
+	return render_template('admin/about_sections.html', sections=sections, lang_filter=lang_filter)
 
 
 @app.route('/admin/about-sections/new', methods=['GET', 'POST'])

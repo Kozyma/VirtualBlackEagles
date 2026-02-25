@@ -186,9 +186,14 @@
 
       <div class="contact-wrapper">
         <div class="contact-intro">
+          {% if contact_info and contact_info.content %}
+          <h2>{{ contact_info.title if contact_info.title else 'Get in Touch' }}</h2>
+          {{ contact_info.content|safe }}
+          {% else %}
           <h2>Get in Touch</h2>
           <p>Have questions about the Virtual Black Eagles? We're here to help!<br>
              Reach out to us through any of the methods below.</p>
+          {% endif %}
         </div>
 
         <div class="contact-content">

@@ -8,6 +8,11 @@
 {% endblock %}
 
 {% block content %}
+<div style="margin-bottom:1rem;display:flex;gap:0.5rem;">
+    <a href="?" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if not lang_filter else '#e9ecef' }};color:{{ '#fff' if not lang_filter else '#333' }};">전체</a>
+    <a href="?lang=ko" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if lang_filter == 'ko' else '#e9ecef' }};color:{{ '#fff' if lang_filter == 'ko' else '#333' }};">한국어</a>
+    <a href="?lang=en" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if lang_filter == 'en' else '#e9ecef' }};color:{{ '#fff' if lang_filter == 'en' else '#333' }};">English</a>
+</div>
 <div class="table-container">
     {% if crew %}
     <table class="admin-table">
@@ -16,6 +21,7 @@
                 <th>이름</th>
                 <th>역할</th>
                 <th>콜사인</th>
+                <th>언어</th>
                 <th>순서</th>
                 <th>활성</th>
                 <th>작업</th>
@@ -27,6 +33,7 @@
                 <td>{{ member.name }}</td>
                 <td>{{ member.role or '-' }}</td>
                 <td>{{ member.callsign }}</td>
+                <td><span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.75rem;font-weight:600;color:#fff;background:{{ '#28a745' if member.lang == 'en' else '#007bff' }};">{{ member.lang|upper if member.lang else 'KO' }}</span></td>
                 <td>{{ member.order_num }}</td>
                 <td>
                     {% if member.is_active %}
