@@ -1838,6 +1838,29 @@ def admin_user_edit(user_id):
 	return render_template('admin/user_edit.html', user=user)
 
 
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+def admin_user_delete(user_id):
+	conn = get_db()
+	user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+	if not user:
+		conn.close()
+		flash('회원을 찾을 수 없습니다.', 'error')
+		return redirect(url_for('admin_users'))
+
+	if user['role'] == 'admin':
+		conn.close()
+		flash('관리자 계정은 삭제할 수 없습니다.', 'error')
+		return redirect(url_for('admin_users'))
+
+	conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+	conn.commit()
+	conn.close()
+
+	flash('회원이 삭제되었습니다.', 'success')
+	return redirect(url_for('admin_users'))
+
+
 # 관리자 대시보드
 @app.route('/admin')
 @login_required
