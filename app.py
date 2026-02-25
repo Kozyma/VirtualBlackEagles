@@ -59,7 +59,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
-# Google OAuth 설정
+# Google OAuth 설정 
 if HAS_OAUTH:
 	oauth = OAuth(app)
 	google = oauth.register(
