@@ -1755,6 +1755,93 @@ def auth_signup():
 	return render_template('auth/signup.html')
 
 
+@app.route('/auth/profile', methods=['GET', 'POST'])
+def auth_profile():
+	if not session.get('user_id'):
+		flash('로그인이 필요합니다.', 'error')
+		return redirect(url_for('auth_login'))
+
+	lang = request.args.get('lang', 'ko')
+	conn = get_db()
+	user = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+
+	if not user:
+		conn.close()
+		flash('사용자 정보를 찾을 수 없습니다.', 'error')
+		return redirect(url_for('index'))
+
+	if request.method == 'POST':
+		display_name = request.form.get('display_name', '').strip()
+		email = request.form.get('email', '').strip()
+		current_password = request.form.get('current_password', '').strip()
+		new_password = request.form.get('new_password', '').strip()
+		new_password2 = request.form.get('new_password2', '').strip()
+
+		template = 'auth/profile_en.html' if lang == 'en' else 'auth/profile.html'
+
+		# 이메일 필수
+		if not email:
+			flash('이메일을 입력해주세요.' if lang != 'en' else 'Please enter your email.', 'error')
+			conn.close()
+			return render_template(template, user=user)
+
+		# 이메일 중복 검사 (본인 제외)
+		if email != user['email']:
+			existing = conn.execute('SELECT id FROM users WHERE email = ? AND id != ?', (email, user['id'])).fetchone()
+			if existing:
+				flash('이미 등록된 이메일입니다.' if lang != 'en' else 'This email is already registered.', 'error')
+				conn.close()
+				return render_template(template, user=user)
+
+		# 비밀번호 변경 처리
+		if new_password:
+			if not current_password:
+				flash('현재 비밀번호를 입력해주세요.' if lang != 'en' else 'Please enter your current password.', 'error')
+				conn.close()
+				return render_template(template, user=user)
+			if user['password_hash'] and not verify_password(current_password, user['password_hash']):
+				flash('현재 비밀번호가 일치하지 않습니다.' if lang != 'en' else 'Current password is incorrect.', 'error')
+				conn.close()
+				return render_template(template, user=user)
+			if len(new_password) < 4:
+				flash('새 비밀번호는 4자 이상이어야 합니다.' if lang != 'en' else 'New password must be at least 4 characters.', 'error')
+				conn.close()
+				return render_template(template, user=user)
+			if new_password != new_password2:
+				flash('새 비밀번호가 일치하지 않습니다.' if lang != 'en' else 'New passwords do not match.', 'error')
+				conn.close()
+				return render_template(template, user=user)
+
+			# 비밀번호 포함 업데이트
+			conn.execute('''
+				UPDATE users SET display_name = ?, email = ?, password_hash = ?, updated_at = CURRENT_TIMESTAMP
+				WHERE id = ?
+			''', (display_name, email, hash_password(new_password), user['id']))
+		else:
+			# 비밀번호 없이 업데이트
+			conn.execute('''
+				UPDATE users SET display_name = ?, email = ?, updated_at = CURRENT_TIMESTAMP
+				WHERE id = ?
+			''', (display_name, email, user['id']))
+
+		conn.commit()
+
+		# 세션 즉시 업데이트
+		session['user_name'] = display_name
+		session['user_email'] = email
+
+		# 변경된 유저 데이터 다시 로드
+		user = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+		conn.close()
+
+		flash('프로필이 수정되었습니다.' if lang != 'en' else 'Profile updated successfully.', 'success')
+		return render_template(template, user=user)
+
+	conn.close()
+	template = 'auth/profile_en.html' if lang == 'en' else 'auth/profile.html'
+	return render_template(template, user=user)
+
+
 @app.route('/auth/find-id', methods=['GET', 'POST'])
 def auth_find_id():
 	if request.method == 'POST':

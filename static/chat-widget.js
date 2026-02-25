@@ -9,6 +9,7 @@ class ChatWidget {
         this.userName = localStorage.getItem('chat_user_name') || '방문자';
         this.isOpen = false;
         this.pollInterval = null;
+        this.loggedInUser = window.__VBE_USER || null;
         this.init();
     }
 
@@ -50,8 +51,8 @@ class ChatWidget {
                 <!-- 이름 입력 폼 -->
                 <div id="chat-name-form" class="chat-name-form">
                     <h5>문의를 시작하려면 이름을 입력해주세요</h5>
-                    <input type="text" id="chat-user-name" placeholder="이름" value="${this.userName}">
-                    <input type="email" id="chat-user-email" placeholder="이메일 (선택)">
+                    <input type="text" id="chat-user-name" placeholder="이름" value="${this.loggedInUser && this.loggedInUser.loggedIn ? this.loggedInUser.name : this.userName}">
+                    <input type="email" id="chat-user-email" placeholder="이메일 (선택)" value="${this.loggedInUser && this.loggedInUser.loggedIn && this.loggedInUser.email ? this.loggedInUser.email : ''}">
                     <button id="chat-start-btn" class="chat-start-btn">시작하기</button>
                 </div>
 
@@ -134,6 +135,9 @@ class ChatWidget {
                 if (!this.pollInterval) {
                     this.startPolling();
                 }
+            } else if (this.loggedInUser && this.loggedInUser.loggedIn) {
+                // 로그인 유저는 이름 입력 건너뛰고 자동 시작
+                this.autoStartChat();
             }
         } else {
             if (this.pollInterval) {
@@ -187,6 +191,34 @@ class ChatWidget {
         } catch (error) {
             console.error('채팅 시작 오류:', error);
             alert(lang === 'en' ? 'Unable to start chat. Please try again.' : '채팅을 시작할 수 없습니다. 다시 시도해주세요.');
+        }
+    }
+
+    async autoStartChat() {
+        const name = this.loggedInUser.name || '방문자';
+        const email = this.loggedInUser.email || '';
+
+        try {
+            const response = await fetch('/chat/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.sessionId = data.session_id;
+                this.userName = name;
+                localStorage.setItem('chat_session_id', this.sessionId);
+                localStorage.setItem('chat_user_name', name);
+
+                this.showChatArea();
+                this.startPolling();
+            }
+        } catch (error) {
+            console.error('Auto chat start error:', error);
+            // 실패 시 이름 입력 폼 표시 (기존 동작)
         }
     }
 

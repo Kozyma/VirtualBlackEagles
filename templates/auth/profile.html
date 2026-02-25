@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}내 프로필 - Virtual Black Eagles{% endblock %}
+
+{% block content %}
+<main class="container section" style="max-width:500px;margin:4rem auto;padding:2rem;">
+  <div style="background:#fff;padding:2.5rem;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
+    <h2 style="text-align:center;margin:0 0 2rem;color:#333;">내 프로필</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div style="padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-size:0.9rem;
+                background:{{ '#f8d7da' if category == 'error' else '#d4edda' }};
+                color:{{ '#721c24' if category == 'error' else '#155724' }};">
+      {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- 읽기 전용 정보 -->
+    <div style="background:#f8f9fa;border-radius:8px;padding:1.2rem;margin-bottom:1.5rem;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+        <span style="font-size:0.85rem;color:#666;">아이디</span>
+        <span style="font-size:0.85rem;color:#333;font-weight:500;">{{ user.username or '-' }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+        <span style="font-size:0.85rem;color:#666;">Google 연동</span>
+        <span style="font-size:0.85rem;color:{{ '#28a745' if user.google_id else '#999' }};font-weight:500;">
+          {{ '연동됨' if user.google_id else '미연동' }}
+        </span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+        <span style="font-size:0.85rem;color:#666;">가입일</span>
+        <span style="font-size:0.85rem;color:#333;">{{ user.created_at[:10] if user.created_at else '-' }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:0.85rem;color:#666;">최종 수정일</span>
+        <span style="font-size:0.85rem;color:#333;">{{ user.updated_at[:10] if user.updated_at else '-' }}</span>
+      </div>
+    </div>
+
+    <!-- 수정 폼 -->
+    <form method="POST" action="{{ url_for('auth_profile') }}">
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">닉네임</label>
+        <input type="text" name="display_name" value="{{ user.display_name or '' }}"
+               placeholder="닉네임을 입력해주세요"
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">이메일</label>
+        <input type="email" name="email" value="{{ user.email or '' }}" required
+               placeholder="example@email.com"
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+      </div>
+
+      <!-- 비밀번호 변경 섹션 -->
+      <div style="border-top:1px solid #eee;padding-top:1.5rem;margin-top:0.5rem;">
+        <h3 style="font-size:0.95rem;color:#333;margin:0 0 1rem;">비밀번호 변경</h3>
+        <p style="font-size:0.8rem;color:#999;margin:-0.5rem 0 1rem;">변경하지 않으려면 비워두세요.</p>
+
+        {% if user.password_hash %}
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">현재 비밀번호</label>
+          <input type="password" name="current_password"
+                 placeholder="현재 비밀번호"
+                 style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+        </div>
+        {% endif %}
+
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">새 비밀번호</label>
+          <input type="password" name="new_password" minlength="4"
+                 placeholder="4자 이상"
+                 style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+        </div>
+
+        <div style="margin-bottom:1.5rem;">
+          <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">새 비밀번호 확인</label>
+          <input type="password" name="new_password2" minlength="4"
+                 placeholder="새 비밀번호 다시 입력"
+                 style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+        </div>
+      </div>
+
+      <button type="submit"
+              style="width:100%;padding:0.75rem;background:#007bff;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;transition:background 0.15s;"
+              onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+        저장하기
+      </button>
+    </form>
+
+    <div style="margin-top:1.5rem;text-align:center;">
+      <a href="{{ url_for('index') }}" style="color:#666;text-decoration:none;font-size:0.85rem;">홈으로 돌아가기</a>
+    </div>
+  </div>
+</main>
+{% endblock %}

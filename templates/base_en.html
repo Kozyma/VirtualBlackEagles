@@ -37,6 +37,7 @@
                         {{ session.get('user_name', 'User') }}
                     </button>
                     <div id="userDropdown" style="display:none;position:absolute;right:0;top:110%;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:140px;z-index:1000;overflow:hidden;">
+                        <a href="{{ url_for('auth_profile') }}?lang=en" style="display:block;padding:0.65rem 1rem;color:#333;text-decoration:none;font-size:0.85rem;border-bottom:1px solid #f0f0f0;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='#fff'">My Profile</a>
                         <a href="{{ url_for('auth_logout') }}" style="display:block;padding:0.65rem 1rem;color:#e74c3c;text-decoration:none;font-size:0.85rem;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">Logout</a>
                     </div>
                 </div>
@@ -79,6 +80,7 @@
             💝 Donate
         </a>
         {% if session.get('user_id') %}
+        <a href="{{ url_for('auth_profile') }}?lang=en" style="font-weight:500;">My Profile</a>
         <a href="{{ url_for('auth_logout') }}" style="color:#e74c3c;font-weight:500;">{{ session.get('user_name', 'User') }} (Logout)</a>
         {% else %}
         <a href="{{ url_for('auth_login') }}" style="font-weight:500;">Login / Sign Up</a>
@@ -112,7 +114,14 @@
     </footer>
 
     <script src="/static/script.js"></script>
-    <script src="/static/chat-widget.js?v=7"></script>
+    <script>
+        window.__VBE_USER = {
+            loggedIn: {{ 'true' if session.get('user_id') else 'false' }},
+            name: {{ '"' + (session.get('user_name', '')|e) + '"' if session.get('user_id') else 'null' }},
+            email: {{ '"' + (session.get('user_email', '')|e) + '"' if session.get('user_id') else 'null' }}
+        };
+    </script>
+    <script src="/static/chat-widget.js?v=8"></script>
     <script src="/static/chat-widget-en.js?v=2"></script>
     <script>document.addEventListener('click',function(e){var d=document.getElementById('userDropdown');if(d&&!e.target.closest('#userMenuWrap'))d.style.display='none';});</script>
     {% block scripts %}

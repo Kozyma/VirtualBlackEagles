@@ -1,0 +1,100 @@
+{% extends "base_en.html" %}
+{% block title %}My Profile - Virtual Black Eagles{% endblock %}
+
+{% block content %}
+<main class="container section" style="max-width:500px;margin:4rem auto;padding:2rem;">
+  <div style="background:#fff;padding:2.5rem;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
+    <h2 style="text-align:center;margin:0 0 2rem;color:#333;">My Profile</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div style="padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-size:0.9rem;
+                background:{{ '#f8d7da' if category == 'error' else '#d4edda' }};
+                color:{{ '#721c24' if category == 'error' else '#155724' }};">
+      {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Read-only Info -->
+    <div style="background:#f8f9fa;border-radius:8px;padding:1.2rem;margin-bottom:1.5rem;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+        <span style="font-size:0.85rem;color:#666;">Username</span>
+        <span style="font-size:0.85rem;color:#333;font-weight:500;">{{ user.username or '-' }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+        <span style="font-size:0.85rem;color:#666;">Google Account</span>
+        <span style="font-size:0.85rem;color:{{ '#28a745' if user.google_id else '#999' }};font-weight:500;">
+          {{ 'Linked' if user.google_id else 'Not linked' }}
+        </span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+        <span style="font-size:0.85rem;color:#666;">Joined</span>
+        <span style="font-size:0.85rem;color:#333;">{{ user.created_at[:10] if user.created_at else '-' }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:0.85rem;color:#666;">Last Updated</span>
+        <span style="font-size:0.85rem;color:#333;">{{ user.updated_at[:10] if user.updated_at else '-' }}</span>
+      </div>
+    </div>
+
+    <!-- Edit Form -->
+    <form method="POST" action="{{ url_for('auth_profile') }}?lang=en">
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">Display Name</label>
+        <input type="text" name="display_name" value="{{ user.display_name or '' }}"
+               placeholder="Enter your display name"
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">Email</label>
+        <input type="email" name="email" value="{{ user.email or '' }}" required
+               placeholder="example@email.com"
+               style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+      </div>
+
+      <!-- Password Change Section -->
+      <div style="border-top:1px solid #eee;padding-top:1.5rem;margin-top:0.5rem;">
+        <h3 style="font-size:0.95rem;color:#333;margin:0 0 1rem;">Change Password</h3>
+        <p style="font-size:0.8rem;color:#999;margin:-0.5rem 0 1rem;">Leave blank if you don't want to change it.</p>
+
+        {% if user.password_hash %}
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">Current Password</label>
+          <input type="password" name="current_password"
+                 placeholder="Current password"
+                 style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+        </div>
+        {% endif %}
+
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">New Password</label>
+          <input type="password" name="new_password" minlength="4"
+                 placeholder="At least 4 characters"
+                 style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+        </div>
+
+        <div style="margin-bottom:1.5rem;">
+          <label style="display:block;font-size:0.85rem;color:#666;margin-bottom:0.4rem;">Confirm New Password</label>
+          <input type="password" name="new_password2" minlength="4"
+                 placeholder="Re-enter new password"
+                 style="width:100%;padding:0.65rem 0.75rem;border:1px solid #ddd;border-radius:6px;font-size:0.95rem;box-sizing:border-box;">
+        </div>
+      </div>
+
+      <button type="submit"
+              style="width:100%;padding:0.75rem;background:#007bff;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;transition:background 0.15s;"
+              onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+        Save Changes
+      </button>
+    </form>
+
+    <div style="margin-top:1.5rem;text-align:center;">
+      <a href="/?lang=en" style="color:#666;text-decoration:none;font-size:0.85rem;">Back to Home</a>
+    </div>
+  </div>
+</main>
+{% endblock %}

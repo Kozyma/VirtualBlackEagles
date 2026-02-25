@@ -311,12 +311,12 @@
               <input type="hidden" name="lang" value="ko">
               <div class="form-group">
                 <label for="userName">이름</label>
-                <input type="text" name="name" id="userName" placeholder="이름을 입력해주세요" value="{{ request.form.name|default('') }}" required>
+                <input type="text" name="name" id="userName" placeholder="이름을 입력해주세요" value="{{ session.get('user_name', '') or request.form.name|default('') }}" required>
               </div>
               
               <div class="form-group">
                 <label for="userEmail">이메일</label>
-                <input type="email" name="email" id="userEmail" placeholder="example@email.com" value="{{ request.form.email|default('') }}" required>
+                <input type="email" name="email" id="userEmail" placeholder="example@email.com" value="{{ session.get('user_email', '') or request.form.email|default('') }}" required>
               </div>
               
               <div class="form-group">
