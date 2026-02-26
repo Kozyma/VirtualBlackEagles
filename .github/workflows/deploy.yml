@@ -32,16 +32,20 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
+      - name: Setup environment variables on EC2
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "printf 'MAIL_PASSWORD=%s\n' '${{ secrets.MAIL_PASSWORD }}' > /home/ec2-user/app/.env"
+
       - name: Deploy to EC2
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'DEPLOY_COMMANDS'
             set -e
-            
+
             echo "=== 배포 시작: $(date) ==="
-            
+
             APP_DIR="/home/ec2-user/app"
             SERVICE_NAME="virtualblackeagles"
-            
+
             cd $APP_DIR
 
             echo ">>> DB 백업..."
@@ -54,17 +58,17 @@ jobs:
 
             echo ">>> DB 복원..."
             cp -f /tmp/db_backup/*.db . 2>/dev/null || true
-            
+
             echo ">>> 의존성 설치..."
             source .venv/bin/activate
             pip install -r requirements.txt --quiet
-            
+
             echo ">>> 서비스 재시작..."
             sudo systemctl restart $SERVICE_NAME
-            
+
             sleep 2
             sudo systemctl status $SERVICE_NAME --no-pager || true
-            
+
             echo "=== 배포 완료: $(date) ==="
           DEPLOY_COMMANDS
 
