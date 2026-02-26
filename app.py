@@ -1446,28 +1446,48 @@ def notice():
 	conn = get_db()
 	banner = get_banner_for_lang(conn, 'notice', lang)
 
+	# 검색에 사용할 언어 결정 (영어 콘텐츠 없으면 한국어 폴백)
+	effective_lang = lang
+	if lang != 'ko' and not search_query:
+		lang_count = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE lang = ?', (lang,)).fetchone()
+		if lang_count['cnt'] == 0:
+			effective_lang = 'ko'
+
 	# 검색 쿼리 처리
 	if search_query:
 		if search_type == 'content':
-			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE content LIKE ? AND lang = ?', (f'%{search_query}%', lang)).fetchone()
+			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE content LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
 			total = count_row['cnt']
+			# 검색 결과 없으면 한국어 폴백
+			if total == 0 and effective_lang != 'ko':
+				effective_lang = 'ko'
+				count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE content LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
+				total = count_row['cnt']
 			notices = conn.execute('SELECT * FROM notices WHERE content LIKE ? AND lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-				(f'%{search_query}%', lang, per_page, (page - 1) * per_page)).fetchall()
+				(f'%{search_query}%', effective_lang, per_page, (page - 1) * per_page)).fetchall()
 		elif search_type == 'author':
-			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE author LIKE ? AND lang = ?', (f'%{search_query}%', lang)).fetchone()
+			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE author LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
 			total = count_row['cnt']
+			if total == 0 and effective_lang != 'ko':
+				effective_lang = 'ko'
+				count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE author LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
+				total = count_row['cnt']
 			notices = conn.execute('SELECT * FROM notices WHERE author LIKE ? AND lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-				(f'%{search_query}%', lang, per_page, (page - 1) * per_page)).fetchall()
+				(f'%{search_query}%', effective_lang, per_page, (page - 1) * per_page)).fetchall()
 		else:
-			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE title LIKE ? AND lang = ?', (f'%{search_query}%', lang)).fetchone()
+			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE title LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
 			total = count_row['cnt']
+			if total == 0 and effective_lang != 'ko':
+				effective_lang = 'ko'
+				count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE title LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
+				total = count_row['cnt']
 			notices = conn.execute('SELECT * FROM notices WHERE title LIKE ? AND lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-				(f'%{search_query}%', lang, per_page, (page - 1) * per_page)).fetchall()
+				(f'%{search_query}%', effective_lang, per_page, (page - 1) * per_page)).fetchall()
 	else:
-		count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE lang = ?', (lang,)).fetchone()
+		count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE lang = ?', (effective_lang,)).fetchone()
 		total = count_row['cnt']
 		notices = conn.execute('SELECT * FROM notices WHERE lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-			(lang, per_page, (page - 1) * per_page)).fetchall()
+			(effective_lang, per_page, (page - 1) * per_page)).fetchall()
 
 	conn.close()
 	total_pages = max(1, (total + per_page - 1) // per_page)
@@ -2094,20 +2114,14 @@ def auth_profile():
 		return render_template(template, user=user)
 
 	except Exception as e:
-		import traceback
-		error_detail = traceback.format_exc()
-		app.logger.error(f'Profile error: {error_detail}')
+		app.logger.error(f'Profile error: {str(e)}')
 		if conn:
 			try:
 				conn.close()
 			except:
 				pass
-		# 디버깅: 실제 에러 메시지 표시
-		return f'''<html><body style="font-family:sans-serif;padding:2rem;">
-		<h2>Profile Error</h2>
-		<pre style="background:#f8f8f8;padding:1rem;border-radius:8px;overflow:auto;">{error_detail}</pre>
-		<p><a href="/">홈으로 돌아가기</a></p>
-		</body></html>''', 500
+		flash('프로필을 불러오는 중 오류가 발생했습니다.' if lang != 'en' else 'An error occurred while loading your profile.', 'error')
+		return redirect(url_for('index'))
 
 
 @app.route('/auth/find-id', methods=['GET', 'POST'])
