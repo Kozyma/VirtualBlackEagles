@@ -52,29 +52,8 @@
 
             <div class="sidebar-group">
                 <span class="sidebar-group-title">설정</span>
-                <a href="{{ url_for('admin_page_quick_edit', page_name='contact') }}" class="sidebar-link {% if request.endpoint == 'admin_page_quick_edit' and request.view_args.get('page_name') == 'contact' %}active{% endif %}">
-                    <i class="fas fa-envelope"></i> 문의 페이지
-                </a>
-                <a href="{{ url_for('admin_page_quick_edit', page_name='donate') }}" class="sidebar-link {% if request.endpoint == 'admin_page_quick_edit' and request.view_args.get('page_name') == 'donate' %}active{% endif %}">
-                    <i class="fas fa-heart"></i> 후원 페이지
-                </a>
-                <a href="{{ url_for('admin_pages') }}" class="sidebar-link {% if request.endpoint in ('admin_pages', 'admin_page_section_form') %}active{% endif %}">
-                    <i class="fas fa-file-alt"></i> 페이지 콘텐츠 (고급)
-                </a>
-                <a href="{{ url_for('admin_banner') }}" class="sidebar-link {% if 'banner' in request.endpoint|default('') %}active{% endif %}">
-                    <i class="fas fa-image"></i> 배너 설정
-                </a>
-                <a href="{{ url_for('admin_about_sections') }}" class="sidebar-link {% if 'about_section' in request.endpoint|default('') %}active{% endif %}">
-                    <i class="fas fa-info-circle"></i> 팀소개 섹션
-                </a>
-                <a href="{{ url_for('admin_site_images') }}" class="sidebar-link {% if 'site_image' in request.endpoint|default('') %}active{% endif %}">
-                    <i class="fas fa-images"></i> 사이트 이미지
-                </a>
-                <a href="{{ url_for('admin_home_contents') }}" class="sidebar-link {% if 'home_content' in request.endpoint|default('') %}active{% endif %}">
-                    <i class="fas fa-home"></i> 홈 콘텐츠
-                </a>
-                <a href="{{ url_for('admin_donate_settings') }}" class="sidebar-link {% if 'donate_setting' in request.endpoint|default('') %}active{% endif %}">
-                    <i class="fas fa-hand-holding-heart"></i> 후원 설정
+                <a href="{{ url_for('admin_pages') }}" class="sidebar-link {% if request.endpoint in ('admin_pages', 'admin_page_section_form', 'admin_page_quick_edit', 'admin_banner', 'admin_banner_edit', 'admin_banner_new', 'admin_about_sections', 'admin_about_section_new', 'admin_about_section_edit', 'admin_site_images', 'admin_site_image_edit', 'admin_home_contents', 'admin_home_content_new', 'admin_home_content_edit', 'admin_donate_settings', 'admin_commanders', 'admin_commander_new', 'admin_commander_edit') %}active{% endif %}">
+                    <i class="fas fa-edit"></i> 페이지 편집
                 </a>
             </div>
 

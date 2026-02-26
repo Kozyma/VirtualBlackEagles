@@ -1,168 +1,409 @@
 {% extends "admin/admin_base.html" %}
 
-{% block title %}페이지 구성 관리{% endblock %}
-{% block page_title %}페이지 구성 관리{% endblock %}
-
-{% block top_actions %}
-    <a href="{{ url_for('admin_page_section_form') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 새 섹션 추가</a>
-{% endblock %}
+{% block title %}페이지 편집{% endblock %}
+{% block page_title %}페이지 편집{% endblock %}
 
 {% block head %}
 <style>
-    .info-box {
-        background: #e7f3ff;
-        border-left: 4px solid #007bff;
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-        border-radius: 4px;
-    }
-    .info-box h3 {
-        margin: 0 0 0.5rem 0;
-        color: #007bff;
-    }
-    .info-box p {
-        margin: 0;
-        color: #333;
-    }
-    .page-group {
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    .page-hub-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.25rem;
         margin-bottom: 2rem;
     }
-    .page-group-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1.5rem;
+    .page-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+    }
+    .page-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    .page-card-top {
+        padding: 1.75rem 1.5rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .page-card-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        color: #fff;
+        flex-shrink: 0;
+    }
+    .page-card-info h3 {
+        margin: 0 0 0.25rem;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #1a1a2e;
+    }
+    .page-card-info p {
+        margin: 0;
+        font-size: 0.82rem;
+        color: #888;
+        line-height: 1.4;
+    }
+    .page-card-bottom {
+        padding: 0.85rem 1.5rem;
+        border-top: 1px solid #f0f0f0;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-top: auto;
     }
-    .page-group-header h2 {
-        margin: 0;
-        font-size: 1.5rem;
+    .page-card-badge {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 6px;
+        font-weight: 600;
     }
-    .section-item {
-        padding: 1.5rem;
-        border-bottom: 1px solid #eee;
+    .page-card-arrow {
+        color: #aaa;
+        font-size: 0.9rem;
+        transition: transform 0.2s;
+    }
+    .page-card:hover .page-card-arrow {
+        transform: translateX(3px);
+        color: #007bff;
+    }
+    .section-divider {
         display: flex;
-        justify-content: space-between;
-        align-items: start;
-        transition: background 0.2s;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 2rem 0 1.25rem;
+        color: #999;
+        font-size: 0.85rem;
+        font-weight: 600;
     }
-    .section-item:hover {
+    .section-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e9ecef;
+    }
+    .advanced-toggle {
+        background: none;
+        border: 1px solid #dee2e6;
+        padding: 0.4rem 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .advanced-toggle:hover {
+        border-color: #aaa;
+        color: #333;
+    }
+    .advanced-toggle i {
+        font-size: 0.75rem;
+        transition: transform 0.3s;
+    }
+    .advanced-toggle.open i {
+        transform: rotate(180deg);
+    }
+    .advanced-section {
+        display: none;
+        margin-top: 1rem;
+    }
+    .advanced-section.show {
+        display: block;
+    }
+    .section-table {
+        width: 100%;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+        border-collapse: collapse;
+    }
+    .section-table th {
         background: #f8f9fa;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #666;
+        border-bottom: 2px solid #eee;
     }
-    .section-item:last-child {
+    .section-table td {
+        padding: 0.7rem 1rem;
+        font-size: 0.85rem;
+        border-bottom: 1px solid #f0f0f0;
+        color: #444;
+    }
+    .section-table tr:last-child td {
         border-bottom: none;
     }
-    .section-info {
-        flex: 1;
+    .section-table tr:hover td {
+        background: #fafbfc;
     }
-    .section-info h3 {
-        margin: 0 0 0.5rem 0;
-        color: #333;
-        font-size: 1.1rem;
-    }
-    .section-info p {
-        margin: 0.25rem 0;
-        color: #666;
-        font-size: 0.9rem;
-    }
-    .section-badge {
+    .lang-badge {
         display: inline-block;
-        padding: 0.25rem 0.75rem;
-        background: #e7f3ff;
-        color: #007bff;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        margin-right: 0.5rem;
+        padding: 0.12rem 0.45rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #fff;
     }
-    .section-badge.inactive {
-        background: #f8d7da;
-        color: #721c24;
+    .lang-badge.ko { background: #007bff; }
+    .lang-badge.en { background: #28a745; }
+    .status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 0.3rem;
     }
-    .section-actions {
+    .status-dot.active { background: #28a745; }
+    .status-dot.inactive { background: #dc3545; }
+    .adv-actions {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.4rem;
+    }
+    .adv-actions a, .adv-actions button {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.75rem;
+        border-radius: 5px;
+    }
+    .adv-filter {
+        display: flex;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+    }
+    .adv-filter a {
+        padding: 0.25rem 0.7rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 500;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="margin-bottom:1rem;display:flex;gap:0.5rem;">
-    <a href="?" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if not lang_filter else '#e9ecef' }};color:{{ '#fff' if not lang_filter else '#333' }};">전체</a>
-    <a href="?lang=ko" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if lang_filter == 'ko' else '#e9ecef' }};color:{{ '#fff' if lang_filter == 'ko' else '#333' }};">한국어</a>
-    <a href="?lang=en" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if lang_filter == 'en' else '#e9ecef' }};color:{{ '#fff' if lang_filter == 'en' else '#333' }};">English</a>
-</div>
-
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;">
-    <a href="{{ url_for('admin_page_quick_edit', page_name='contact') }}" style="display:flex;align-items:center;gap:1rem;padding:1.25rem 1.5rem;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border-radius:12px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 15px rgba(102,126,234,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-        <i class="fas fa-envelope" style="font-size:1.5rem;opacity:0.9;"></i>
-        <div><strong style="font-size:1.05rem;">문의 페이지 편집</strong><br><span style="font-size:0.8rem;opacity:0.85;">연락처, 디스코드, 폼 제목 등</span></div>
-    </a>
-    <a href="{{ url_for('admin_page_quick_edit', page_name='donate') }}" style="display:flex;align-items:center;gap:1rem;padding:1.25rem 1.5rem;background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff;border-radius:12px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 15px rgba(245,87,108,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-        <i class="fas fa-heart" style="font-size:1.5rem;opacity:0.9;"></i>
-        <div><strong style="font-size:1.05rem;">후원 페이지 편집</strong><br><span style="font-size:0.8rem;opacity:0.85;">후원 안내, 카카오페이, 응원 등</span></div>
-    </a>
-</div>
-
-<div class="info-box">
-    <h3>고급 편집</h3>
-    <p>아래는 각 페이지의 개별 섹션을 직접 수정하는 고급 모드입니다. 위의 빠른 편집 버튼을 사용하면 더 쉽게 수정할 수 있습니다.</p>
-</div>
-
-{% if pages %}
-    {% for page_name, sections in pages.items() %}
-    <div class="page-group">
-        <div class="page-group-header">
-            <h2>{{ page_name|upper }} 페이지</h2>
-            <span style="opacity: 0.9;">{{ sections|length }} 개 섹션</span>
-        </div>
-        <div>
-            {% for section in sections %}
-            <div class="section-item">
-                <div class="section-info">
-                    <div>
-                        <span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.75rem;font-weight:600;color:#fff;background:{{ '#28a745' if section.lang == 'en' else '#007bff' }};">{{ section.lang|upper if section.lang else 'KO' }}</span>
-                        <span class="section-badge">{{ section.section_type }}</span>
-                        <span class="section-badge{% if not section.is_active %} inactive{% endif %}">
-                            {{ '활성' if section.is_active else '비활성' }}
-                        </span>
-                        <span style="color: #999; font-size: 0.85rem;">순서: {{ section.order_num }}</span>
-                    </div>
-                    <h3>{{ section.title or section.section_id }}</h3>
-                    {% if section.content %}
-                    <p><strong>내용:</strong> {{ section.content|striptags|truncate(150) }}</p>
-                    {% endif %}
-                    {% if section.image_url %}
-                    <p><strong>이미지:</strong> {{ section.image_url }}</p>
-                    {% endif %}
-                    {% if section.link_url %}
-                    <p><strong>링크:</strong> {{ section.link_url }} ({{ section.link_text or '링크 텍스트 없음' }})</p>
-                    {% endif %}
-                    <p style="font-size: 0.8rem; color: #999;">섹션 ID: {{ section.section_id }} | 수정일: {{ section.updated_at|datefmt }}</p>
-                </div>
-                <div class="section-actions">
-                    <a href="{{ url_for('admin_page_section_form', section_id=section.id) }}" class="btn btn-sm btn-primary">수정</a>
-                    <form method="POST" action="{{ url_for('admin_page_section_delete', section_id=section.id) }}"
-                          style="display:inline;"
-                          onsubmit="return confirm('정말 이 섹션을 삭제하시겠습니까?');">
-                        <button type="submit" class="btn btn-sm btn-danger">삭제</button>
-                    </form>
-                </div>
+<!-- Main Page Cards -->
+<div class="page-hub-grid">
+    <a href="{{ url_for('admin_home_contents') }}" class="page-card">
+        <div class="page-card-top">
+            <div class="page-card-icon" style="background:linear-gradient(135deg,#667eea,#764ba2);">
+                <i class="fas fa-home"></i>
             </div>
-            {% endfor %}
+            <div class="page-card-info">
+                <h3>홈페이지</h3>
+                <p>메인 페이지 소개글, 하이라이트 콘텐츠 편집</p>
+            </div>
         </div>
-    </div>
-    {% endfor %}
-{% else %}
-<div class="page-group">
-    <div class="empty-state">
-        <p>등록된 페이지 섹션이 없습니다.</p>
-        <a href="{{ url_for('admin_page_section_form') }}" class="btn btn-primary">첫 섹션 추가하기</a>
-    </div>
+        <div class="page-card-bottom">
+            <span class="page-card-badge" style="background:#eef2ff;color:#667eea;">콘텐츠</span>
+            <i class="fas fa-chevron-right page-card-arrow"></i>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_about_sections') }}" class="page-card">
+        <div class="page-card-top">
+            <div class="page-card-icon" style="background:linear-gradient(135deg,#43e97b,#38f9d7);">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="page-card-info">
+                <h3>팀소개</h3>
+                <p>팀 소개 섹션, 이미지, 설명 편집</p>
+            </div>
+        </div>
+        <div class="page-card-bottom">
+            <span class="page-card-badge" style="background:#e6faf2;color:#38c99a;">콘텐츠</span>
+            <i class="fas fa-chevron-right page-card-arrow"></i>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_page_quick_edit', page_name='contact') }}" class="page-card">
+        <div class="page-card-top">
+            <div class="page-card-icon" style="background:linear-gradient(135deg,#4facfe,#00f2fe);">
+                <i class="fas fa-envelope"></i>
+            </div>
+            <div class="page-card-info">
+                <h3>문의하기</h3>
+                <p>연락처, 디스코드, 이메일, 폼 제목 편집</p>
+            </div>
+        </div>
+        <div class="page-card-bottom">
+            <span class="page-card-badge" style="background:#e8f4fe;color:#4facfe;">페이지</span>
+            <i class="fas fa-chevron-right page-card-arrow"></i>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_page_quick_edit', page_name='donate') }}" class="page-card">
+        <div class="page-card-top">
+            <div class="page-card-icon" style="background:linear-gradient(135deg,#f093fb,#f5576c);">
+                <i class="fas fa-heart"></i>
+            </div>
+            <div class="page-card-info">
+                <h3>후원하기</h3>
+                <p>후원 안내, 카카오페이, 응원 메시지 편집</p>
+            </div>
+        </div>
+        <div class="page-card-bottom">
+            <span class="page-card-badge" style="background:#fde8f4;color:#f5576c;">페이지</span>
+            <i class="fas fa-chevron-right page-card-arrow"></i>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_banner') }}" class="page-card">
+        <div class="page-card-top">
+            <div class="page-card-icon" style="background:linear-gradient(135deg,#fa709a,#fee140);">
+                <i class="fas fa-image"></i>
+            </div>
+            <div class="page-card-info">
+                <h3>배너 설정</h3>
+                <p>각 페이지 상단 배너 이미지, 텍스트, 색상</p>
+            </div>
+        </div>
+        <div class="page-card-bottom">
+            <span class="page-card-badge" style="background:#fff5e6;color:#fa9a3a;">디자인</span>
+            <i class="fas fa-chevron-right page-card-arrow"></i>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_site_images') }}" class="page-card">
+        <div class="page-card-top">
+            <div class="page-card-icon" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb);">
+                <i class="fas fa-images"></i>
+            </div>
+            <div class="page-card-info">
+                <h3>사이트 이미지</h3>
+                <p>로고, 배경, 기체 사진 등 공통 이미지</p>
+            </div>
+        </div>
+        <div class="page-card-bottom">
+            <span class="page-card-badge" style="background:#f3eef8;color:#a18cd1;">이미지</span>
+            <i class="fas fa-chevron-right page-card-arrow"></i>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_donate_settings') }}" class="page-card">
+        <div class="page-card-top">
+            <div class="page-card-icon" style="background:linear-gradient(135deg,#fccb90,#d57eeb);">
+                <i class="fas fa-hand-holding-heart"></i>
+            </div>
+            <div class="page-card-info">
+                <h3>후원 설정</h3>
+                <p>후원 링크, 결제 수단 설정</p>
+            </div>
+        </div>
+        <div class="page-card-bottom">
+            <span class="page-card-badge" style="background:#fef3e6;color:#d5a03e;">설정</span>
+            <i class="fas fa-chevron-right page-card-arrow"></i>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_commanders') }}" class="page-card">
+        <div class="page-card-top">
+            <div class="page-card-icon" style="background:linear-gradient(135deg,#30cfd0,#330867);">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="page-card-info">
+                <h3>전대장 인사말</h3>
+                <p>팀소개 페이지 전대장 사진, 인사말 편집</p>
+            </div>
+        </div>
+        <div class="page-card-bottom">
+            <span class="page-card-badge" style="background:#e6f7f7;color:#30a0a0;">팀</span>
+            <i class="fas fa-chevron-right page-card-arrow"></i>
+        </div>
+    </a>
 </div>
-{% endif %}
+
+<!-- Advanced Section Toggle -->
+<div class="section-divider">
+    <button class="advanced-toggle" onclick="toggleAdvanced()" id="advToggle">
+        <i class="fas fa-chevron-down"></i> 고급 편집 (섹션 직접 수정)
+    </button>
+</div>
+
+<div class="advanced-section" id="advSection">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <div class="adv-filter">
+            <a href="?" style="background:{{ '#007bff' if not lang_filter else '#e9ecef' }};color:{{ '#fff' if not lang_filter else '#333' }};">전체</a>
+            <a href="?lang=ko" style="background:{{ '#007bff' if lang_filter == 'ko' else '#e9ecef' }};color:{{ '#fff' if lang_filter == 'ko' else '#333' }};">한국어</a>
+            <a href="?lang=en" style="background:{{ '#007bff' if lang_filter == 'en' else '#e9ecef' }};color:{{ '#fff' if lang_filter == 'en' else '#333' }};">English</a>
+        </div>
+        <a href="{{ url_for('admin_page_section_form') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> 섹션 추가</a>
+    </div>
+
+    {% if pages %}
+    <table class="section-table">
+        <thead>
+            <tr>
+                <th>언어</th>
+                <th>페이지</th>
+                <th>섹션 ID</th>
+                <th>제목</th>
+                <th>타입</th>
+                <th>상태</th>
+                <th>순서</th>
+                <th style="text-align:right;">관리</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for page_name, sections in pages.items() %}
+                {% for section in sections %}
+                <tr>
+                    <td><span class="lang-badge {{ section.lang or 'ko' }}">{{ (section.lang or 'KO')|upper }}</span></td>
+                    <td style="font-weight:600;">{{ page_name }}</td>
+                    <td style="color:#999;font-family:monospace;font-size:0.8rem;">{{ section.section_id }}</td>
+                    <td>{{ section.title or '-' }}</td>
+                    <td><span style="background:#f0f0f0;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.75rem;">{{ section.section_type }}</span></td>
+                    <td><span class="status-dot {{ 'active' if section.is_active else 'inactive' }}"></span>{{ '활성' if section.is_active else '비활성' }}</td>
+                    <td style="text-align:center;">{{ section.order_num }}</td>
+                    <td>
+                        <div class="adv-actions" style="justify-content:flex-end;">
+                            <a href="{{ url_for('admin_page_section_form', section_id=section.id) }}" class="btn btn-sm btn-primary">수정</a>
+                            <form method="POST" action="{{ url_for('admin_page_section_delete', section_id=section.id) }}" style="display:inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                                <button type="submit" class="btn btn-sm btn-danger">삭제</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:2rem;color:#999;">
+        <i class="fas fa-folder-open" style="font-size:2rem;margin-bottom:0.5rem;display:block;"></i>
+        등록된 페이지 섹션이 없습니다.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleAdvanced() {
+    var sec = document.getElementById('advSection');
+    var btn = document.getElementById('advToggle');
+    sec.classList.toggle('show');
+    btn.classList.toggle('open');
+}
+// If there's a lang filter in URL, auto-open advanced section
+if (window.location.search.includes('lang=')) {
+    document.getElementById('advSection').classList.add('show');
+    document.getElementById('advToggle').classList.add('open');
+}
+</script>
 {% endblock %}
