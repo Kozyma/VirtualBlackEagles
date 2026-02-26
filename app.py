@@ -35,6 +35,13 @@ except ImportError:
 	HAS_SENDGRID = False
 
 try:
+	import boto3
+	from botocore.exceptions import ClientError, NoCredentialsError
+	HAS_BOTO3 = True
+except ImportError:
+	HAS_BOTO3 = False
+
+try:
 	from authlib.integrations.flask_client import OAuth
 	HAS_OAUTH = True
 except ImportError:
@@ -1080,8 +1087,13 @@ mail = Mail(app)
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
 SENDGRID_FROM_EMAIL = os.environ.get('SENDGRID_FROM_EMAIL', '')
 
+# AWS SES 설정
+AWS_SES_REGION = os.environ.get('AWS_SES_REGION', 'ap-northeast-2')  # 서울 리전 기본값
+AWS_SES_FROM_EMAIL = os.environ.get('AWS_SES_FROM_EMAIL', '')  # SES에서 인증된 발신 이메일
+AWS_SES_ENABLED = os.environ.get('AWS_SES_ENABLED', 'false').lower() == 'true'
+
 def send_email(subject, to_email, body_text):
-	"""SendGrid 우선, Flask-Mail 폴백으로 이메일 발송"""
+	"""SendGrid → AWS SES → Flask-Mail SMTP 순서로 이메일 발송 시도"""
 	# 1) SendGrid 시도
 	if HAS_SENDGRID and SENDGRID_API_KEY:
 		try:
@@ -1094,12 +1106,38 @@ def send_email(subject, to_email, body_text):
 			sg = SendGridAPIClient(SENDGRID_API_KEY)
 			response = sg.send(message)
 			if response.status_code in (200, 201, 202):
+				app.logger.info(f"이메일 발송 성공 (SendGrid): {to_email}")
 				return True
 			app.logger.error(f"SendGrid 발송 실패: status={response.status_code}")
 		except Exception as e:
 			app.logger.error(f"SendGrid 발송 오류: {str(e)}")
 
-	# 2) Flask-Mail 폴백
+	# 2) AWS SES 시도 (EC2 IAM 역할 또는 AWS 자격증명 사용)
+	if HAS_BOTO3 and (AWS_SES_ENABLED or AWS_SES_FROM_EMAIL):
+		ses_from = AWS_SES_FROM_EMAIL or app.config.get('MAIL_DEFAULT_SENDER', '')
+		if ses_from:
+			try:
+				ses_client = boto3.client('ses', region_name=AWS_SES_REGION)
+				response = ses_client.send_email(
+					Source=ses_from,
+					Destination={'ToAddresses': [to_email]},
+					Message={
+						'Subject': {'Data': subject, 'Charset': 'UTF-8'},
+						'Body': {'Text': {'Data': body_text, 'Charset': 'UTF-8'}}
+					}
+				)
+				if response.get('MessageId'):
+					app.logger.info(f"이메일 발송 성공 (AWS SES): {to_email}, MessageId={response['MessageId']}")
+					return True
+			except NoCredentialsError:
+				app.logger.warning("AWS SES: AWS 자격증명이 설정되지 않음 (IAM 역할 또는 환경변수 확인)")
+			except ClientError as e:
+				error_code = e.response['Error']['Code']
+				app.logger.error(f"AWS SES 발송 오류: {error_code} - {e.response['Error']['Message']}")
+			except Exception as e:
+				app.logger.error(f"AWS SES 발송 오류: {str(e)}")
+
+	# 3) Flask-Mail SMTP 폴백
 	if app.config.get('MAIL_PASSWORD'):
 		try:
 			msg = Message(
@@ -1109,10 +1147,12 @@ def send_email(subject, to_email, body_text):
 				body=body_text
 			)
 			mail.send(msg)
+			app.logger.info(f"이메일 발송 성공 (Flask-Mail SMTP): {to_email}")
 			return True
 		except Exception as e:
 			app.logger.error(f"Flask-Mail 발송 오류: {str(e)}")
 
+	app.logger.warning(f"이메일 발송 실패 - 모든 방법 실패. 수신자: {to_email}, 제목: {subject}")
 	return False
 
 @app.route('/send_mail', methods=['POST'])
