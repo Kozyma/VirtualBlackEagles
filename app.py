@@ -1762,13 +1762,25 @@ def schedule():
 	total = count_row['cnt']
 	schedules = conn.execute('SELECT * FROM schedules ORDER BY event_date DESC LIMIT ? OFFSET ?',
 		(per_page, (page - 1) * per_page)).fetchall()
+
+	# 달력용 전체 일정 (JSON 직렬화)
+	all_events = conn.execute('SELECT id, title, event_date, location, description FROM schedules ORDER BY event_date').fetchall()
+	import json as _json
+	events_json = _json.dumps([{
+		'id': e['id'],
+		'title': e['title'],
+		'date': e['event_date'],
+		'location': e['location'] or '',
+		'description': re.sub(r'<[^>]+>', '', e['description'] or '').strip()
+	} for e in all_events], ensure_ascii=False)
+
 	conn.close()
 	total_pages = max(1, (total + per_page - 1) // per_page)
 
 	if lang == 'en':
-		return render_template('schedule_en.html', schedules=schedules, banner=banner, page=page, total_pages=total_pages, total=total)
+		return render_template('schedule_en.html', schedules=schedules, banner=banner, page=page, total_pages=total_pages, total=total, events_json=events_json)
 	else:
-		return render_template('schedule.html', schedules=schedules, banner=banner, page=page, total_pages=total_pages, total=total)
+		return render_template('schedule.html', schedules=schedules, banner=banner, page=page, total_pages=total_pages, total=total, events_json=events_json)
 
 
 @app.route('/schedule/<int:schedule_id>')
@@ -2611,6 +2623,54 @@ def admin_message_delete(message_id):
 	
 	flash('문의가 삭제되었습니다.', 'success')
 	return redirect(url_for('admin_messages'))
+
+
+# 페이지 빠른 편집 (문의/후원)
+@app.route('/admin/page-edit/<page_name>', methods=['GET', 'POST'])
+@login_required
+def admin_page_quick_edit(page_name):
+	if page_name not in ('contact', 'donate'):
+		flash('지원하지 않는 페이지입니다.', 'error')
+		return redirect(url_for('admin_pages'))
+
+	conn = get_db()
+	lang = request.args.get('lang', 'ko')
+
+	if request.method == 'POST':
+		lang = request.form.get('lang', 'ko')
+		fields = request.form.to_dict()
+		for key, value in fields.items():
+			if key in ('lang',):
+				continue
+			# key format: field__section_id  (e.g. title__intro, content__discord, link_url__link_facebook)
+			if '__' not in key:
+				continue
+			field_type, section_id = key.split('__', 1)
+			if field_type not in ('title', 'content', 'link_url'):
+				continue
+			existing = conn.execute(
+				'SELECT id FROM page_sections WHERE page_name = ? AND section_id = ? AND lang = ?',
+				(page_name, section_id, lang)
+			).fetchone()
+			if existing:
+				conn.execute(f'UPDATE page_sections SET {field_type} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+					(value.strip(), existing['id']))
+			else:
+				conn.execute('''INSERT INTO page_sections (page_name, section_id, section_type, {col}, order_num, is_active, lang)
+					VALUES (?, ?, 'text', ?, 0, 1, ?)'''.format(col=field_type),
+					(page_name, section_id, value.strip(), lang))
+		conn.commit()
+		conn.close()
+		flash('페이지가 저장되었습니다.', 'success')
+		return redirect(url_for('admin_page_quick_edit', page_name=page_name, lang=lang))
+
+	# GET: load sections
+	rows = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND lang = ?', (page_name, lang)).fetchall()
+	sec = {}
+	for r in rows:
+		sec[r['section_id']] = {'title': r['title'] or '', 'content': r['content'] or '', 'link_url': r['link_url'] or ''}
+	conn.close()
+	return render_template('admin/page_quick_edit.html', page_name=page_name, sec=sec, lang=lang)
 
 
 # 페이지 섹션 관리

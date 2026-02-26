@@ -13,8 +13,57 @@
 {% block content %}
 <main class="container section" style="max-width:960px;margin:0 auto;padding:2rem 1rem;">
 
-  <!-- Calendar -->
-  <div id="calendar" style="background:#fff;padding:1rem;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.08);margin-bottom:2rem;"></div>
+  <style>
+    .vbe-cal{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;margin-bottom:2rem}
+    .vbe-cal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f0f0f0}
+    .vbe-cal-title{font-size:1.15rem;font-weight:700;color:#1a1a1a;margin:0}
+    .vbe-cal-nav{display:flex;gap:0.5rem;align-items:center}
+    .vbe-cal-btn{width:36px;height:36px;border:1px solid #e0e0e0;background:#fff;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:#555}
+    .vbe-cal-btn:hover{background:#f0f4ff;border-color:#007bff;color:#007bff}
+    .vbe-cal-today{font-size:0.8rem;padding:0.4rem 0.8rem;border:1px solid #e0e0e0;background:#fff;border-radius:8px;cursor:pointer;color:#555;font-weight:500;width:auto}
+    .vbe-cal-today:hover{background:#007bff;color:#fff;border-color:#007bff}
+    .vbe-cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+    .vbe-cal-dow{padding:0.6rem 0;text-align:center;font-size:0.8rem;font-weight:600;color:#999;border-bottom:1px solid #f0f0f0}
+    .vbe-cal-dow:first-child{color:#e74c3c}
+    .vbe-cal-dow:last-child{color:#3498db}
+    .vbe-cal-day{min-height:80px;padding:0.4rem;border-right:1px solid #f5f5f5;border-bottom:1px solid #f5f5f5;position:relative;cursor:default;transition:background 0.15s}
+    .vbe-cal-day:nth-child(7n){border-right:none}
+    .vbe-cal-day:hover{background:#fafbff}
+    .vbe-cal-day.other{background:#fafafa}
+    .vbe-cal-day.other .vbe-cal-num{color:#ccc}
+    .vbe-cal-day.today .vbe-cal-num{background:#007bff;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+    .vbe-cal-num{font-size:0.85rem;font-weight:500;color:#333;padding:2px;display:inline-block}
+    .vbe-cal-day:nth-child(7n+1) .vbe-cal-num{color:#e74c3c}
+    .vbe-cal-day:nth-child(7n) .vbe-cal-num{color:#3498db}
+    .vbe-cal-day.other .vbe-cal-num{color:#ccc !important}
+    .vbe-cal-day.today .vbe-cal-num{color:#fff !important}
+    .vbe-cal-evt{display:block;font-size:0.7rem;padding:2px 5px;margin:2px 0;background:#e8f0fe;color:#1a73e8;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:background 0.15s;text-decoration:none;line-height:1.4}
+    .vbe-cal-evt:hover{background:#d2e3fc}
+    .vbe-cal-more{font-size:0.7rem;color:#1a73e8;cursor:pointer;padding:2px 5px;font-weight:500}
+    @media(max-width:768px){
+      .vbe-cal-day{min-height:56px;padding:2px}
+      .vbe-cal-evt{font-size:0;padding:0;margin:1px auto;width:6px;height:6px;border-radius:50%;background:#1a73e8;display:block}
+      .vbe-cal-more{display:none}
+      .vbe-cal-num{font-size:0.75rem}
+    }
+  </style>
+
+  <div class="vbe-cal">
+    <div class="vbe-cal-header">
+      <div class="vbe-cal-nav">
+        <button class="vbe-cal-btn" id="calPrev"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>
+        <button class="vbe-cal-btn vbe-cal-today" id="calToday">Today</button>
+        <button class="vbe-cal-btn" id="calNext"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>
+      </div>
+      <h3 class="vbe-cal-title" id="calTitle"></h3>
+    </div>
+    <div class="vbe-cal-grid" id="calGrid"></div>
+  </div>
+
+  <div id="calDetail" style="display:none;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);padding:1.5rem;margin-bottom:2rem;">
+    <h3 id="calDetailTitle" style="margin:0 0 1rem 0;font-size:1rem;color:#007bff;"></h3>
+    <div id="calDetailList"></div>
+  </div>
 
   <div style="margin-bottom:1.5rem;">
     <span style="color:#666;font-size:0.95rem;">Total <strong style="color:#007bff;">{{ total }}</strong> events</span>
@@ -57,7 +106,6 @@
   </div>
   {% endif %}
 
-  <!-- Pagination -->
   {% if total_pages > 1 %}
   <div style="display:flex;justify-content:center;align-items:center;gap:0.25rem;margin-top:2rem;">
     {% if page > 1 %}
@@ -66,19 +114,16 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
     </a>
     {% endif %}
-
     {% for p in range(1, total_pages + 1) %}
       {% if p == page %}
       <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:#007bff;color:#fff;border-radius:4px;font-size:0.9rem;font-weight:600;">{{ p }}</span>
       {% elif p <= 2 or p >= total_pages - 1 or (p >= page - 2 and p <= page + 2) %}
       <a href="{{ url_for('schedule', lang='en', page=p) }}"
-         style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:0.9rem;transition:background 0.15s;"
-         onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">{{ p }}</a>
+         style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;font-size:0.9rem;">{{ p }}</a>
       {% elif p == 3 or p == total_pages - 2 %}
       <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;color:#999;">...</span>
       {% endif %}
     {% endfor %}
-
     {% if page < total_pages %}
     <a href="{{ url_for('schedule', lang='en', page=page+1) }}"
        style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#333;">
@@ -90,7 +135,6 @@
 
 </main>
 
-<!-- Contact Us + Footer Section -->
 <section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
 	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
 		<h3 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
@@ -98,50 +142,94 @@
 	</div>
 </section>
 
-<style>
-.site-footer {
-	display: none;
-}
-.fc .fc-toolbar-title { font-size: 1.2rem !important; }
-.fc .fc-button { font-size: 0.85rem !important; }
-.fc .fc-daygrid-event { cursor: pointer; }
-</style>
+<style>.site-footer{display:none}</style>
 
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var calendarEl = document.getElementById('calendar');
-    if (calendarEl) {
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'en',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth'
-            },
-            height: 'auto',
-            events: '/api/schedules',
-            eventDisplay: 'block',
-            eventClick: function(info) {
-                info.jsEvent.preventDefault();
-                if (info.event.url) {
-                    window.location.href = info.event.url + '?lang=en';
-                }
-            },
-            eventDidMount: function(info) {
-                var desc = info.event.extendedProps.description || '';
-                var loc = info.event.extendedProps.location || '';
-                var tooltip = info.event.title;
-                if (desc) tooltip += '\n' + desc;
-                if (loc) tooltip += '\n📍 ' + loc;
-                info.el.setAttribute('title', tooltip);
-            },
-            eventColor: '#007bff',
-            dayMaxEvents: 3
-        });
-        calendar.render();
+(function(){
+  var EVENTS = {{ events_json|safe }};
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var now = new Date();
+  var curYear = now.getFullYear(), curMonth = now.getMonth();
+
+  function pad(n){return n<10?'0'+n:n}
+  function fmtDate(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d)}
+  function getDaysInMonth(y,m){return new Date(y,m+1,0).getDate()}
+  function getFirstDow(y,m){return new Date(y,m,1).getDay()}
+
+  function getEventsForDate(dateStr){
+    return EVENTS.filter(function(e){return e.date===dateStr});
+  }
+
+  function render(){
+    var titleEl=document.getElementById('calTitle');
+    var gridEl=document.getElementById('calGrid');
+    titleEl.textContent=MONTHS[curMonth]+' '+curYear;
+
+    var html='';
+    var dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    for(var i=0;i<7;i++) html+='<div class="vbe-cal-dow">'+dows[i]+'</div>';
+
+    var firstDow=getFirstDow(curYear,curMonth);
+    var daysInMonth=getDaysInMonth(curYear,curMonth);
+    var prevDays=getDaysInMonth(curYear,curMonth-1);
+    var todayStr=fmtDate(now.getFullYear(),now.getMonth(),now.getDate());
+
+    for(var i=firstDow-1;i>=0;i--){
+      html+='<div class="vbe-cal-day other"><span class="vbe-cal-num">'+(prevDays-i)+'</span></div>';
     }
-});
+    for(var d=1;d<=daysInMonth;d++){
+      var dateStr=fmtDate(curYear,curMonth,d);
+      var isToday=dateStr===todayStr;
+      var evts=getEventsForDate(dateStr);
+      html+='<div class="vbe-cal-day'+(isToday?' today':'')+'" data-date="'+dateStr+'">';
+      html+='<span class="vbe-cal-num">'+d+'</span>';
+      for(var j=0;j<Math.min(evts.length,2);j++){
+        html+='<a class="vbe-cal-evt" href="/schedule/'+evts[j].id+'?lang=en" title="'+evts[j].title+'">'+evts[j].title+'</a>';
+      }
+      if(evts.length>2) html+='<span class="vbe-cal-more" onclick="showDateEvents(\''+dateStr+'\')">+' + (evts.length-2) + ' more</span>';
+      html+='</div>';
+    }
+    var totalCells=firstDow+daysInMonth;
+    var remaining=totalCells%7===0?0:7-totalCells%7;
+    for(var i=1;i<=remaining;i++){
+      html+='<div class="vbe-cal-day other"><span class="vbe-cal-num">'+i+'</span></div>';
+    }
+    gridEl.innerHTML=html;
+
+    gridEl.querySelectorAll('.vbe-cal-day:not(.other)').forEach(function(el){
+      el.addEventListener('click',function(e){
+        if(e.target.closest('.vbe-cal-evt')) return;
+        var date=el.getAttribute('data-date');
+        if(date) showDateEvents(date);
+      });
+    });
+  }
+
+  window.showDateEvents=function(dateStr){
+    var evts=getEventsForDate(dateStr);
+    var detailEl=document.getElementById('calDetail');
+    var titleEl=document.getElementById('calDetailTitle');
+    var listEl=document.getElementById('calDetailList');
+    if(evts.length===0){detailEl.style.display='none';return;}
+    titleEl.textContent=dateStr+' Events ('+evts.length+')';
+    var html='';
+    evts.forEach(function(e){
+      html+='<a href="/schedule/'+e.id+'?lang=en" style="display:block;padding:0.75rem 1rem;margin-bottom:0.5rem;background:#f8f9fa;border-radius:8px;text-decoration:none;color:#333;transition:background 0.15s;"';
+      html+=' onmouseover="this.style.background=\'#e8f0fe\'" onmouseout="this.style.background=\'#f8f9fa\'">';
+      html+='<strong>'+e.title+'</strong>';
+      if(e.location) html+='<span style="margin-left:0.75rem;font-size:0.85rem;color:#666;">'+e.location+'</span>';
+      if(e.description) html+='<p style="margin:0.25rem 0 0;font-size:0.85rem;color:#888;">'+e.description+'</p>';
+      html+='</a>';
+    });
+    listEl.innerHTML=html;
+    detailEl.style.display='block';
+    detailEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+
+  document.getElementById('calPrev').addEventListener('click',function(){curMonth--;if(curMonth<0){curMonth=11;curYear--;}render();});
+  document.getElementById('calNext').addEventListener('click',function(){curMonth++;if(curMonth>11){curMonth=0;curYear++;}render();});
+  document.getElementById('calToday').addEventListener('click',function(){curYear=now.getFullYear();curMonth=now.getMonth();render();});
+  render();
+})();
 </script>
 {% endblock %}

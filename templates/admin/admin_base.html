@@ -52,8 +52,14 @@
 
             <div class="sidebar-group">
                 <span class="sidebar-group-title">설정</span>
-                <a href="{{ url_for('admin_pages') }}" class="sidebar-link {% if 'page' in request.endpoint|default('') and 'home' not in request.endpoint|default('') %}active{% endif %}">
-                    <i class="fas fa-file-alt"></i> 페이지 콘텐츠
+                <a href="{{ url_for('admin_page_quick_edit', page_name='contact') }}" class="sidebar-link {% if request.endpoint == 'admin_page_quick_edit' and request.view_args.get('page_name') == 'contact' %}active{% endif %}">
+                    <i class="fas fa-envelope"></i> 문의 페이지
+                </a>
+                <a href="{{ url_for('admin_page_quick_edit', page_name='donate') }}" class="sidebar-link {% if request.endpoint == 'admin_page_quick_edit' and request.view_args.get('page_name') == 'donate' %}active{% endif %}">
+                    <i class="fas fa-heart"></i> 후원 페이지
+                </a>
+                <a href="{{ url_for('admin_pages') }}" class="sidebar-link {% if request.endpoint in ('admin_pages', 'admin_page_section_form') %}active{% endif %}">
+                    <i class="fas fa-file-alt"></i> 페이지 콘텐츠 (고급)
                 </a>
                 <a href="{{ url_for('admin_banner') }}" class="sidebar-link {% if 'banner' in request.endpoint|default('') %}active{% endif %}">
                     <i class="fas fa-image"></i> 배너 설정

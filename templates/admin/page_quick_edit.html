@@ -1,0 +1,206 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}{{ '문의하기' if page_name == 'contact' else '후원하기' }} 페이지 편집{% endblock %}
+{% block page_title %}{{ '문의하기' if page_name == 'contact' else '후원하기' }} 페이지 편집{% endblock %}
+
+{% block top_actions %}
+    <a href="{{ url_for('admin_pages') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 페이지 목록</a>
+{% endblock %}
+
+{% block head %}
+<style>
+    .lang-tabs{display:flex;gap:0.5rem;margin-bottom:1.5rem}
+    .lang-tab{padding:0.5rem 1.2rem;border-radius:8px;text-decoration:none;font-size:0.9rem;font-weight:600;transition:all 0.2s}
+    .lang-tab.active{background:#007bff;color:#fff}
+    .lang-tab:not(.active){background:#e9ecef;color:#333}
+    .lang-tab:not(.active):hover{background:#dee2e6}
+    .edit-card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:1.5rem;overflow:hidden}
+    .edit-card-header{background:#f8f9fa;padding:1rem 1.5rem;border-bottom:1px solid #eee;display:flex;align-items:center;gap:0.75rem}
+    .edit-card-header i{color:#007bff;font-size:1.1rem}
+    .edit-card-header h3{margin:0;font-size:1rem;font-weight:600;color:#333}
+    .edit-card-body{padding:1.5rem}
+    .edit-field{margin-bottom:1.25rem}
+    .edit-field:last-child{margin-bottom:0}
+    .edit-field label{display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.9rem;color:#444}
+    .edit-field input,.edit-field textarea{width:100%;padding:0.65rem 0.85rem;border:1.5px solid #e0e0e0;border-radius:8px;font-size:0.95rem;transition:border-color 0.2s;font-family:inherit}
+    .edit-field input:focus,.edit-field textarea:focus{outline:none;border-color:#007bff;box-shadow:0 0 0 3px rgba(0,123,255,0.1)}
+    .edit-field textarea{min-height:80px;resize:vertical}
+    .edit-field .help{font-size:0.8rem;color:#999;margin-top:0.25rem}
+    .save-bar{position:sticky;bottom:0;background:#fff;padding:1rem 1.5rem;border-top:2px solid #007bff;display:flex;justify-content:flex-end;gap:1rem;z-index:10;box-shadow:0 -4px 12px rgba(0,0,0,0.05)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lang-tabs">
+    <a href="?lang=ko" class="lang-tab {{ 'active' if lang == 'ko' }}">한국어</a>
+    <a href="?lang=en" class="lang-tab {{ 'active' if lang == 'en' }}">English</a>
+</div>
+
+<form method="POST" action="{{ url_for('admin_page_quick_edit', page_name=page_name) }}">
+    <input type="hidden" name="lang" value="{{ lang }}">
+
+    {% if page_name == 'contact' %}
+    <!-- 문의하기 페이지 -->
+    <div class="edit-card">
+        <div class="edit-card-header"><i class="fas fa-heading"></i><h3>상단 소개</h3></div>
+        <div class="edit-card-body">
+            <div class="edit-field">
+                <label>소개 제목</label>
+                <input type="text" name="title__intro" value="{{ sec.get('intro', {}).get('title', '') }}" placeholder="{{ '문의하기' if lang == 'ko' else 'Get in Touch' }}">
+            </div>
+            <div class="edit-field">
+                <label>소개 설명</label>
+                <textarea name="content__intro" placeholder="{{ '궁금한 사항이 있으시면 연락주세요.' if lang == 'ko' else 'Have questions? Reach out to us!' }}">{{ sec.get('intro', {}).get('content', '') }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="edit-card">
+        <div class="edit-card-header"><i class="fas fa-address-card"></i><h3>연락처 정보</h3></div>
+        <div class="edit-card-body">
+            <div class="edit-field">
+                <label>카드 제목</label>
+                <input type="text" name="title__card_title" value="{{ sec.get('card_title', {}).get('title', '') }}" placeholder="{{ '연락처' if lang == 'ko' else 'Contact Information' }}">
+            </div>
+            <div class="edit-field">
+                <label>디스코드 제목</label>
+                <input type="text" name="title__discord" value="{{ sec.get('discord', {}).get('title', '') }}" placeholder="{{ '디스코드' if lang == 'ko' else 'Discord' }}">
+            </div>
+            <div class="edit-field">
+                <label>디스코드 ID</label>
+                <input type="text" name="content__discord" value="{{ sec.get('discord', {}).get('content', '') }}" placeholder="Johnson#4553">
+            </div>
+            <div class="edit-field">
+                <label>이메일 제목</label>
+                <input type="text" name="title__email" value="{{ sec.get('email', {}).get('title', '') }}" placeholder="{{ '이메일' if lang == 'ko' else 'Email' }}">
+            </div>
+            <div class="edit-field">
+                <label>이메일 설명</label>
+                <input type="text" name="content__email" value="{{ sec.get('email', {}).get('content', '') }}" placeholder="{{ '폼으로 문의해주세요' if lang == 'ko' else 'Contact us via the form' }}">
+            </div>
+            <div class="edit-field">
+                <label>{{ '세번째 항목 제목' if lang == 'ko' else 'Third Item Title' }}</label>
+                <input type="text" name="title__response" value="{{ sec.get('response', {}).get('title', '') }}" placeholder="{{ '응답 시간' if lang == 'ko' else 'Social Media' }}">
+            </div>
+            <div class="edit-field">
+                <label>{{ '세번째 항목 설명' if lang == 'ko' else 'Third Item Description' }}</label>
+                <input type="text" name="content__response" value="{{ sec.get('response', {}).get('content', '') }}" placeholder="{{ '보통 24시간 이내 회신드립니다' if lang == 'ko' else 'Follow us on Instagram & Facebook' }}">
+            </div>
+        </div>
+    </div>
+
+    <div class="edit-card">
+        <div class="edit-card-header"><i class="fas fa-paper-plane"></i><h3>문의 폼</h3></div>
+        <div class="edit-card-body">
+            <div class="edit-field">
+                <label>폼 제목</label>
+                <input type="text" name="title__form_title" value="{{ sec.get('form_title', {}).get('title', '') }}" placeholder="{{ '빠른 문의' if lang == 'ko' else 'Send us a Message' }}">
+            </div>
+        </div>
+    </div>
+
+    {% if lang == 'en' %}
+    <div class="edit-card">
+        <div class="edit-card-header"><i class="fas fa-users"></i><h3>커뮤니티 섹션 (영어 전용)</h3></div>
+        <div class="edit-card-body">
+            <div class="edit-field">
+                <label>커뮤니티 제목</label>
+                <input type="text" name="title__community" value="{{ sec.get('community', {}).get('title', '') }}" placeholder="Join Our Community">
+            </div>
+            <div class="edit-field">
+                <label>커뮤니티 설명</label>
+                <textarea name="content__community" placeholder="Connect with us on Discord...">{{ sec.get('community', {}).get('content', '') }}</textarea>
+            </div>
+            <div class="edit-field">
+                <label>Facebook 링크</label>
+                <input type="text" name="link_url__link_facebook" value="{{ sec.get('link_facebook', {}).get('link_url', '') }}" placeholder="https://www.facebook.com/VirtualBlackEagles/">
+            </div>
+            <div class="edit-field">
+                <label>Instagram 링크</label>
+                <input type="text" name="link_url__link_instagram" value="{{ sec.get('link_instagram', {}).get('link_url', '') }}" placeholder="https://www.instagram.com/...">
+            </div>
+            <div class="edit-field">
+                <label>YouTube 링크</label>
+                <input type="text" name="link_url__link_youtube" value="{{ sec.get('link_youtube', {}).get('link_url', '') }}" placeholder="https://www.youtube.com/@VirtualBlackEagles-DCS">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% elif page_name == 'donate' %}
+    <!-- 후원하기 페이지 -->
+    <div class="edit-card">
+        <div class="edit-card-header"><i class="fas fa-heading"></i><h3>상단 소개</h3></div>
+        <div class="edit-card-body">
+            <div class="edit-field">
+                <label>소개 제목</label>
+                <input type="text" name="title__intro" value="{{ sec.get('intro', {}).get('title', '') }}" placeholder="{{ '후원하기' if lang == 'ko' else 'Support Us' }}">
+            </div>
+            <div class="edit-field">
+                <label>소개 설명</label>
+                <textarea name="content__intro" placeholder="{{ '여러분의 후원이 큰 힘이 됩니다.' if lang == 'ko' else 'Your support makes a difference!' }}">{{ sec.get('intro', {}).get('content', '') }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="edit-card">
+        <div class="edit-card-header"><i class="fas fa-info-circle"></i><h3>후원 안내</h3></div>
+        <div class="edit-card-body">
+            <div class="edit-field">
+                <label>안내 제목</label>
+                <input type="text" name="title__guide_title" value="{{ sec.get('guide_title', {}).get('title', '') }}" placeholder="{{ '후원 안내' if lang == 'ko' else 'Donation Guide' }}">
+            </div>
+            <div class="edit-field">
+                <label>카카오페이 카드 제목</label>
+                <input type="text" name="title__method_kakaopay" value="{{ sec.get('method_kakaopay', {}).get('title', '') }}" placeholder="{{ '카카오페이 송금' if lang == 'ko' else 'KakaoPay Transfer' }}">
+            </div>
+            <div class="edit-field">
+                <label>카카오페이 카드 설명</label>
+                <textarea name="content__method_kakaopay">{{ sec.get('method_kakaopay', {}).get('content', '') }}</textarea>
+            </div>
+            <div class="edit-field">
+                <label>투명한 운영 카드 제목</label>
+                <input type="text" name="title__method_transparency" value="{{ sec.get('method_transparency', {}).get('title', '') }}" placeholder="{{ '투명한 운영' if lang == 'ko' else 'Transparent Management' }}">
+            </div>
+            <div class="edit-field">
+                <label>투명한 운영 카드 설명</label>
+                <textarea name="content__method_transparency">{{ sec.get('method_transparency', {}).get('content', '') }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="edit-card">
+        <div class="edit-card-header"><i class="fas fa-hand-holding-heart"></i><h3>후원 폼</h3></div>
+        <div class="edit-card-body">
+            <div class="edit-field">
+                <label>폼 제목</label>
+                <input type="text" name="title__form_title" value="{{ sec.get('form_title', {}).get('title', '') }}" placeholder="{{ '후원하기' if lang == 'ko' else 'Donate' }}">
+            </div>
+            <div class="edit-field">
+                <label>응원 메시지 제목</label>
+                <input type="text" name="title__encourage" value="{{ sec.get('encourage', {}).get('title', '') }}" placeholder="{{ '응원 메시지 보내기' if lang == 'ko' else 'Send Encouragement' }}">
+            </div>
+        </div>
+    </div>
+
+    <div class="edit-card">
+        <div class="edit-card-header"><i class="fas fa-phone"></i><h3>하단 연락처</h3></div>
+        <div class="edit-card-body">
+            <div class="edit-field">
+                <label>연락처 제목</label>
+                <input type="text" name="title__footer_contact" value="{{ sec.get('footer_contact', {}).get('title', '') }}" placeholder="Contact Us">
+            </div>
+            <div class="edit-field">
+                <label>연락처 내용</label>
+                <input type="text" name="content__footer_contact" value="{{ sec.get('footer_contact', {}).get('content', '') }}" placeholder="Discord | Johnson#4553">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="save-bar">
+        <a href="{{ url_for('admin_pages') }}" class="btn btn-secondary">취소</a>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 저장</button>
+    </div>
+</form>
+{% endblock %}
