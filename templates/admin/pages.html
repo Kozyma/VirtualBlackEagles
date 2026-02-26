@@ -97,9 +97,20 @@
     <a href="?lang=en" style="padding:0.3rem 0.8rem;border-radius:4px;text-decoration:none;font-size:0.85rem;background:{{ '#007bff' if lang_filter == 'en' else '#e9ecef' }};color:{{ '#fff' if lang_filter == 'en' else '#333' }};">English</a>
 </div>
 
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;">
+    <a href="{{ url_for('admin_page_quick_edit', page_name='contact') }}" style="display:flex;align-items:center;gap:1rem;padding:1.25rem 1.5rem;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border-radius:12px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 15px rgba(102,126,234,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+        <i class="fas fa-envelope" style="font-size:1.5rem;opacity:0.9;"></i>
+        <div><strong style="font-size:1.05rem;">문의 페이지 편집</strong><br><span style="font-size:0.8rem;opacity:0.85;">연락처, 디스코드, 폼 제목 등</span></div>
+    </a>
+    <a href="{{ url_for('admin_page_quick_edit', page_name='donate') }}" style="display:flex;align-items:center;gap:1rem;padding:1.25rem 1.5rem;background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff;border-radius:12px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 15px rgba(245,87,108,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+        <i class="fas fa-heart" style="font-size:1.5rem;opacity:0.9;"></i>
+        <div><strong style="font-size:1.05rem;">후원 페이지 편집</strong><br><span style="font-size:0.8rem;opacity:0.85;">후원 안내, 카카오페이, 응원 등</span></div>
+    </a>
+</div>
+
 <div class="info-box">
-    <h3>사용 방법</h3>
-    <p>각 페이지(home, about, notice, contact, donate 등)의 섹션을 추가/수정/삭제할 수 있습니다. 섹션 타입(텍스트, 이미지, HTML 등)을 선택하고 순서를 지정하세요. 문의와 후원 페이지도 여기서 편집 가능합니다.</p>
+    <h3>고급 편집</h3>
+    <p>아래는 각 페이지의 개별 섹션을 직접 수정하는 고급 모드입니다. 위의 빠른 편집 버튼을 사용하면 더 쉽게 수정할 수 있습니다.</p>
 </div>
 
 {% if pages %}

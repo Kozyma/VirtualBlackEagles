@@ -146,7 +146,7 @@
 
 <script>
 (function(){
-  var EVENTS = {{ events_json|safe }};
+  var EVENTS = {{ cal_events|tojson }};
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var now = new Date();
   var curYear = now.getFullYear(), curMonth = now.getMonth();

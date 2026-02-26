@@ -1763,24 +1763,25 @@ def schedule():
 	schedules = conn.execute('SELECT * FROM schedules ORDER BY event_date DESC LIMIT ? OFFSET ?',
 		(per_page, (page - 1) * per_page)).fetchall()
 
-	# 달력용 전체 일정 (JSON 직렬화)
-	all_events = conn.execute('SELECT id, title, event_date, location, description FROM schedules ORDER BY event_date').fetchall()
-	import json as _json
-	events_json = _json.dumps([{
-		'id': e['id'],
-		'title': e['title'],
-		'date': e['event_date'],
-		'location': e['location'] or '',
-		'description': re.sub(r'<[^>]+>', '', e['description'] or '').strip()
-	} for e in all_events], ensure_ascii=False)
+	# 달력용 전체 일정
+	all_events_raw = conn.execute('SELECT id, title, event_date, location, description FROM schedules ORDER BY event_date').fetchall()
+	cal_events = []
+	for e in all_events_raw:
+		cal_events.append({
+			'id': e['id'],
+			'title': e['title'] or '',
+			'date': str(e['event_date'] or ''),
+			'location': e['location'] or '',
+			'description': re.sub(r'<[^>]+>', '', e['description'] or '').strip()
+		})
 
 	conn.close()
 	total_pages = max(1, (total + per_page - 1) // per_page)
 
 	if lang == 'en':
-		return render_template('schedule_en.html', schedules=schedules, banner=banner, page=page, total_pages=total_pages, total=total, events_json=events_json)
+		return render_template('schedule_en.html', schedules=schedules, banner=banner, page=page, total_pages=total_pages, total=total, cal_events=cal_events)
 	else:
-		return render_template('schedule.html', schedules=schedules, banner=banner, page=page, total_pages=total_pages, total=total, events_json=events_json)
+		return render_template('schedule.html', schedules=schedules, banner=banner, page=page, total_pages=total_pages, total=total, cal_events=cal_events)
 
 
 @app.route('/schedule/<int:schedule_id>')

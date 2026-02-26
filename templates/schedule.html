@@ -151,7 +151,7 @@
 
 <script>
 (function(){
-  var EVENTS = {{ events_json|safe }};
+  var EVENTS = {{ cal_events|tojson }};
   var now = new Date();
   var curYear = now.getFullYear(), curMonth = now.getMonth();
 
