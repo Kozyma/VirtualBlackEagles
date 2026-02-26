@@ -1063,23 +1063,14 @@ def login_required(f):
 #   export MAIL_PASSWORD=your_app_password
 #   export MAIL_DEFAULT_SENDER=rr3340@naver.com
 
-# Gmail 설정 (실제 사용시 네이버 앱 비밀번호로 변경하세요)
-# Gmail을 사용하려면 아래 주석을 해제하고 네이버 설정을 주석 처리하세요
-# app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-# app.config['MAIL_PORT'] = 587
-# app.config['MAIL_USE_TLS'] = True
-# app.config['MAIL_USE_SSL'] = False
-# app.config['MAIL_USERNAME'] = 'your-email@gmail.com'
-# app.config['MAIL_PASSWORD'] = 'your-app-password'
-
-# 네이버 메일 설정
-app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.naver.com')
-app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 465))
-app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'true').lower() == 'true'
-app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'false').lower() == 'true'
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'rr3340@naver.com')  # 기본값 설정
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')  # 여기에 네이버 앱 비밀번호 입력
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'rr3340@naver.com')
+# Gmail SMTP 설정
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'virtualblackeagles2021@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')  # Gmail 앱 비밀번호
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'virtualblackeagles2021@gmail.com')
 
 mail = Mail(app)
 
