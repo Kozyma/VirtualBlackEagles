@@ -1117,46 +1117,104 @@ def send_email(subject, to_email, body_text):
 
 @app.route('/send_mail', methods=['POST'])
 def send_mail():
-	name = request.form.get('name', '').strip()
-	email = request.form.get('email', '').strip()
-	message_text = request.form.get('message', '').strip()
-	lang = request.form.get('lang', 'ko')
+	"""문의 메시지 전송 (폼 POST / AJAX JSON 모두 지원)"""
+	# AJAX JSON 요청인지 확인
+	is_ajax = request.is_json
+
+	if is_ajax:
+		data = request.get_json(silent=True) or {}
+		name = data.get('name', '').strip()
+		email = data.get('email', '').strip()
+		subject = data.get('subject', '').strip()
+		message_text = data.get('message', '').strip()
+		lang = data.get('lang', 'ko')
+	else:
+		name = request.form.get('name', '').strip()
+		email = request.form.get('email', '').strip()
+		subject = request.form.get('subject', '').strip()
+		message_text = request.form.get('message', '').strip()
+		lang = request.form.get('lang', 'ko')
 
 	if not email or not message_text:
-		flash('이메일과 메시지를 모두 입력해 주세요.' if lang != 'en' else 'Please fill in email and message.', 'error')
+		error_msg = 'Please fill in email and message.' if lang == 'en' else '이메일과 메시지를 모두 입력해 주세요.'
+		if is_ajax:
+			return {'success': False, 'error': error_msg}, 400
+		flash(error_msg, 'error')
 		return redirect(url_for('contact', lang=lang) if lang == 'en' else url_for('contact'))
+
+	# 제목이 있으면 메시지 앞에 추가
+	full_message = f"[{subject}]\n{message_text}" if subject else message_text
 
 	# 1) 데이터베이스에 문의 내용 저장
 	try:
 		conn = get_db()
-		cursor = conn.cursor()
-		cursor.execute('''
+		conn.execute('''
 			INSERT INTO contact_messages (name, email, message, type)
 			VALUES (?, ?, ?, ?)
-		''', (name or '익명', email, message_text, 'contact'))
+		''', (name or '익명', email, full_message, 'contact'))
 		conn.commit()
 		conn.close()
 	except Exception as e:
 		app.logger.error(f"문의 저장 실패: {str(e)}")
-		flash('문의 접수에 실패했습니다. 잠시 후 다시 시도해주세요.' if lang != 'en' else 'Failed to submit. Please try again.', 'error')
+		error_msg = 'Failed to submit. Please try again.' if lang == 'en' else '문의 접수에 실패했습니다. 잠시 후 다시 시도해주세요.'
+		if is_ajax:
+			return {'success': False, 'error': error_msg}, 500
+		flash(error_msg, 'error')
 		return redirect(url_for('contact', lang=lang) if lang == 'en' else url_for('contact'))
 
 	# 2) 관리자에게 이메일 알림 발송
+	email_sent = False
 	try:
 		conn_email = get_db()
 		email_row = conn_email.execute("SELECT setting_value FROM site_settings WHERE setting_key = 'contact_email'").fetchone()
 		conn_email.close()
 		admin_email = (email_row['setting_value'] if email_row and email_row['setting_value'] else SENDGRID_FROM_EMAIL or app.config.get('MAIL_USERNAME', 'rr3340@naver.com'))
-		send_email(
-			subject=f'[VBE 문의] {name or "익명"} - {email}',
+		subject_line = f'[VBE 문의] {name or "익명"} - {subject or email}'
+		email_sent = send_email(
+			subject=subject_line,
 			to_email=admin_email,
-			body_text=f"새 문의가 접수되었습니다.\n\n이름: {name or '익명'}\n이메일: {email}\n\n내용:\n{message_text}"
+			body_text=f"새 문의가 접수되었습니다.\n\n이름: {name or '익명'}\n이메일: {email}\n제목: {subject or '(없음)'}\n\n내용:\n{message_text}"
 		)
 	except Exception as e:
-		# 이메일 실패해도 DB 저장은 성공했으므로 계속 진행
 		app.logger.error(f"문의 이메일 발송 실패: {str(e)}")
 
-	success_msg = 'Contact submitted successfully!' if lang == 'en' else '문의가 성공적으로 접수되었습니다! 관리자가 확인 후 답변드리겠습니다.'
+	# 3) 문의자에게 접수 확인 이메일 발송
+	try:
+		if lang == 'en':
+			confirm_subject = '[Virtual Black Eagles] Your inquiry has been received'
+			confirm_body = (
+				f"Hello {name or 'Guest'},\n\n"
+				f"Thank you for contacting Virtual Black Eagles.\n"
+				f"We have received your inquiry and will respond within 24 hours.\n\n"
+				f"--- Your Message ---\n{message_text}\n---\n\n"
+				f"Thank you,\nVirtual Black Eagles Team"
+			)
+		else:
+			confirm_subject = '[Virtual Black Eagles] 문의가 접수되었습니다'
+			confirm_body = (
+				f"{name or '고객'}님 안녕하세요,\n\n"
+				f"Virtual Black Eagles에 문의해 주셔서 감사합니다.\n"
+				f"문의가 정상적으로 접수되었으며, 24시간 이내에 답변드리겠습니다.\n\n"
+				f"--- 문의 내용 ---\n{message_text}\n---\n\n"
+				f"감사합니다.\nVirtual Black Eagles 팀"
+			)
+		send_email(
+			subject=confirm_subject,
+			to_email=email,
+			body_text=confirm_body
+		)
+	except Exception as e:
+		app.logger.error(f"문의 확인 이메일 발송 실패: {str(e)}")
+
+	success_msg = 'Your inquiry has been submitted! We will respond within 24 hours.' if lang == 'en' else '문의가 접수되었습니다! 24시간 이내에 답변드리겠습니다.'
+
+	if is_ajax:
+		return {
+			'success': True,
+			'message': success_msg,
+			'email_sent': email_sent
+		}
+
 	flash(success_msg, 'success')
 	return redirect(url_for('contact', lang=lang) if lang == 'en' else url_for('contact'))
 

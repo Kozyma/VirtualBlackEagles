@@ -312,25 +312,88 @@
               {% endif %}
             {% endwith %}
             
-            <form id="contactForm" action="{{ url_for('send_mail') }}" method="post">
-              <input type="hidden" name="lang" value="ko">
+            <form id="contactForm">
               <div class="form-group">
                 <label for="userName">이름</label>
-                <input type="text" name="name" id="userName" placeholder="이름을 입력해주세요" value="{{ session.get('user_name', '') or request.form.name|default('') }}" required>
+                <input type="text" name="name" id="userName" placeholder="이름을 입력해주세요" value="{{ session.get('user_name', '') or '' }}" required>
               </div>
-              
+
               <div class="form-group">
                 <label for="userEmail">이메일</label>
-                <input type="email" name="email" id="userEmail" placeholder="example@email.com" value="{{ session.get('user_email', '') or request.form.email|default('') }}" required>
+                <input type="email" name="email" id="userEmail" placeholder="example@email.com" value="{{ session.get('user_email', '') or '' }}" required>
               </div>
-              
+
               <div class="form-group">
                 <label for="userMsg">메시지</label>
-                <textarea name="message" id="userMsg" placeholder="문의하실 내용을 입력해주세요" required>{{ request.form.message|default('') }}</textarea>
+                <textarea name="message" id="userMsg" placeholder="문의하실 내용을 입력해주세요" required></textarea>
               </div>
-              
-              <button type="submit" class="submit-btn">메시지 전송하기</button>
+
+              <div id="contactResult" style="display:none;padding:1rem 1.5rem;border-radius:12px;margin-bottom:1rem;font-size:0.95rem;"></div>
+
+              <button type="submit" class="submit-btn" id="contactSubmitBtn">
+                <span id="btnText">메시지 전송하기</span>
+                <span id="btnLoading" style="display:none;">전송 중...</span>
+              </button>
             </form>
+
+            <script>
+            document.getElementById('contactForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const btn = document.getElementById('contactSubmitBtn');
+                const btnText = document.getElementById('btnText');
+                const btnLoading = document.getElementById('btnLoading');
+                const result = document.getElementById('contactResult');
+
+                btn.disabled = true;
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline';
+                result.style.display = 'none';
+
+                const name = document.getElementById('userName').value.trim();
+                const email = document.getElementById('userEmail').value.trim();
+                const message = document.getElementById('userMsg').value.trim();
+
+                try {
+                    const response = await fetch('/send_mail', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, message, lang: 'ko' })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        result.style.display = 'flex';
+                        result.style.alignItems = 'center';
+                        result.style.gap = '0.75rem';
+                        result.style.background = '#d4edda';
+                        result.style.color = '#155724';
+                        result.style.border = '1px solid #c3e6cb';
+                        result.innerHTML = '<svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>' + data.message;
+                        document.getElementById('userMsg').value = '';
+                    } else {
+                        result.style.display = 'flex';
+                        result.style.alignItems = 'center';
+                        result.style.gap = '0.75rem';
+                        result.style.background = '#f8d7da';
+                        result.style.color = '#721c24';
+                        result.style.border = '1px solid #f5c6cb';
+                        result.innerHTML = '<svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>' + (data.error || '전송에 실패했습니다.');
+                    }
+                } catch (err) {
+                    result.style.display = 'flex';
+                    result.style.alignItems = 'center';
+                    result.style.gap = '0.75rem';
+                    result.style.background = '#f8d7da';
+                    result.style.color = '#721c24';
+                    result.style.border = '1px solid #f5c6cb';
+                    result.innerHTML = '네트워크 오류가 발생했습니다. 다시 시도해주세요.';
+                } finally {
+                    btn.disabled = false;
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                }
+            });
+            </script>
           </div>
         </div>
       </div>

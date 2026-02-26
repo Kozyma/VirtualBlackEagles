@@ -251,30 +251,89 @@
           <!-- Contact Form -->
           <div class="contact-form-card">
             <h3>Send us a Message</h3>
-            <form action="{{ url_for('send_mail') }}" method="POST">
-                <input type="hidden" name="lang" value="en">
+            <form id="contactFormEn">
               <div class="form-group">
-                <label for="name">Name *</label>
-                <input type="text" id="name" name="name" value="{{ session.get('user_name', '') }}" required>
+                <label for="contactName">Name *</label>
+                <input type="text" id="contactName" name="name" value="{{ session.get('user_name', '') or '' }}" required>
               </div>
 
               <div class="form-group">
-                <label for="email">Email *</label>
-                <input type="email" id="email" name="email" value="{{ session.get('user_email', '') }}" required>
+                <label for="contactEmail">Email *</label>
+                <input type="email" id="contactEmail" name="email" value="{{ session.get('user_email', '') or '' }}" required>
               </div>
-              
+
               <div class="form-group">
-                <label for="subject">Subject *</label>
-                <input type="text" id="subject" name="subject" required>
+                <label for="contactSubject">Subject *</label>
+                <input type="text" id="contactSubject" name="subject" required>
               </div>
-              
+
               <div class="form-group">
-                <label for="message">Message *</label>
-                <textarea id="message" name="message" required></textarea>
+                <label for="contactMessage">Message *</label>
+                <textarea id="contactMessage" name="message" required></textarea>
               </div>
-              
-              <button type="submit" class="submit-btn">Send Message</button>
+
+              <div id="contactResultEn" style="display:none;padding:1rem 1.5rem;border-radius:8px;margin-bottom:1rem;font-size:0.95rem;"></div>
+
+              <button type="submit" class="submit-btn" id="contactSubmitBtnEn">
+                <span id="btnTextEn">Send Message</span>
+                <span id="btnLoadingEn" style="display:none;">Sending...</span>
+              </button>
             </form>
+
+            <script>
+            document.getElementById('contactFormEn').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const btn = document.getElementById('contactSubmitBtnEn');
+                const btnText = document.getElementById('btnTextEn');
+                const btnLoading = document.getElementById('btnLoadingEn');
+                const result = document.getElementById('contactResultEn');
+
+                btn.disabled = true;
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline';
+                result.style.display = 'none';
+
+                const name = document.getElementById('contactName').value.trim();
+                const email = document.getElementById('contactEmail').value.trim();
+                const subject = document.getElementById('contactSubject').value.trim();
+                const message = document.getElementById('contactMessage').value.trim();
+
+                try {
+                    const response = await fetch('/send_mail', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, subject, message, lang: 'en' })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        result.style.display = 'block';
+                        result.style.background = '#d4edda';
+                        result.style.color = '#155724';
+                        result.style.border = '1px solid #c3e6cb';
+                        result.textContent = data.message;
+                        document.getElementById('contactSubject').value = '';
+                        document.getElementById('contactMessage').value = '';
+                    } else {
+                        result.style.display = 'block';
+                        result.style.background = '#f8d7da';
+                        result.style.color = '#721c24';
+                        result.style.border = '1px solid #f5c6cb';
+                        result.textContent = data.error || 'Failed to send. Please try again.';
+                    }
+                } catch (err) {
+                    result.style.display = 'block';
+                    result.style.background = '#f8d7da';
+                    result.style.color = '#721c24';
+                    result.style.border = '1px solid #f5c6cb';
+                    result.textContent = 'Network error. Please try again.';
+                } finally {
+                    btn.disabled = false;
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                }
+            });
+            </script>
           </div>
         </div>
 
