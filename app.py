@@ -1934,9 +1934,10 @@ def auth_profile():
 
 	lang = request.args.get('lang', 'ko')
 	template = 'auth/profile_en.html' if lang == 'en' else 'auth/profile.html'
-	conn = get_db()
+	conn = None
 
 	try:
+		conn = get_db()
 		row = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
 
 		if not row:
@@ -1944,8 +1945,17 @@ def auth_profile():
 			flash('사용자 정보를 찾을 수 없습니다.', 'error')
 			return redirect(url_for('index'))
 
-		# sqlite3.Row → dict 변환 (Jinja2 호환성 보장)
-		user = dict(row)
+		# Row → dict 변환 (명시적으로 각 필드를 문자열 안전하게 변환)
+		cols = row.keys() if hasattr(row, 'keys') else []
+		user = {}
+		for k in cols:
+			v = row[k]
+			user[k] = v
+		# created_at, updated_at은 문자열로 확실히 변환
+		if user.get('created_at') is not None:
+			user['created_at'] = str(user['created_at'])
+		if user.get('updated_at') is not None:
+			user['updated_at'] = str(user['updated_at'])
 
 		if request.method == 'POST':
 			display_name = request.form.get('display_name', '').strip()
@@ -2008,8 +2018,15 @@ def auth_profile():
 			session['user_email'] = email
 
 			# 변경된 유저 데이터 다시 로드
-			row = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-			user = dict(row) if row else user
+			row2 = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+			if row2:
+				user = {}
+				for k in (row2.keys() if hasattr(row2, 'keys') else []):
+					user[k] = row2[k]
+				if user.get('created_at') is not None:
+					user['created_at'] = str(user['created_at'])
+				if user.get('updated_at') is not None:
+					user['updated_at'] = str(user['updated_at'])
 			conn.close()
 
 			flash('프로필이 수정되었습니다.' if lang != 'en' else 'Profile updated successfully.', 'success')
@@ -2019,13 +2036,20 @@ def auth_profile():
 		return render_template(template, user=user)
 
 	except Exception as e:
-		app.logger.error(f'Profile error: {e}')
-		try:
-			conn.close()
-		except:
-			pass
-		flash('프로필 로드 중 오류가 발생했습니다.' if lang != 'en' else 'An error occurred while loading your profile.', 'error')
-		return redirect(url_for('index'))
+		import traceback
+		error_detail = traceback.format_exc()
+		app.logger.error(f'Profile error: {error_detail}')
+		if conn:
+			try:
+				conn.close()
+			except:
+				pass
+		# 디버깅: 실제 에러 메시지 표시
+		return f'''<html><body style="font-family:sans-serif;padding:2rem;">
+		<h2>Profile Error</h2>
+		<pre style="background:#f8f8f8;padding:1rem;border-radius:8px;overflow:auto;">{error_detail}</pre>
+		<p><a href="/">홈으로 돌아가기</a></p>
+		</body></html>''', 500
 
 
 @app.route('/auth/find-id', methods=['GET', 'POST'])

@@ -198,6 +198,9 @@ class ChatWidget {
         const name = this.loggedInUser.name || '방문자';
         const email = this.loggedInUser.email || '';
 
+        // 즉시 이름 폼 숨기고 채팅 영역 표시 (로딩 상태)
+        this.showChatArea();
+
         try {
             const response = await fetch('/chat/start', {
                 method: 'POST',
@@ -212,13 +215,33 @@ class ChatWidget {
                 this.userName = name;
                 localStorage.setItem('chat_session_id', this.sessionId);
                 localStorage.setItem('chat_user_name', name);
-
-                this.showChatArea();
                 this.startPolling();
+            } else {
+                // 서버 에러 시 이름 폼으로 복귀
+                this.showNameForm();
             }
         } catch (error) {
             console.error('Auto chat start error:', error);
-            // 실패 시 이름 입력 폼 표시 (기존 동작)
+            // 네트워크 에러 시 이름 폼으로 복귀
+            this.showNameForm();
+        }
+    }
+
+    showNameForm() {
+        const nameForm = document.getElementById('chat-name-form');
+        const messagesArea = document.getElementById('chat-messages');
+        const inputArea = document.getElementById('chat-input-area');
+
+        if (nameForm) nameForm.style.display = 'flex';
+        if (messagesArea) messagesArea.style.display = 'none';
+        if (inputArea) inputArea.style.display = 'none';
+
+        // 로그인 유저 정보 미리 채우기
+        if (this.loggedInUser && this.loggedInUser.loggedIn) {
+            const nameInput = document.getElementById('chat-user-name');
+            const emailInput = document.getElementById('chat-user-email');
+            if (nameInput && this.loggedInUser.name) nameInput.value = this.loggedInUser.name;
+            if (emailInput && this.loggedInUser.email) emailInput.value = this.loggedInUser.email;
         }
     }
 
@@ -371,25 +394,14 @@ class ChatWidget {
             messagesArea.innerHTML = '';
         }
 
-        // 로그인 유저는 자동으로 새 채팅 시작
+        // 로그인 유저는 자동으로 새 채팅 시작 (autoStartChat이 showChatArea를 즉시 호출)
         if (this.loggedInUser && this.loggedInUser.loggedIn) {
             this.autoStartChat();
             return;
         }
 
         // 비로그인 유저는 이름 입력 폼 표시
-        const inputArea = document.getElementById('chat-input-area');
-        const nameForm = document.getElementById('chat-name-form');
-
-        if (messagesArea) messagesArea.style.display = 'none';
-        if (inputArea) inputArea.style.display = 'none';
-        if (nameForm) {
-            nameForm.style.display = 'flex';
-            const nameInput = document.getElementById('chat-user-name');
-            const emailInput = document.getElementById('chat-user-email');
-            if (nameInput) nameInput.value = '';
-            if (emailInput) emailInput.value = '';
-        }
+        this.showNameForm();
     }
 
     displayMessages(messages) {
