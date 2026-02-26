@@ -355,6 +355,22 @@ def get_banner_for_lang(conn, page_name, lang):
 		banner = conn.execute('SELECT * FROM banner_settings WHERE page_name = ? AND lang = ?', (page_name, 'ko')).fetchone()
 	return banner
 
+def get_sections_dict(conn, page_name, lang):
+	"""페이지 섹션을 section_id를 키로 하는 딕셔너리로 반환 (한국어 폴백 포함)"""
+	rows = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', (page_name, lang)).fetchall()
+	if not rows and lang != 'ko':
+		rows = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', (page_name, 'ko')).fetchall()
+	result = {}
+	for r in rows:
+		result[r['section_id']] = {
+			'title': r['title'] or '',
+			'content': r['content'] or '',
+			'link_url': r['link_url'] or '',
+			'link_text': r['link_text'] or '',
+			'image_url': r['image_url'] or ''
+		}
+	return result
+
 def init_db():
 	"""데이터베이스 초기화"""
 	conn = get_db()
@@ -1010,6 +1026,46 @@ def init_db():
 	''')
 
 
+	# 문의/후원 페이지 기본 섹션
+	contact_donate_defaults = [
+		# Contact (KO)
+		('contact', 'intro', 'text', '문의하기', '', 1, 'ko'),
+		('contact', 'card_title', 'text', '연락처', '', 2, 'ko'),
+		('contact', 'discord', 'text', '디스코드', 'Johnson#4553', 3, 'ko'),
+		('contact', 'email', 'text', '이메일', '폼으로 문의해주세요', 4, 'ko'),
+		('contact', 'response', 'text', '응답 시간', '보통 24시간 이내 회신드립니다', 5, 'ko'),
+		('contact', 'form_title', 'text', '빠른 문의', '', 6, 'ko'),
+		# Contact (EN)
+		('contact', 'intro', 'text', 'Get in Touch', '', 1, 'en'),
+		('contact', 'card_title', 'text', 'Contact Information', '', 2, 'en'),
+		('contact', 'discord', 'text', 'Discord', 'Johnson#4553', 3, 'en'),
+		('contact', 'email', 'text', 'Email', 'Contact us via the form', 4, 'en'),
+		('contact', 'response', 'text', 'Social Media', 'Follow us on Instagram & Facebook', 5, 'en'),
+		('contact', 'form_title', 'text', 'Send us a Message', '', 6, 'en'),
+		('contact', 'community', 'text', 'Join Our Community', '', 7, 'en'),
+		# Donate (KO)
+		('donate', 'intro', 'text', '후원하기', '', 1, 'ko'),
+		('donate', 'guide_title', 'text', '후원 안내', '', 2, 'ko'),
+		('donate', 'method_kakaopay', 'text', '카카오페이 송금', '간편하게 카카오페이로 후원할 수 있습니다.', 3, 'ko'),
+		('donate', 'method_transparency', 'text', '투명한 운영', '모든 후원금은 서버 유지 및 팀 운영에 사용됩니다.', 4, 'ko'),
+		('donate', 'form_title', 'text', '후원하기', '', 5, 'ko'),
+		('donate', 'encourage', 'text', '응원 메시지 보내기', '', 6, 'ko'),
+		('donate', 'footer_contact', 'text', 'Contact Us', 'Discord | Johnson#4553', 7, 'ko'),
+		# Donate (EN)
+		('donate', 'intro', 'text', 'Support Us', '', 1, 'en'),
+		('donate', 'guide_title', 'text', 'Donation Guide', '', 2, 'en'),
+		('donate', 'method_kakaopay', 'text', 'KakaoPay Transfer', 'Support us easily via KakaoPay.', 3, 'en'),
+		('donate', 'method_transparency', 'text', 'Transparent Management', 'All donations are used for server maintenance and team operations.', 4, 'en'),
+		('donate', 'form_title', 'text', 'Donate', '', 5, 'en'),
+		('donate', 'encourage', 'text', 'Send Encouragement', '', 6, 'en'),
+		('donate', 'footer_contact', 'text', 'Contact Us', 'Discord | Johnson#4553', 7, 'en'),
+	]
+	for page, sec_id, sec_type, title, content, order, lang in contact_donate_defaults:
+		conn.execute('''
+			INSERT OR IGNORE INTO page_sections (page_name, section_id, section_type, title, content, order_num, is_active, lang)
+			VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+		''', (page, sec_id, sec_type, title, content, order, lang))
+
 	conn.commit()
 
 	# PostgreSQL: 명시적 ID 삽입 후 SERIAL 시퀀스 리셋
@@ -1372,16 +1428,21 @@ def api_link_preview():
 def api_schedules():
 	"""FullCalendar용 일정 JSON 데이터"""
 	conn = get_db()
-	schedules = conn.execute('SELECT id, title, event_date, location FROM schedules ORDER BY event_date').fetchall()
+	schedules = conn.execute('SELECT id, title, event_date, location, description FROM schedules ORDER BY event_date').fetchall()
 	conn.close()
 	events = []
 	for s in schedules:
+		desc = s['description'] or ''
+		desc_clean = re.sub(r'<[^>]+>', '', desc).strip()
 		events.append({
 			'id': s['id'],
 			'title': s['title'],
 			'start': s['event_date'],
 			'url': f"/schedule/{s['id']}",
-			'extendedProps': {'location': s['location'] or ''}
+			'extendedProps': {
+				'location': s['location'] or '',
+				'description': desc_clean
+			}
 		})
 	return jsonify(events)
 
@@ -1594,18 +1655,13 @@ def contact():
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
 	banner = get_banner_for_lang(conn, 'contact', lang)
-	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('contact', lang)).fetchall()
-	if not sections and lang != 'ko':
-		sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('contact', 'ko')).fetchall()
-	contact_info = conn.execute("SELECT * FROM page_sections WHERE page_name = 'contact' AND section_id = 'info' AND is_active = 1 AND lang = ? ORDER BY order_num", (lang,)).fetchone()
-	if not contact_info and lang != 'ko':
-		contact_info = conn.execute("SELECT * FROM page_sections WHERE page_name = 'contact' AND section_id = 'info' AND is_active = 1 AND lang = ?", ('ko',)).fetchone()
+	sec = get_sections_dict(conn, 'contact', lang)
 	conn.close()
 
 	if lang == 'en':
-		return render_template('contact_en.html', banner=banner, sections=sections, contact_info=contact_info)
+		return render_template('contact_en.html', banner=banner, sec=sec)
 	else:
-		return render_template('contact.html', banner=banner, sections=sections, contact_info=contact_info)
+		return render_template('contact.html', banner=banner, sec=sec)
 
 
 @app.route('/donate')
@@ -1613,9 +1669,7 @@ def donate():
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
 	banner = get_banner_for_lang(conn, 'donate', lang)
-	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('donate', lang)).fetchall()
-	if not sections and lang != 'ko':
-		sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('donate', 'ko')).fetchall()
+	sec = get_sections_dict(conn, 'donate', lang)
 	# 후원 설정 가져오기
 	donate_settings = {}
 	try:
@@ -1627,9 +1681,9 @@ def donate():
 	conn.close()
 
 	if lang == 'en':
-		return render_template('donate_en.html', banner=banner, sections=sections, donate_settings=donate_settings)
+		return render_template('donate_en.html', banner=banner, sec=sec, donate_settings=donate_settings)
 	else:
-		return render_template('donate.html', banner=banner, sections=sections, donate_settings=donate_settings)
+		return render_template('donate.html', banner=banner, sec=sec, donate_settings=donate_settings)
 
 
 @app.route('/gallery')

@@ -73,7 +73,7 @@
                 {% if commander.greeting_text %}
                   {% set paragraphs = commander.greeting_text.split('\n\n') %}
                   {% for paragraph in paragraphs %}
-                    <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">{{ paragraph }}</p>
+                    <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">{{ paragraph|striptags }}</p>
                   {% endfor %}
                 {% else %}
                   <p style="line-height:1.8;color:#333;margin-bottom:1.5rem;text-align:justify;font-size:1.05rem;">

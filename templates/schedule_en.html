@@ -37,7 +37,7 @@
         {% endif %}
         {% if schedule.description %}
         <p style="margin:0;color:#888;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          {{ schedule.description[:80] }}{{ '...' if (schedule.description or '')|length > 80 else '' }}
+          {{ schedule.description|striptags|truncate(80) }}
         </p>
         {% endif %}
       </div>
@@ -122,11 +122,20 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             height: 'auto',
             events: '/api/schedules',
+            eventDisplay: 'block',
             eventClick: function(info) {
                 info.jsEvent.preventDefault();
                 if (info.event.url) {
                     window.location.href = info.event.url + '?lang=en';
                 }
+            },
+            eventDidMount: function(info) {
+                var desc = info.event.extendedProps.description || '';
+                var loc = info.event.extendedProps.location || '';
+                var tooltip = info.event.title;
+                if (desc) tooltip += '\n' + desc;
+                if (loc) tooltip += '\n📍 ' + loc;
+                info.el.setAttribute('title', tooltip);
             },
             eventColor: '#007bff',
             dayMaxEvents: 3

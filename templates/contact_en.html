@@ -186,11 +186,10 @@
 
       <div class="contact-wrapper">
         <div class="contact-intro">
-          {% if contact_info and contact_info.content %}
-          <h2>{{ contact_info.title if contact_info.title else 'Get in Touch' }}</h2>
-          {{ contact_info.content|safe }}
+          <h2>{{ sec.get('intro', {}).get('title', 'Get in Touch') or 'Get in Touch' }}</h2>
+          {% if sec.get('intro', {}).get('content') %}
+          {{ sec['intro']['content']|safe }}
           {% else %}
-          <h2>Get in Touch</h2>
           <p>Have questions about the Virtual Black Eagles? We're here to help!<br>
              Reach out to us through any of the methods below.</p>
           {% endif %}
@@ -203,11 +202,10 @@
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
               </svg>
-              Contact Information
+              {{ sec.get('card_title', {}).get('title', 'Contact Information') or 'Contact Information' }}
             </h3>
-            
+
             <div class="contact-methods">
-              <!-- Discord -->
               <div class="contact-method">
                 <div class="contact-method-icon">
                   <svg viewBox="0 0 24 24" fill="white">
@@ -215,12 +213,11 @@
                   </svg>
                 </div>
                 <div class="contact-method-details">
-                  <h4>Discord</h4>
-                  <p>Johnson#4553</p>
+                  <h4>{{ sec.get('discord', {}).get('title', 'Discord') or 'Discord' }}</h4>
+                  <p>{{ sec.get('discord', {}).get('content', 'Johnson#4553') or 'Johnson#4553' }}</p>
                 </div>
               </div>
 
-              <!-- Email -->
               <div class="contact-method">
                 <div class="contact-method-icon">
                   <svg viewBox="0 0 24 24" fill="white">
@@ -228,21 +225,20 @@
                   </svg>
                 </div>
                 <div class="contact-method-details">
-                  <h4>Email</h4>
-                  <p>Contact us via the form</p>
+                  <h4>{{ sec.get('email', {}).get('title', 'Email') or 'Email' }}</h4>
+                  <p>{{ sec.get('email', {}).get('content', 'Contact us via the form') or 'Contact us via the form' }}</p>
                 </div>
               </div>
 
-              <!-- Social Media -->
               <div class="contact-method">
                 <div class="contact-method-icon">
                   <svg viewBox="0 0 24 24" fill="white">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                   </svg>
                 </div>
                 <div class="contact-method-details">
-                  <h4>Social Media</h4>
-                  <p>Follow us on Instagram & Facebook</p>
+                  <h4>{{ sec.get('response', {}).get('title', 'Social Media') or 'Social Media' }}</h4>
+                  <p>{{ sec.get('response', {}).get('content', 'Follow us on Instagram & Facebook') or 'Follow us on Instagram & Facebook' }}</p>
                 </div>
               </div>
             </div>
@@ -250,7 +246,7 @@
 
           <!-- Contact Form -->
           <div class="contact-form-card">
-            <h3>Send us a Message</h3>
+            <h3>{{ sec.get('form_title', {}).get('title', 'Send us a Message') or 'Send us a Message' }}</h3>
             <form id="contactFormEn">
               <div class="form-group">
                 <label for="contactName">Name *</label>
@@ -339,15 +335,19 @@
 
         <!-- Additional Information -->
         <div style="background:#f8f9fa;padding:3rem;border-radius:20px;text-align:center;margin-top:3rem;">
-          <h3 style="font-size:1.8rem;margin-bottom:1rem;color:#1a1a1a;">Join Our Community</h3>
+          <h3 style="font-size:1.8rem;margin-bottom:1rem;color:#1a1a1a;">{{ sec.get('community', {}).get('title', 'Join Our Community') or 'Join Our Community' }}</h3>
+          {% if sec.get('community', {}).get('content') %}
+          {{ sec['community']['content']|safe }}
+          {% else %}
           <p style="font-size:1.1rem;color:#666;line-height:1.8;margin-bottom:2rem;">
             Interested in joining the Virtual Black Eagles? Connect with us on Discord<br>
             to learn more about our team and upcoming recruitment opportunities.
           </p>
+          {% endif %}
           <div style="display:flex;gap:1rem;justify-content:center;">
-            <a href="https://www.facebook.com/VirtualBlackEagles/" target="_blank" style="display:inline-block;padding:0.75rem 1.5rem;background:#1877f2;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Facebook</a>
-            <a href="https://www.instagram.com/p/DR0nfrNE8qh/" target="_blank" style="display:inline-block;padding:0.75rem 1.5rem;background:#e1306c;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Instagram</a>
-            <a href="https://www.youtube.com/@VirtualBlackEagles-DCS" target="_blank" style="display:inline-block;padding:0.75rem 1.5rem;background:#ff0000;color:white;text-decoration:none;border-radius:8px;font-weight:600;">YouTube</a>
+            <a href="{{ sec.get('link_facebook', {}).get('link_url', 'https://www.facebook.com/VirtualBlackEagles/') or 'https://www.facebook.com/VirtualBlackEagles/' }}" target="_blank" style="display:inline-block;padding:0.75rem 1.5rem;background:#1877f2;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Facebook</a>
+            <a href="{{ sec.get('link_instagram', {}).get('link_url', 'https://www.instagram.com/p/DR0nfrNE8qh/') or 'https://www.instagram.com/p/DR0nfrNE8qh/' }}" target="_blank" style="display:inline-block;padding:0.75rem 1.5rem;background:#e1306c;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Instagram</a>
+            <a href="{{ sec.get('link_youtube', {}).get('link_url', 'https://www.youtube.com/@VirtualBlackEagles-DCS') or 'https://www.youtube.com/@VirtualBlackEagles-DCS' }}" target="_blank" style="display:inline-block;padding:0.75rem 1.5rem;background:#ff0000;color:white;text-decoration:none;border-radius:8px;font-weight:600;">YouTube</a>
           </div>
         </div>
       </div>
