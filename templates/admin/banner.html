@@ -60,7 +60,7 @@
         <div class="banner-item">
             <div style="display: flex; align-items: center; flex: 1;">
                 {% if banner.background_image %}
-                <div class="banner-preview" style="background-image: url('{{ banner.background_image }}');"></div>
+                <div class="banner-preview" style="background-image: url('{{ banner.background_image }}?t={{ banner.updated_at or '' }}');"></div>
                 {% endif %}
                 <div class="banner-info">
                     <h3>

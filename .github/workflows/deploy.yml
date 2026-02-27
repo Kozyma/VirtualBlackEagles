@@ -52,12 +52,25 @@ jobs:
             mkdir -p /tmp/db_backup
             cp -f *.db /tmp/db_backup/ 2>/dev/null || true
 
+            echo ">>> 업로드 파일 백업..."
+            mkdir -p /tmp/upload_backup
+            cp -rf static/images /tmp/upload_backup/ 2>/dev/null || true
+            cp -rf static/members /tmp/upload_backup/ 2>/dev/null || true
+            cp -rf static/gallery /tmp/upload_backup/ 2>/dev/null || true
+            cp -rf static/Picture /tmp/upload_backup/ 2>/dev/null || true
+
             echo ">>> Git pull..."
             git fetch origin
             git reset --hard origin/main
 
             echo ">>> DB 복원..."
             cp -f /tmp/db_backup/*.db . 2>/dev/null || true
+
+            echo ">>> 업로드 파일 복원..."
+            cp -rf /tmp/upload_backup/images/* static/images/ 2>/dev/null || true
+            cp -rf /tmp/upload_backup/members/* static/members/ 2>/dev/null || true
+            cp -rf /tmp/upload_backup/gallery/* static/gallery/ 2>/dev/null || true
+            cp -rf /tmp/upload_backup/Picture/* static/Picture/ 2>/dev/null || true
 
             echo ">>> 의존성 설치..."
             source .venv/bin/activate

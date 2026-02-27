@@ -3,7 +3,7 @@
 {% block title %}Schedule - Virtual Black Eagles{% endblock %}
 
 {% block banner %}
-<section class="hero banner" style="background-image: url('{{ banner.background_image if banner and banner.background_image else '/static/images/hero.jpg' }}')">
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner and banner.background_image else '/static/images/hero.jpg' }}?t={{ banner.updated_at if banner else '' }}')">
   <div class="container">
     <h1 class="banner-title">{{ banner.title if banner and banner.title else 'Schedule' }}</h1>
   </div>

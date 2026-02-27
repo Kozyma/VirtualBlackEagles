@@ -18,7 +18,7 @@
                 <div class="upload-text">클릭하여 이미지를 선택하세요</div>
             </div>
             <div class="image-preview image-preview-circle" id="preview-container" style="{% if not candidate or not candidate.photo_url %}display:none;{% endif %}">
-                <img id="preview-image" src="{{ candidate.photo_url if candidate and candidate.photo_url else '' }}">
+                <img id="preview-image" src="{{ (candidate.photo_url ~ '?t=' ~ (candidate.updated_at or '')) if candidate and candidate.photo_url else '' }}">
             </div>
         </div>
 

@@ -43,7 +43,7 @@
             <div style="margin-top:1rem;text-align:center;">
                 <p style="font-size:0.85rem;color:#666;margin-bottom:0.75rem;"><strong>현재 이미지:</strong></p>
                 <div class="image-preview">
-                    <img src="{{ image.image_path }}" alt="{{ image.image_name }}" onerror="this.src='/static/images/placeholder.jpg'" style="max-height:300px;">
+                    <img src="{{ image.image_path }}?t={{ image.updated_at or '' }}" alt="{{ image.image_name }}" onerror="this.src='/static/images/placeholder.jpg'" style="max-height:300px;">
                 </div>
             </div>
         </div>

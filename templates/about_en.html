@@ -3,9 +3,9 @@
 {% block title %}About - Virtual Black Eagles{% endblock %}
 
 {% block banner %}
-<section class="hero banner" style="background-image: url('/static/images/hero.jpg')">
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner and banner.background_image else '/static/images/hero.jpg' }}?t={{ banner.updated_at if banner else '' }}')">
   <div class="container">
-    <h1 class="banner-title">About Us</h1>
+    <h1 class="banner-title" style="{% if banner and banner.title_color %}color:{{ banner.title_color }};{% endif %}{% if banner and banner.title_font %}font-family:{{ banner.title_font }};{% endif %}">{{ banner.title if banner and banner.title else 'About Us' }}</h1>
   </div>
 </section>
 {% endblock %}
@@ -35,7 +35,7 @@
           <h2 style="text-align:center;margin-bottom:2rem;font-size:2rem;">{{ section['title'] }}</h2>
           <div style="display:flex;align-items:flex-start;gap:3rem;max-width:1200px;margin:0;">
             <div style="width:400px;flex-shrink:0;">
-              <img src="{{ section['image_url'] or '/static/Picture/test.jpg' }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
+              <img src="{{ (section['image_url'] or '/static/Picture/test.jpg') }}?t={{ section['updated_at'] or '' }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
             </div>
             <div style="flex:1;font-size:1.1rem;line-height:1.8;">
                 {{ section['content']|safe }}
@@ -63,7 +63,7 @@
             <div style="display:flex;gap:4rem;align-items:flex-start;margin-bottom:3rem;">
               <!-- Left: Photo -->
               <div style="flex-shrink:0;">
-                <img src="{{ commander.photo_url }}" alt="{{ commander.callsign }}" 
+                <img src="{{ commander.photo_url }}?t={{ commander.updated_at or '' }}" alt="{{ commander.callsign }}"
                      style="width:400px;height:auto;object-fit:cover;border-radius:8px;">
               </div>
               
@@ -110,7 +110,7 @@
           {% for pilot in pilots %}
           <h3 style="text-align:left;margin-bottom:2rem;">#{{ pilot.number }} {{ pilot.position }}</h3>
           <div class="member-card" style="max-width:600px;margin:0 0 2rem 0;background:#f8f9fa;padding:2rem;border-radius:8px;display:flex;align-items:center;gap:2rem;">
-            <img src="{{ pilot.photo_url }}" alt="{{ pilot.callsign }}" style="width:150px;height:150px;object-fit:cover;flex-shrink:0;">
+            <img src="{{ pilot.photo_url }}?t={{ pilot.updated_at or '' }}" alt="{{ pilot.callsign }}" style="width:150px;height:150px;object-fit:cover;flex-shrink:0;">
             <div style="text-align:left;">
               <h4 style="color:#007bff;margin:0 0 0.5rem 0;">#{{ pilot.number }} {{ pilot.callsign }}</h4>
               <p style="margin:0.5rem 0;color:#666;">Class : {{ pilot.generation }}</p>
@@ -129,7 +129,7 @@
           {% for member in maintenance_crew %}
           <h3 style="text-align:left;margin-bottom:2rem;">{{ member.name }}</h3>
           <div class="member-card" style="max-width:600px;margin:0 0 2rem 0;background:#f8f9fa;padding:2rem;border-radius:8px;display:flex;align-items:center;gap:2rem;">
-            <img src="{{ member.photo_url }}" alt="{{ member.callsign }}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <img src="{{ member.photo_url }}?t={{ member.updated_at or '' }}" alt="{{ member.callsign }}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;flex-shrink:0;">
             <div style="text-align:left;">
               <h4 style="color:#007bff;margin:0 0 0.5rem 0;">{{ member.callsign }}</h4>
               {% if member.role %}
@@ -155,7 +155,7 @@
           {% for candidate in candidates %}
           <h3 style="text-align:left;margin-bottom:2rem;">{{ candidate.name }}</h3>
           <div class="member-card" style="max-width:600px;margin:0 0 2rem 0;background:#f8f9fa;padding:2rem;border-radius:8px;display:flex;align-items:center;gap:2rem;">
-            <img src="{{ candidate.photo_url }}" alt="{{ candidate.callsign }}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <img src="{{ candidate.photo_url }}?t={{ candidate.updated_at or '' }}" alt="{{ candidate.callsign }}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;flex-shrink:0;">
             <div style="text-align:left;">
               <h4 style="color:#007bff;margin:0 0 0.5rem 0;">{{ candidate.callsign }}</h4>
               {% if candidate.bio %}
@@ -185,7 +185,7 @@
           {% if section['image_url'] %}
           <div style="display:flex;align-items:flex-start;gap:3rem;">
             <div style="width:400px;flex-shrink:0;">
-              <img src="{{ section['image_url'] }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
+              <img src="{{ section['image_url'] }}?t={{ section['updated_at'] or '' }}" alt="{{ section['title'] }}" style="width:100%;height:auto;border-radius:8px;">
             </div>
             <div style="flex:1;font-size:1.1rem;line-height:1.8;">
               {{ section['content']|safe }}

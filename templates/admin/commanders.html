@@ -35,7 +35,7 @@
             <tr>
                 <td>
                     {% if commander.photo_url %}
-                    <img src="{{ commander.photo_url }}" alt="{{ commander.callsign }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+                    <img src="{{ commander.photo_url }}?t={{ commander.updated_at or '' }}" alt="{{ commander.callsign }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
                     {% else %}
                     -
                     {% endif %}

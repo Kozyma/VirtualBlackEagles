@@ -55,7 +55,7 @@
 <div class="form-container">
     <h2 style="margin-top: 0;">{{ '새 배너 추가' if is_new else (banner.page_name|upper ~ ' 페이지 배너') }}</h2>
 
-    <form method="POST" id="bannerForm" {% if is_new %}action="{{ url_for('admin_banner_new') }}"{% endif %}>
+    <form method="POST" enctype="multipart/form-data" id="bannerForm" {% if is_new %}action="{{ url_for('admin_banner_new') }}"{% endif %}>
         {% if is_new %}
         <div class="form-group">
             <label for="page_name">페이지 이름 *</label>
@@ -75,11 +75,24 @@
         </div>
 
         <div class="form-group">
-            <label for="background_image">배경 이미지 경로</label>
-            <input type="text" id="background_image" name="background_image" class="form-control"
-                   value="{{ banner.background_image or '' }}"
-                   placeholder="/static/images/hero.jpg">
-            <small>이미지 파일을 /static/images/ 폴더에 업로드하고 경로를 입력하세요.</small>
+            <label>배경 이미지 업로드</label>
+            <div class="file-upload-area" onclick="document.getElementById('bannerImageFile').click()">
+                <input type="file" id="bannerImageFile" name="background_image_file" accept="image/*" style="display:none;">
+                <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                <div class="upload-text">클릭하여 배경 이미지를 선택하세요</div>
+                <div style="font-size:0.8rem;color:#999;margin-top:0.25rem;">JPG, PNG 형식 지원</div>
+            </div>
+            {% if banner.background_image %}
+            <div id="currentBannerImage" style="margin-top:1rem;text-align:center;">
+                <p style="font-size:0.85rem;color:#666;margin-bottom:0.5rem;">현재 배경 이미지:</p>
+                <img src="{{ banner.background_image }}?t={{ banner.updated_at or '' }}" alt="현재 배너" style="max-height:200px;max-width:100%;border-radius:8px;border:1px solid #ddd;">
+            </div>
+            {% endif %}
+            <div id="bannerPreviewContainer" style="margin-top:1rem;display:none;text-align:center;">
+                <p style="font-size:0.85rem;color:#28a745;margin-bottom:0.5rem;"><i class="fas fa-check-circle"></i> 새 이미지 선택됨</p>
+                <img id="bannerPreviewImage" alt="미리보기" style="max-height:200px;max-width:100%;border-radius:8px;border:1px solid #ddd;">
+            </div>
+            <input type="hidden" id="background_image" name="background_image" value="{{ banner.background_image or '' }}">
         </div>
 
         <div class="form-group">
@@ -330,6 +343,21 @@
         previewDescription.textContent = description || '배너 설명이 여기에 표시됩니다.';
         previewDescription.style.color = descriptionColor;
     }
+
+    // 배너 이미지 파일 선택 시 미리보기
+    document.getElementById('bannerImageFile').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                document.getElementById('bannerPreviewImage').src = ev.target.result;
+                document.getElementById('bannerPreviewContainer').style.display = 'block';
+                // 미리보기 배너에도 반영
+                document.getElementById('previewBanner').style.backgroundImage = "url('" + ev.target.result + "')";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
     // 페이지 로드 시 미리보기 초기화
     document.addEventListener('DOMContentLoaded', function() {

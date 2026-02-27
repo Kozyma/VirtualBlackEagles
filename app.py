@@ -53,6 +53,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'devsecret-change-this-in-producti
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
 app.config['PREFERRED_URL_SCHEME'] = 'https'
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # 정적 파일 브라우저 캐시 비활성화
 
 # 세션 쿠키 설정: www 포함/미포함 도메인 간 세션 공유
 # SESSION_COOKIE_DOMAIN을 .virtualblackeagles.kr로 설정하면
@@ -84,6 +85,17 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 UPLOAD_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 
 
+# 업로드 이미지 캐시 방지 (브라우저가 항상 최신 이미지를 로드하도록)
+@app.after_request
+def add_cache_headers(response):
+	# 업로드 이미지 경로의 정적 파일은 캐시하지 않음
+	if request.path.startswith(('/static/images/', '/static/members/', '/static/gallery/', '/static/Picture/')):
+		response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+		response.headers['Pragma'] = 'no-cache'
+		response.headers['Expires'] = '0'
+	return response
+
+
 # 페이지 방문 트래킹 (하루에 IP당 1회만 기록)
 @app.before_request
 def track_page_view():
@@ -104,6 +116,20 @@ def track_page_view():
 		conn.close()
 	except Exception:
 		pass
+
+
+# 안전한 파일명 생성 (한글, 공백, 특수문자 제거)
+def safe_filename(filename):
+	"""파일명에서 확장자를 분리하고, 이름 부분을 영숫자+하이픈+언더스코어만 남김"""
+	name, ext = os.path.splitext(filename)
+	# 영숫자, 하이픈, 언더스코어만 남기고 나머지 제거
+	safe_name = re.sub(r'[^a-zA-Z0-9_-]', '', name)
+	if not safe_name:
+		safe_name = 'image'
+	ext = ext.lower()
+	if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+		ext = '.jpg'
+	return safe_name + ext
 
 
 # 이미지 최적화 함수
@@ -1595,13 +1621,14 @@ def notice_detail(notice_id):
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
 	notice = conn.execute('SELECT * FROM notices WHERE id = ?', (notice_id,)).fetchone()
+	banner = get_banner_for_lang(conn, 'notice', lang)
 	conn.close()
 
 	if not notice:
 		flash('공지사항을 찾을 수 없습니다.', 'error')
 		return redirect(url_for('notice'))
 
-	return render_template('notice_detail.html', notice=notice, lang=lang)
+	return render_template('notice_detail.html', notice=notice, banner=banner, lang=lang)
 
 
 @app.route('/about')
@@ -1789,13 +1816,14 @@ def schedule_detail(schedule_id):
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
 	schedule = conn.execute('SELECT * FROM schedules WHERE id = ?', (schedule_id,)).fetchone()
+	banner = get_banner_for_lang(conn, 'schedule', lang)
 	conn.close()
 
 	if not schedule:
 		flash('일정을 찾을 수 없습니다.', 'error')
 		return redirect(url_for('schedule'))
 
-	return render_template('schedule_detail.html', schedule=schedule, lang=lang)
+	return render_template('schedule_detail.html', schedule=schedule, banner=banner, lang=lang)
 
 
 # 관리자 로그인 페이지
@@ -2820,6 +2848,16 @@ def admin_banner_edit(banner_id):
 		padding_top = request.form.get('padding_top', '250').strip()
 		lang = request.form.get('lang', 'ko').strip()
 
+		# 배경 이미지 파일 업로드 처리
+		file = request.files.get('background_image_file')
+		if file and file.filename:
+			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_banner_{safe_filename(file.filename)}"
+			filepath = os.path.join(UPLOAD_BASE, 'images', filename)
+			os.makedirs(os.path.dirname(filepath), exist_ok=True)
+			file.save(filepath)
+			optimize_image(filepath, max_width=1920, max_height=1200, quality=90)
+			background_image = f'/static/images/{filename}'
+
 		if not title:
 			flash('제목을 입력해주세요.', 'error')
 			return redirect(url_for('admin_banner_edit', banner_id=banner_id))
@@ -2841,7 +2879,7 @@ def admin_banner_edit(banner_id):
 		      padding_top_int, lang, banner_id))
 		conn.commit()
 		conn.close()
-		
+
 		flash('배너 설정이 수정되었습니다.', 'success')
 		return redirect(url_for('admin_banner'))
 	
@@ -2874,6 +2912,16 @@ def admin_banner_new():
 		vertical_position = request.form.get('vertical_position', 'center').strip()
 		padding_top = request.form.get('padding_top', '250').strip()
 		lang = request.form.get('lang', 'ko').strip()
+
+		# 배경 이미지 파일 업로드 처리
+		file = request.files.get('background_image_file')
+		if file and file.filename:
+			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_banner_{safe_filename(file.filename)}"
+			filepath = os.path.join(UPLOAD_BASE, 'images', filename)
+			os.makedirs(os.path.dirname(filepath), exist_ok=True)
+			file.save(filepath)
+			optimize_image(filepath, max_width=1920, max_height=1200, quality=90)
+			background_image = f'/static/images/{filename}'
 
 		if not page_name or not title:
 			flash('페이지 이름과 제목을 입력해주세요.', 'error')
@@ -2953,17 +3001,16 @@ def admin_pilot_new():
 		photo_url = '/static/images/default-pilot.jpg'  # 기본 이미지
 		file = request.files.get('photo')
 		if file and file.filename:
-			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_pilot_{callsign}.jpg"  # 최종 파일은 항상 .jpg
+			safe_cs = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
+			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_pilot_{safe_cs or 'pilot'}.jpg"
 			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
-			
-			# 이미지 최적화
-			if optimize_image(filepath):
-				photo_url = f'/static/members/{filename}'
-			else:
-				flash('이미지 처리 중 오류가 발생했습니다.', 'warning')
-		
+
+			# 이미지 최적화 (실패해도 원본 사용)
+			optimize_image(filepath)
+			photo_url = f'/static/members/{filename}'
+
 		conn = get_db()
 		conn.execute('''
 			INSERT INTO pilots (number, position, callsign, generation, aircraft, photo_url, order_num, is_active, lang)
@@ -3012,17 +3059,16 @@ def admin_pilot_edit(pilot_id):
 		# 파일 업로드 처리
 		file = request.files.get('photo')
 		if file and file.filename:
-			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_pilot_{callsign}.jpg"  # 최종 파일은 항상 .jpg
+			safe_cs = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
+			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_pilot_{safe_cs or 'pilot'}.jpg"
 			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
-			
-			# 이미지 최적화
-			if optimize_image(filepath):
-				photo_url = f'/static/members/{filename}'
-			else:
-				flash('이미지 처리 중 오류가 발생했습니다.', 'warning')
-		
+
+			# 이미지 최적화 (실패해도 원본 사용)
+			optimize_image(filepath)
+			photo_url = f'/static/members/{filename}'
+
 		conn.execute('''
 			UPDATE pilots
 			SET number = ?, position = ?, callsign = ?, generation = ?, aircraft = ?,
@@ -3111,20 +3157,18 @@ def admin_maintenance_new():
 				# 안전한 파일명 생성
 				safe_callsign = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
 				timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-				filename = f'{timestamp}_crew_{safe_callsign}.jpg'  # 최종 파일은 항상 .jpg
+				filename = f'{timestamp}_crew_{safe_callsign or "crew"}.jpg'
 				
 				# 파일 저장
 				upload_folder = os.path.join(app.root_path, 'static', 'members')
 				os.makedirs(upload_folder, exist_ok=True)
 				file_path = os.path.join(upload_folder, filename)
 				file.save(file_path)
-				
-				# 이미지 최적화
-				if optimize_image(file_path):
-					photo_url = f'/static/members/{filename}'
-				else:
-					flash('이미지 처리 중 오류가 발생했습니다.', 'warning')
-		
+
+				# 이미지 최적화 (실패해도 원본 사용)
+				optimize_image(file_path)
+				photo_url = f'/static/members/{filename}'
+
 		# 데이터베이스에 저장
 		conn = get_db()
 		conn.execute('''
@@ -3182,20 +3226,18 @@ def admin_maintenance_edit(crew_id):
 				# 안전한 파일명 생성
 				safe_callsign = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
 				timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-				filename = f'{timestamp}_crew_{safe_callsign}.jpg'  # 최종 파일은 항상 .jpg
+				filename = f'{timestamp}_crew_{safe_callsign or "crew"}.jpg'
 				
 				# 파일 저장
 				upload_folder = os.path.join(app.root_path, 'static', 'members')
 				os.makedirs(upload_folder, exist_ok=True)
 				file_path = os.path.join(upload_folder, filename)
 				file.save(file_path)
-				
-				# 이미지 최적화
-				if optimize_image(file_path):
-					photo_url = f'/static/members/{filename}'
-				else:
-					flash('이미지 처리 중 오류가 발생했습니다.', 'warning')
-		
+
+				# 이미지 최적화 (실패해도 원본 사용)
+				optimize_image(file_path)
+				photo_url = f'/static/members/{filename}'
+
 		# 데이터베이스 업데이트
 		conn.execute('''
 			UPDATE maintenance_crew
@@ -3283,7 +3325,7 @@ def admin_candidate_new():
 				# 안전한 파일명 생성
 				safe_callsign = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
 				timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-				filename = f'{timestamp}_candidate_{safe_callsign}{file_ext}'
+				filename = f'{timestamp}_candidate_{safe_callsign or "candidate"}{file_ext}'
 				
 				# 파일 저장
 				upload_folder = os.path.join(app.root_path, 'static', 'members')
@@ -3349,7 +3391,7 @@ def admin_candidate_edit(candidate_id):
 				# 안전한 파일명 생성
 				safe_callsign = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
 				timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-				filename = f'{timestamp}_candidate_{safe_callsign}{file_ext}'
+				filename = f'{timestamp}_candidate_{safe_callsign or "candidate"}{file_ext}'
 				
 				# 파일 저장
 				upload_folder = os.path.join(app.root_path, 'static', 'members')
@@ -3439,16 +3481,14 @@ def admin_commander_new():
 		if file and file.filename:
 			# 안전한 파일명 생성 (공백, 특수문자 제거)
 			safe_callsign = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
-			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_commander_{safe_callsign}.jpg"  # 최종 파일은 항상 .jpg
+			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_commander_{safe_callsign or 'commander'}.jpg"
 			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
 
-			# 이미지 최적화
-			if optimize_image(filepath):
-				photo_url = f'/static/members/{filename}'
-			else:
-				flash('이미지 처리 중 오류가 발생했습니다.', 'warning')
+			# 이미지 최적화 (실패해도 원본 사용)
+			optimize_image(filepath)
+			photo_url = f'/static/members/{filename}'
 
 		conn = get_db()
 		conn.execute('''
@@ -3500,16 +3540,14 @@ def admin_commander_edit(commander_id):
 		if file and file.filename:
 			# 안전한 파일명 생성 (공백, 특수문자 제거)
 			safe_callsign = ''.join(c for c in callsign if c.isalnum() or c in ('-', '_'))
-			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_commander_{safe_callsign}.jpg"  # 최종 파일은 항상 .jpg
+			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_commander_{safe_callsign or 'commander'}.jpg"
 			filepath = os.path.join(UPLOAD_BASE, 'members', filename)
 			os.makedirs(os.path.dirname(filepath), exist_ok=True)
 			file.save(filepath)
 
-			# 이미지 최적화
-			if optimize_image(filepath):
-				photo_url = f'/static/members/{filename}'
-			else:
-				flash('이미지 처리 중 오류가 발생했습니다.', 'warning')
+			# 이미지 최적화 (실패해도 원본 사용)
+			optimize_image(filepath)
+			photo_url = f'/static/members/{filename}'
 
 		conn.execute('''
 			UPDATE commander_greeting
@@ -3694,7 +3732,7 @@ def admin_about_section_new():
 				timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 				safe_section = ''.join(c for c in section_type if c.isalnum() or c in ('-', '_'))
 				file_ext = os.path.splitext(file.filename)[1].lower()
-				filename = f"{timestamp}_section_{safe_section}{file_ext}"
+				filename = f"{timestamp}_section_{safe_section or 'section'}{file_ext}"
 
 				# 저장 경로
 				upload_folder = os.path.join(app.static_folder, 'Picture')
@@ -3750,7 +3788,7 @@ def admin_about_section_edit(section_id):
 				timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 				safe_section = ''.join(c for c in section_type if c.isalnum() or c in ('-', '_'))
 				file_ext = os.path.splitext(file.filename)[1].lower()
-				filename = f"{timestamp}_section_{safe_section}{file_ext}"
+				filename = f"{timestamp}_section_{safe_section or 'section'}{file_ext}"
 
 				# 저장 경로
 				upload_folder = os.path.join(app.static_folder, 'Picture')
@@ -3812,7 +3850,7 @@ def admin_gallery_new():
 		# 파일 업로드 처리
 		file = request.files.get('image_file')
 		if file and file.filename:
-			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_gallery_{file.filename}"
+			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_gallery_{safe_filename(file.filename)}"
 			gallery_dir = os.path.join(UPLOAD_BASE, 'gallery')
 			os.makedirs(gallery_dir, exist_ok=True)
 			filepath = os.path.join(gallery_dir, filename)
@@ -3857,7 +3895,7 @@ def admin_gallery_edit(photo_id):
 		# 파일 업로드 처리
 		file = request.files.get('image_file')
 		if file and file.filename:
-			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_gallery_{file.filename}"
+			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_gallery_{safe_filename(file.filename)}"
 			gallery_dir = os.path.join(UPLOAD_BASE, 'gallery')
 			os.makedirs(gallery_dir, exist_ok=True)
 			filepath = os.path.join(gallery_dir, filename)
@@ -3934,25 +3972,32 @@ def admin_site_image_edit(image_id):
 	
 	if request.method == 'POST':
 		file = request.files.get('image')
-		
+
 		if file and file.filename:
-			# 파일 저장
-			filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
-			filepath = os.path.join(UPLOAD_BASE, 'images', filename)
-			os.makedirs(os.path.dirname(filepath), exist_ok=True)
-			file.save(filepath)
-			
-			image_path = f'/static/images/{filename}'
-			
-			# 데이터베이스 업데이트
-			conn.execute('''
-				UPDATE site_images 
-				SET image_path = ?, updated_at = CURRENT_TIMESTAMP
-				WHERE id = ?
-			''', (image_path, image_id))
-			conn.commit()
-			
-			flash('이미지가 업데이트되었습니다.', 'success')
+			try:
+				# 안전한 파일명 생성 (한글/공백/특수문자 제거)
+				clean_name = safe_filename(file.filename)
+				filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{clean_name}"
+				filepath = os.path.join(UPLOAD_BASE, 'images', filename)
+				os.makedirs(os.path.dirname(filepath), exist_ok=True)
+				file.save(filepath)
+
+				# 이미지 최적화 (실패해도 원본 사용)
+				optimize_image(filepath)
+
+				image_path = f'/static/images/{filename}'
+
+				# 데이터베이스 업데이트
+				conn.execute('''
+					UPDATE site_images
+					SET image_path = ?, updated_at = CURRENT_TIMESTAMP
+					WHERE id = ?
+				''', (image_path, image_id))
+				conn.commit()
+
+				flash('이미지가 업데이트되었습니다.', 'success')
+			except Exception as e:
+				flash(f'이미지 업로드 중 오류: {str(e)}', 'error')
 		else:
 			flash('이미지 파일을 선택해주세요.', 'error')
 		

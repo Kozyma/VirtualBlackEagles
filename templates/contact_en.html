@@ -3,9 +3,9 @@
 {% block title %}Contact - Virtual Black Eagles{% endblock %}
 
 {% block banner %}
-<section class="hero banner" style="background-image: url('/static/images/hero.jpg')">
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner and banner.background_image else '/static/images/hero.jpg' }}?t={{ banner.updated_at if banner else '' }}')">
   <div class="container">
-    <h1 class="banner-title">Contact Us</h1>
+    <h1 class="banner-title" style="{% if banner and banner.title_color %}color:{{ banner.title_color }};{% endif %}{% if banner and banner.title_font %}font-family:{{ banner.title_font }};{% endif %}">{{ banner.title if banner and banner.title else 'Contact Us' }}</h1>
   </div>
 </section>
 {% endblock %}

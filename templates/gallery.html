@@ -3,7 +3,7 @@
 {% block title %}활동 - 가상 블랙이글스{% endblock %}
 
 {% block banner %}
-<section class="hero banner" style="background-image: url('{{ banner.background_image if banner else '/static/images/hero.jpg' }}')">
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner else '/static/images/hero.jpg' }}?t={{ banner.updated_at if banner else '' }}')">
     <div class="container">
         <h1 class="banner-title">{{ banner.title if banner else '활동' }}</h1>
         <p class="banner-subtitle">{{ banner.subtitle if banner else 'Virtual Black Eagles Activities' }}</p>
@@ -35,7 +35,7 @@
             {% for photo in photos %}
             <div class="gallery-item" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 100 }}">
                 <div class="gallery-image-wrapper">
-                    <img src="{{ photo.image_url }}" alt="{{ photo.title }}" class="gallery-image">
+                    <img src="{{ photo.image_url }}?t={{ photo.updated_at or photo.upload_date or '' }}" alt="{{ photo.title }}" class="gallery-image">
                     <div class="gallery-overlay">
                         <div class="gallery-info">
                             <h3 class="gallery-title">{{ photo.title }}</h3>

@@ -27,7 +27,7 @@
             <div class="gallery-grid">
                 {% for image in category_images %}
                     <div class="gallery-item">
-                        <img src="{{ image.image_path }}" alt="{{ image.image_name }}" onerror="this.src='/static/images/placeholder.jpg'">
+                        <img src="{{ image.image_path }}?t={{ image.updated_at or '' }}" alt="{{ image.image_name }}" onerror="this.src='/static/images/placeholder.jpg'">
                         <div class="item-info">
                             <h3>{{ image.image_name }}</h3>
                             <p><span style="font-family:monospace;background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:0.75rem;">{{ image.image_key }}</span></p>

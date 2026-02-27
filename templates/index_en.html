@@ -3,7 +3,7 @@
 {% block title %}Virtual Black Eagles - Home{% endblock %}
 
 {% block banner %}
-<section class="hero banner" style="background-image: url('{{ banner.background_image if banner else '/static/images/hero.jpg' }}'); min-height: 900px; align-items: {{ banner.vertical_position if banner and banner.vertical_position else 'flex-start' }}; padding-top: {{ banner.padding_top if banner and banner.padding_top else 250 }}px;">
+<section class="hero banner" style="background-image: url('{{ banner.background_image if banner else '/static/images/hero.jpg' }}?t={{ banner.updated_at if banner else '' }}'); min-height: 900px; align-items: {{ banner.vertical_position if banner and banner.vertical_position else 'flex-start' }}; padding-top: {{ banner.padding_top if banner and banner.padding_top else 250 }}px;">
 	<style>
 		/* Tablet / Foldable Phone (769px ~ 1024px) */
 		@media (min-width: 769px) and (max-width: 1024px) {

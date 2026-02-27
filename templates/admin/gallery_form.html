@@ -69,7 +69,7 @@
                 {% if photo and photo.image_url %}
                 <div class="image-preview" style="margin-top:1rem;">
                     <p style="font-size:0.85rem;color:#666;margin-bottom:0.5rem;">현재 이미지:</p>
-                    <img src="{{ photo.image_url }}" alt="현재 이미지" style="max-width:300px;max-height:200px;border-radius:8px;border:1px solid #ddd;" onerror="this.style.display='none'">
+                    <img src="{{ photo.image_url }}?t={{ photo.updated_at or photo.upload_date or '' }}" alt="현재 이미지" style="max-width:300px;max-height:200px;border-radius:8px;border:1px solid #ddd;" onerror="this.style.display='none'">
                 </div>
                 {% endif %}
             </div>

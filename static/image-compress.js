@@ -168,9 +168,20 @@ const ImageCompressor = {
                 }
 
             } catch (error) {
-                console.error('이미지 처리 중 오류:', error);
-                alert('이미지 처리 중 오류가 발생했습니다. 다른 이미지를 선택해주세요.');
-                this.value = '';
+                console.warn('이미지 압축 건너뜀 (원본 파일 사용):', error.message);
+                // 압축 실패 시 원본 파일 그대로 유지 (파일 input을 비우지 않음)
+                if (previewElementId && previewImageId) {
+                    const previewElement = document.getElementById(previewElementId);
+                    const previewImage = document.getElementById(previewImageId);
+                    if (previewElement && previewImage) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewImage.src = e.target.result;
+                            previewElement.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
                 if (onError) onError(error);
             }
         });

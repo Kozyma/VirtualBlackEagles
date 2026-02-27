@@ -50,7 +50,7 @@
                 <label for="photo">이미지 첨부</label>
                 {% if section and section.image_url %}
                 <div class="image-preview" style="margin-bottom: 1rem;">
-                    <img src="{{ section.image_url }}" alt="현재 이미지" style="max-width: 300px; height: auto;">
+                    <img src="{{ section.image_url }}?t={{ section.updated_at or '' }}" alt="현재 이미지" style="max-width: 300px; height: auto;">
                     <p style="margin-top: 0.5rem; color: #666; font-size: 0.85rem;">현재 이미지: {{ section.image_url }}</p>
                 </div>
                 {% endif %}
