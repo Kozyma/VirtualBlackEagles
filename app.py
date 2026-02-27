@@ -1037,7 +1037,7 @@ def init_db():
 		VALUES ('contact_email', '', '문의 수신 이메일 주소')
 	''')
 
-	# 배너 기본값 (notice, schedule, gallery 추가)
+	# 배너 기본값 (모든 페이지)
 	conn.execute('''
 		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
 		VALUES ('notice', '/static/images/hero.jpg', '공지사항', 'Announcements')
@@ -1049,6 +1049,18 @@ def init_db():
 	conn.execute('''
 		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
 		VALUES ('gallery', '/static/images/hero.jpg', '활동', 'Activities')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
+		VALUES ('about', '/static/images/hero.jpg', '팀 소개', 'About Us')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
+		VALUES ('contact', '/static/images/hero.jpg', '문의하기', 'Contact Us')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle)
+		VALUES ('donate', '/static/images/hero.jpg', '후원하기', 'Donate')
 	''')
 
 
@@ -3993,6 +4005,22 @@ def admin_site_image_edit(image_id):
 					SET image_path = ?, updated_at = CURRENT_TIMESTAMP
 					WHERE id = ?
 				''', (image_path, image_id))
+
+				# 배너 관련 site_image인 경우 banner_settings도 동기화
+				image_row = conn.execute('SELECT image_key FROM site_images WHERE id = ?', (image_id,)).fetchone()
+				if image_row:
+					banner_page_map = {
+						'hero_banner': 'home',
+						'about_banner': 'about',
+					}
+					page_name = banner_page_map.get(image_row['image_key'])
+					if page_name:
+						conn.execute('''
+							UPDATE banner_settings
+							SET background_image = ?, updated_at = CURRENT_TIMESTAMP
+							WHERE page_name = ?
+						''', (image_path, page_name))
+
 				conn.commit()
 
 				flash('이미지가 업데이트되었습니다.', 'success')
@@ -4000,7 +4028,7 @@ def admin_site_image_edit(image_id):
 				flash(f'이미지 업로드 중 오류: {str(e)}', 'error')
 		else:
 			flash('이미지 파일을 선택해주세요.', 'error')
-		
+
 		conn.close()
 		return redirect(url_for('admin_site_images'))
 	
