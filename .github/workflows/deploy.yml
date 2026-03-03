@@ -34,7 +34,7 @@ jobs:
 
       - name: Setup environment variables on EC2
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "printf 'MAIL_PASSWORD=%s\n' '${{ secrets.MAIL_PASSWORD }}' > /home/ec2-user/app/.env"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "printf 'MAIL_PASSWORD=%s\nGOOGLE_CLIENT_ID=%s\nGOOGLE_CLIENT_SECRET=%s\nOAUTH_REDIRECT_DOMAIN=%s\n' '${{ secrets.MAIL_PASSWORD }}' '${{ secrets.GOOGLE_CLIENT_ID }}' '${{ secrets.GOOGLE_CLIENT_SECRET }}' 'virtualblackeagles.kr' > /home/ec2-user/app/.env"
 
       - name: Deploy to EC2
         run: |
