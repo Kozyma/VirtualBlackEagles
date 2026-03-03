@@ -14,12 +14,14 @@ body{margin:0;padding:0;font-family: -apple-system, BlinkMacSystemFont, "Segoe U
   padding:3rem 0;
 }
 
-/* Full-width contact section without 100vw hack */
+/* Full-width contact section */
 .contact-full-width{
   width:100vw;
   position:relative;
   left:50%;
+  right:50%;
   margin-left:-50vw;
+  margin-right:-50vw;
   box-sizing:border-box;
 }
 
@@ -512,7 +514,9 @@ a:active {
   .contact-full-width {
     width:100%;
     left:0;
+    right:auto;
     margin-left:0;
+    margin-right:0;
   }
 
   .contact-section {
