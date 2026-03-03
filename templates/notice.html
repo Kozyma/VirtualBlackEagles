@@ -16,14 +16,14 @@
   <!-- 검색 + 총 건수 -->
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
     <span style="color:#666;font-size:0.95rem;">총 <strong style="color:#007bff;">{{ total }}</strong>건</span>
-    <form method="GET" action="{{ url_for('notice') }}" style="display:flex;gap:0.5rem;align-items:center;">
+    <form method="GET" action="{{ url_for('notice') }}" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
       <select name="search_type" style="padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;background:#fff;">
         <option value="title" {{ 'selected' if search_type == 'title' }}>제목</option>
         <option value="content" {{ 'selected' if search_type == 'content' }}>내용</option>
         <option value="author" {{ 'selected' if search_type == 'author' }}>작성자</option>
       </select>
       <input type="text" name="q" value="{{ search_query }}" placeholder="검색어를 입력하세요"
-             style="padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;width:200px;">
+             style="padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;width:200px;max-width:100%;flex:1;min-width:120px;">
       <button type="submit" style="padding:0.5rem 1rem;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.9rem;">
         검색
       </button>
@@ -34,8 +34,8 @@
   </div>
 
   <!-- 테이블 -->
-  <div style="background:#fff;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.08);overflow:hidden;">
-    <table style="width:100%;border-collapse:collapse;">
+  <div style="background:#fff;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,0.08);overflow-x:auto;">
+    <table class="notice-table" style="width:100%;border-collapse:collapse;">
       <thead>
         <tr style="background:#f8f9fa;border-bottom:2px solid #e9ecef;">
           <th style="padding:0.85rem 1rem;text-align:center;font-weight:600;color:#495057;font-size:0.9rem;width:60px;">번호</th>
@@ -104,7 +104,7 @@
 </main>
 
 <!-- Contact Us + Footer Section -->
-<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+<section class="contact-section contact-full-width" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0;">
 	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
 		<h3 data-i18n="contact.title" style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
 		<p data-i18n="contact.text" style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord | Johnson#4553</p>

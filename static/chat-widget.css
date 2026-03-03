@@ -424,10 +424,13 @@
     }
     
     #chat-window {
-        width: calc(100vw - 30px);
+        width: calc(100% - 30px);
+        max-width: calc(100vw - 30px);
         height: calc(100vh - 120px);
+        height: calc(100dvh - 120px);
         bottom: 80px;
         right: 15px;
+        left: 15px;
         max-height: 600px;
     }
     
@@ -492,10 +495,13 @@
     }
     
     #chat-window {
-        width: calc(100vw - 24px);
+        width: calc(100% - 24px);
+        max-width: calc(100vw - 24px);
         height: calc(100vh - 100px);
+        height: calc(100dvh - 100px);
         bottom: 70px;
         right: 12px;
+        left: 12px;
     }
     
     .chat-closed-notice {

@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block content %}
-<main class="container section" style="padding-left: 7rem; text-align: center;">
+<main class="container section about-main" style="text-align: center;">
       <style>
         .donate-wrapper {
           max-width: 1200px;
@@ -492,7 +492,7 @@ function openKakaoPay() {
 </script>
 
 <!-- Contact Us + Footer Section -->
-<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+<section class="contact-section contact-full-width" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; ">
 	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
 		<h3 data-i18n="contact.title" style="color: white; font-size: 2rem; margin-bottom: 1rem;">{{ sec.get('footer_contact', {}).get('title', 'Contact Us') or 'Contact Us' }}</h3>
 		<p data-i18n="contact.text" style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">{{ sec.get('footer_contact', {}).get('content', 'Discord | Johnson#4553') or 'Discord | Johnson#4553' }}</p>

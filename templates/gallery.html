@@ -14,8 +14,8 @@
 {% block content %}
 
 <!-- Tab Navigation -->
-<div style="max-width:1200px; margin:2rem auto 0; padding:0 2rem;">
-    <div style="display:flex; gap:0; border-bottom:2px solid #e0e0e0;">
+<div style="max-width:1200px; margin:2rem auto 0; padding:0 1rem;">
+    <div style="display:flex; gap:0; border-bottom:2px solid #e0e0e0; overflow-x:auto;">
         <a href="/gallery/photos" style="padding:0.75rem 2rem; font-weight:600; font-size:1.05rem; text-decoration:none; border-bottom:3px solid {% if active_tab == 'photos' %}#007bff{% else %}transparent{% endif %}; color:{% if active_tab == 'photos' %}#007bff{% else %}#888{% endif %}; margin-bottom:-2px; transition:all 0.2s;">
             📷 사진관
         </a>
@@ -93,7 +93,7 @@
 <style>
 .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 30px;
     margin-top: 40px;
 }
@@ -141,7 +141,7 @@
 /* Video Grid */
 .video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 30px;
     margin-top: 40px;
 }
@@ -192,11 +192,13 @@
 .empty-state p { color: #666; font-size: 1.1rem; }
 
 @media (max-width: 768px) {
-    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
     .video-grid { grid-template-columns: 1fr; gap: 20px; }
+    .gallery-overlay { opacity: 1; }
+    .gallery-item:hover { transform: none; }
 }
 @media (max-width: 480px) {
-    .gallery-grid { grid-template-columns: 1fr; }
+    .gallery-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 </style>
 
@@ -234,7 +236,7 @@ document.querySelectorAll('.gallery-image').forEach(img => {
 </style>
 
 <!-- Contact Us + Footer -->
-<section class="contact-section" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0; width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+<section class="contact-section contact-full-width" style="background-color: #2D519E; padding: 3rem 0 1rem 0; margin: 0;">
 	<div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
 		<h3 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Contact Us</h3>
 		<p style="color: white; font-size: 1.2rem; margin-bottom: 2rem;">Discord | Johnson#4553</p>

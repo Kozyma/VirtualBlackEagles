@@ -13,6 +13,20 @@ body{margin:0;padding:0;font-family: -apple-system, BlinkMacSystemFont, "Segoe U
 .contact-section{
   padding:3rem 0;
 }
+
+/* Full-width contact section without 100vw hack */
+.contact-full-width{
+  width:100vw;
+  position:relative;
+  left:50%;
+  margin-left:-50vw;
+  box-sizing:border-box;
+}
+
+/* About page main container */
+.about-main{
+  padding-left:7rem;
+}
 .site-header{background:transparent;color:#fff;padding:0;position:absolute;top:0;left:0;right:0;z-index:1000}
 .header-container{display:flex;align-items:center;justify-content:space-between;gap:2rem;padding:0 2rem}
 .header-left{display:flex;align-items:center;gap:1rem}
@@ -183,10 +197,6 @@ a:active {
   color:#fff
 }
 /* Tab content */
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-.sub-nav .tab-link.active {
-/* Tab content */
 .tab-content{display:none}
 .tab-content.active{display:block}
 .sub-nav{display:flex;gap:1rem;margin-bottom:2rem;border-bottom:1px solid #e0e0e0}
@@ -198,8 +208,6 @@ a:active {
 }
 
 /* Notice Board */
-}
-
 .notice-header {
   display: flex;
   flex-direction: column;
@@ -393,8 +401,10 @@ a:active {
   }
 
   .social-link {
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .lang-btn-header {
@@ -454,7 +464,10 @@ a:active {
 
   .mobile-nav a {
     font-size: 0.9rem;
-    padding: 0.4rem 0.8rem;
+    padding: 0.6rem 1rem;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
   }
 
   /* Mobile Social Icons Below Navigation */
@@ -489,12 +502,22 @@ a:active {
   }
 
   /* About Page Mobile */
-  main.container {
+  main.container,
+  .about-main {
     padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Full-width contact section mobile fix */
+  .contact-full-width {
+    width:100%;
+    left:0;
+    margin-left:0;
   }
 
   .contact-section {
     padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
 
   /* Tab Navigation Mobile */
@@ -511,14 +534,19 @@ a:active {
 
   /* Member Sub Navigation Mobile */
   .member-sub-nav, .maneuver-sub-nav {
-    flex-wrap: wrap;
-    gap: 1rem;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
     justify-content: center;
+    overflow-x: auto;
   }
 
   .member-tab-link, .maneuver-tab-link {
     font-size: 0.85rem !important;
-    padding: 0.4rem 0.8rem !important;
+    padding: 0.6rem 0.8rem !important;
+    min-height: 44px;
+    display: inline-flex !important;
+    align-items: center;
+    white-space: nowrap;
   }
 
   /* Team Overview Section Mobile */
@@ -531,9 +559,42 @@ a:active {
   }
 
   /* Flex Layouts Mobile */
-  .about-section > div[style*="display:flex"] {
+  .about-section > div[style*="display:flex"],
+  .about-section div[style*="display:flex"] {
     flex-direction: column !important;
     gap: 1.5rem !important;
+  }
+
+  /* Fix fixed-width elements on mobile */
+  .about-section div[style*="width:400px"],
+  .about-section div[style*="width: 400px"],
+  .about-section img[style*="width:400px"],
+  .about-section img[style*="width: 400px"],
+  #commander div[style*="width:400px"],
+  #commander img[style*="width:400px"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Reduce excessive gaps on mobile */
+  .about-section div[style*="gap:3rem"],
+  .about-section div[style*="gap: 3rem"],
+  .about-section div[style*="gap:4rem"],
+  .about-section div[style*="gap: 4rem"],
+  #commander div[style*="gap:4rem"],
+  #commander div[style*="gap: 4rem"] {
+    gap: 1.5rem !important;
+  }
+
+  /* Member cards mobile */
+  .member-card {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 1rem !important;
+  }
+
+  .member-card img {
+    margin: 0 auto !important;
   }
 
   /* Images Mobile */
@@ -545,11 +606,18 @@ a:active {
   .member-card {
     max-width: 100% !important;
     padding: 1.5rem !important;
+    flex-direction: column !important;
+    text-align: center !important;
   }
 
   .member-card img {
     width: 120px !important;
     height: 120px !important;
+    margin: 0 auto !important;
+  }
+
+  .member-card div[style*="text-align:left"] {
+    text-align: center !important;
   }
 
   .member-card h4 {
@@ -667,11 +735,19 @@ a:active {
 
   .search-input {
     flex: 2;
-    min-width: 150px;
+    min-width: 120px;
+    width: auto !important;
   }
 
   .search-btn {
     padding: 0.5rem 1rem;
+    min-height: 44px;
+  }
+
+  /* Notice table author column hide on mobile */
+  .notice-table th:nth-child(3),
+  .notice-table td:nth-child(3) {
+    display: none;
   }
 
   /* Schedule Page Mobile */
@@ -762,6 +838,23 @@ a:active {
   table {
     font-size: 0.75rem !important;
   }
+
+  /* Hide notice number column on small screens */
+  .notice-table th:first-child,
+  .notice-table td:first-child {
+    display: none;
+  }
+
+  .mobile-nav a {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Banner smaller on 480px */
+  .banner {
+    min-height: 320px;
+  }
 }
 
 /* Home Page Responsive */
@@ -839,6 +932,83 @@ a:active {
   #services > div > div > div:last-child {
     padding: 1rem !important;
     max-height: 500px !important;
+  }
+}
+
+/* Very small devices (375px and below) */
+@media (max-width: 375px) {
+  .container {
+    padding: 0.75rem;
+  }
+
+  .banner {
+    min-height: 300px;
+    padding-top: 45px;
+  }
+
+  .banner .banner-title {
+    font-size: 1.8rem;
+  }
+
+  .banner .banner-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .banner .banner-description {
+    font-size: 0.9rem;
+  }
+
+  .mobile-nav {
+    gap: 0.3rem;
+  }
+
+  .mobile-nav a {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .header-container {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .logo-image-img {
+    height: 40px;
+  }
+
+  /* Gallery tab nav on small screens */
+  .content-section .container {
+    padding: 0.75rem;
+  }
+
+  /* Contact section text smaller */
+  .contact-section h3 {
+    font-size: 1.3rem !important;
+  }
+
+  .contact-section p {
+    font-size: 0.9rem !important;
+  }
+
+  /* Notice table tighter on very small screens */
+  table th, table td {
+    padding: 0.4rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Maneuver gallery grid - 6 columns on very small */
+  #maneuvers div[style*="display:grid"] {
+    grid-template-columns: repeat(6, 1fr) !important;
+  }
+
+  /* Contact form mobile */
+  .contact-info-card,
+  .contact-form-card {
+    padding: 1.5rem !important;
+  }
+
+  .contact-info-card h3,
+  .contact-form-card h3 {
+    font-size: 1.5rem !important;
   }
 }
 
