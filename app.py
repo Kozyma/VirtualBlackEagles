@@ -104,10 +104,10 @@ def track_page_view():
 		return
 	try:
 		conn = get_db()
-		# 오늘 같은 IP가 이미 기록되어 있으면 중복 삽입 안 함
+		# 오늘 같은 IP + 같은 페이지 조합이 이미 기록되어 있으면 중복 삽입 안 함
 		existing = conn.execute(
-			"SELECT id FROM page_views WHERE ip_address = ? AND DATE(visited_at) = DATE('now')",
-			(request.remote_addr,)
+			"SELECT id FROM page_views WHERE ip_address = ? AND page_path = ? AND DATE(visited_at) = DATE('now')",
+			(request.remote_addr, request.path)
 		).fetchone()
 		if not existing:
 			conn.execute('INSERT INTO page_views (page_path, ip_address, user_agent) VALUES (?, ?, ?)',
@@ -1488,10 +1488,10 @@ def api_schedules():
 @app.route('/api/traffic')
 @login_required
 def api_traffic():
-	"""최근 30일 트래픽 데이터 (고유 IP 기준)"""
+	"""최근 30일 트래픽 데이터 (페이지뷰 기준)"""
 	conn = get_db()
 	rows = conn.execute('''
-		SELECT DATE(visited_at) as date, COUNT(DISTINCT ip_address) as count
+		SELECT DATE(visited_at) as date, COUNT(*) as count
 		FROM page_views
 		WHERE visited_at >= DATE('now', '-30 days')
 		GROUP BY DATE(visited_at)
@@ -1500,6 +1500,18 @@ def api_traffic():
 	conn.close()
 	data = [{'date': r['date'], 'count': r['count']} for r in rows]
 	return jsonify(data)
+
+
+
+@app.route('/api/traffic/reset', methods=['POST'])
+@login_required
+def api_traffic_reset():
+	"""페이지뷰 데이터 초기화 (1회성)"""
+	conn = get_db()
+	conn.execute('DELETE FROM page_views')
+	conn.commit()
+	conn.close()
+	return jsonify({'success': True, 'message': '트래픽 데이터가 초기화되었습니다.'})
 
 
 # ─── 관리자: 방문자 로그 ───
@@ -2411,18 +2423,18 @@ def admin_dashboard():
 		SELECT COUNT(DISTINCT ip_address) as count FROM page_views WHERE DATE(visited_at) = DATE('now')
 	''').fetchone()['count']
 
-	# 총 방문 수 (고유 IP+날짜 기준)
-	total_views = conn.execute('SELECT COUNT(DISTINCT ip_address || CAST(DATE(visited_at) AS TEXT)) as count FROM page_views').fetchone()['count']
+	# 총 방문 수 (페이지뷰 수)
+	total_views = conn.execute('SELECT COUNT(*) as count FROM page_views').fetchone()['count']
 
-	# 이번 주 방문 수 (고유 IP+날짜 기준)
+	# 이번 주 방문 수 (페이지뷰 수)
 	week_views = conn.execute('''
-		SELECT COUNT(DISTINCT ip_address || CAST(DATE(visited_at) AS TEXT)) as count FROM page_views
+		SELECT COUNT(*) as count FROM page_views
 		WHERE visited_at >= DATE('now', '-7 days')
 	''').fetchone()['count']
 
-	# 이번 달 방문 수 (고유 IP+날짜 기준)
+	# 이번 달 방문 수 (페이지뷰 수)
 	month_views = conn.execute('''
-		SELECT COUNT(DISTINCT ip_address || CAST(DATE(visited_at) AS TEXT)) as count FROM page_views
+		SELECT COUNT(*) as count FROM page_views
 		WHERE visited_at >= DATE('now', 'start of month')
 	''').fetchone()['count']
 
