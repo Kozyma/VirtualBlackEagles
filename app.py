@@ -5,6 +5,7 @@ try:
 except ImportError:
 	pass
 import re
+import time as _time
 import sqlite3
 import hashlib
 import urllib.request
@@ -132,15 +133,49 @@ MALICIOUS_BOT_KEYWORDS = [
 	'dirbuster', 'gobuster', 'wfuzz', 'ffuf', 'burpsuite',
 	'nessus', 'openvas', 'acunetix', 'w3af', 'skipfish',
 	'havij', 'xerxes', 'slowloris', 'hulk', 'torshammer',
+	'hydra', 'medusa', 'metasploit', 'commix', 'xsstrike',
+	'whatweb', 'jboss', 'struts', 'shellshock',
 ]
 
 # 악성 경로 패턴 - 취약점 스캐닝 시도
 MALICIOUS_PATHS = [
-	'.env', '.git/', '.htaccess', 'wp-admin', 'wp-login', 'wp-content',
-	'phpmyadmin', 'phpinfo', 'admin/config', 'shell', 'cmd',
-	'../..', '%2e%2e', 'etc/passwd', 'proc/self',
-	'.asp', '.aspx', '.jsp', '.cgi',
+	# 설정/소스 노출
+	'.env', '.git/', '.gitignore', '.svn/', '.htaccess', '.htpasswd',
+	'.DS_Store', 'web.config', '.idea/', '.vscode/',
+	'config.php', 'config.yml', 'config.json', 'database.yml',
+	'settings.py', 'wp-config', '.bak', '.swp', '.old',
+	# CMS/프레임워크 스캐닝
+	'wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'xmlrpc.php',
+	'administrator/', 'joomla', 'drupal', 'magento',
+	# 관리 도구 스캐닝
+	'phpmyadmin', 'adminer', 'phpinfo', 'info.php', 'test.php',
+	'server-status', 'server-info', 'debug/', 'console/',
+	'cpanel', 'webmail', 'cgi-bin/',
+	# 쉘/백도어
+	'shell', 'cmd', 'c99', 'r57', 'webshell', 'backdoor',
+	'filemanager', 'upload.php', 'eval', 'exec',
+	# 경로 트래버설 / 인젝션
+	'../..', '%2e%2e', 'etc/passwd', 'etc/shadow', 'proc/self',
+	'boot.ini', 'win.ini',
+	# 타 플랫폼 확장자
+	'.asp', '.aspx', '.jsp', '.cgi', '.pl', '.cfm',
+	# API/DB 노출
+	'_debug', 'graphql', 'api/v1', '.sql', 'dump.sql', 'backup.sql',
+	'elasticsearch', 'kibana', 'solr', 'redis', 'mongo',
 ]
+
+# 의심스러운 쿼리 파라미터 패턴 (SQL 인젝션, XSS 등)
+MALICIOUS_QUERY_PATTERNS = [
+	re.compile(r"('|\"|;|--|\bOR\b|\bAND\b|\bUNION\b|\bSELECT\b|\bDROP\b|\bINSERT\b|\bDELETE\b|\bUPDATE\b)", re.IGNORECASE),
+	re.compile(r"(<script|javascript:|onerror|onload|onclick|alert\(|prompt\(|confirm\()", re.IGNORECASE),
+	re.compile(r"(\.\./|\.\.\\|%2e%2e|%252e)", re.IGNORECASE),
+]
+
+# 레이트 리밋 (메모리 기반, IP별 요청 횟수 추적)
+from collections import defaultdict
+_rate_limit_data = defaultdict(list)  # {ip: [timestamp, ...]}
+RATE_LIMIT_WINDOW = 10   # 10초 이내
+RATE_LIMIT_MAX = 30       # 최대 30회 (초과 시 자동 차단)
 
 def is_human(user_agent_str):
 	"""User-Agent를 분석하여 실제 사람인지 판별"""
@@ -173,20 +208,59 @@ def auto_block_malicious():
 	if request.path.startswith(('/static/', '/admin/')):
 		return
 	ip = request.remote_addr
-	ua = str(request.user_agent).lower()
+	ua_raw = str(request.user_agent)
+	ua = ua_raw.lower()
 
-	# 악성 봇 User-Agent 감지 → 즉시 차단
+	# 1) 악성 봇 User-Agent 감지
 	for keyword in MALICIOUS_BOT_KEYWORDS:
 		if keyword in ua:
-			auto_block_ip(ip, f'악성 봇 감지: {keyword}')
+			auto_block_ip(ip, f'악성 봇: {keyword}')
 			return '<h1>403 Forbidden</h1>', 403
 
-	# 악성 경로 접근 시도 → 즉시 차단
+	# 2) User-Agent 없음 또는 비정상적으로 짧음
+	if not ua_raw or len(ua_raw.strip()) < 10:
+		auto_block_ip(ip, 'User-Agent 없음/비정상')
+		return '<h1>403 Forbidden</h1>', 403
+
+	# 3) 악성 경로 접근 시도
 	path_lower = request.path.lower()
 	for pattern in MALICIOUS_PATHS:
 		if pattern in path_lower:
-			auto_block_ip(ip, f'악성 경로 접근: {request.path}')
+			auto_block_ip(ip, f'악성 경로: {request.path[:100]}')
 			return '<h1>403 Forbidden</h1>', 403
+
+	# 4) 쿼리스트링 SQL 인젝션 / XSS 탐지
+	query = request.query_string.decode('utf-8', errors='ignore')
+	if query:
+		for pat in MALICIOUS_QUERY_PATTERNS:
+			if pat.search(query):
+				auto_block_ip(ip, f'악성 쿼리: {query[:100]}')
+				return '<h1>403 Forbidden</h1>', 403
+
+	# 5) POST 바디에 의심스러운 패턴 (폼 데이터만)
+	if request.method == 'POST' and request.content_type and 'form' in request.content_type:
+		try:
+			form_data = request.get_data(as_text=True)[:500]
+			for pat in MALICIOUS_QUERY_PATTERNS:
+				if pat.search(form_data):
+					auto_block_ip(ip, f'악성 POST: {form_data[:100]}')
+					return '<h1>403 Forbidden</h1>', 403
+		except Exception:
+			pass
+
+	# 6) 필수 헤더 누락 (진짜 브라우저는 항상 보냄)
+	if not request.headers.get('Accept') and not request.headers.get('Accept-Language'):
+		auto_block_ip(ip, '필수 헤더 누락 (Accept/Accept-Language)')
+		return '<h1>403 Forbidden</h1>', 403
+
+	# 7) 레이트 리밋 - 단시간 대량 요청 차단
+	now = _time.time()
+	_rate_limit_data[ip] = [t for t in _rate_limit_data[ip] if now - t < RATE_LIMIT_WINDOW]
+	_rate_limit_data[ip].append(now)
+	if len(_rate_limit_data[ip]) > RATE_LIMIT_MAX:
+		auto_block_ip(ip, f'레이트 초과: {RATE_LIMIT_WINDOW}초 내 {len(_rate_limit_data[ip])}회 요청')
+		del _rate_limit_data[ip]
+		return '<h1>403 Forbidden</h1>', 403
 
 
 # 페이지 방문 트래킹 (사람만, 하루에 IP+페이지당 1회)
