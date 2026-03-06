@@ -96,11 +96,40 @@ def add_cache_headers(response):
 	return response
 
 
-# 페이지 방문 트래킹 (하루에 IP당 1회만 기록)
+# 봇/크롤러 판별 키워드 (소문자)
+BOT_KEYWORDS = [
+	'bot', 'crawl', 'spider', 'slurp', 'wget', 'curl', 'python', 'java/',
+	'httpclient', 'fetcher', 'scraper', 'scanner', 'archive', 'monitoring',
+	'pingdom', 'uptimerobot', 'lighthouse', 'pagespeed', 'gtmetrix',
+	'semrush', 'ahrefs', 'mj12bot', 'dotbot', 'petalbot', 'bytespider',
+	'yandex', 'baidu', 'bing', 'duckduck', 'facebookexternalhit', 'twitterbot',
+	'linkedinbot', 'whatsapp', 'telegrambot', 'discordbot', 'applebot',
+	'headlesschrome', 'phantomjs', 'selenium', 'puppeteer', 'playwright',
+]
+
+def is_human(user_agent_str):
+	"""User-Agent를 분석하여 실제 사람인지 판별"""
+	if not user_agent_str:
+		return False
+	ua = user_agent_str.lower()
+	# 봇 키워드가 포함되면 봇으로 판별
+	for keyword in BOT_KEYWORDS:
+		if keyword in ua:
+			return False
+	# 일반 브라우저 시그니처가 있어야 사람으로 판별
+	browser_signs = ['mozilla/', 'chrome/', 'safari/', 'firefox/', 'edge/', 'opera/', 'samsung']
+	return any(sign in ua for sign in browser_signs)
+
+
+# 페이지 방문 트래킹 (사람만, 하루에 IP+페이지당 1회)
 @app.before_request
 def track_page_view():
 	# 정적 파일이나 API, 관리자 페이지는 트래킹 제외
 	if request.path.startswith(('/static/', '/api/', '/admin/')):
+		return
+	# 봇/크롤러 제외 - 사람만 집계
+	ua_str = str(request.user_agent)[:200]
+	if not is_human(ua_str):
 		return
 	try:
 		conn = get_db()
@@ -111,7 +140,7 @@ def track_page_view():
 		).fetchone()
 		if not existing:
 			conn.execute('INSERT INTO page_views (page_path, ip_address, user_agent) VALUES (?, ?, ?)',
-				(request.path, request.remote_addr, str(request.user_agent)[:200]))
+				(request.path, request.remote_addr, ua_str))
 			conn.commit()
 		conn.close()
 	except Exception:
