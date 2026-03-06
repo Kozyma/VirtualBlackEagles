@@ -1622,7 +1622,7 @@ def admin_blocked_ips_add():
 		flash(f'{ip} 차단되었습니다.', 'success')
 	except Exception:
 		flash(f'{ip}는 이미 차단된 IP입니다.', 'error')
-	return redirect(url_for('admin_blocked_ips'))
+	return redirect(request.referrer or url_for('admin_blocked_ips'))
 
 
 @app.route('/admin/blocked-ips/delete/<int:block_id>', methods=['POST'])
