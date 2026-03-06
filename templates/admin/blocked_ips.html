@@ -82,7 +82,12 @@
     <tr>
       <td style="color:#999;">{{ b.id }}</td>
       <td style="font-family:monospace;color:#dc3545;">{{ b.ip_address }}</td>
-      <td>{{ b.reason or '-' }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('admin_blocked_ips_update', block_id=b.id) }}" style="display:flex;gap:0.4rem;align-items:center;">
+          <input type="text" name="reason" value="{{ b.reason or '' }}" placeholder="사유 입력" style="flex:1;padding:0.3rem 0.5rem;border:1px solid #ddd;border-radius:4px;font-size:0.83rem;">
+          <button type="submit" style="padding:0.3rem 0.5rem;background:#007bff;color:#fff;border:none;border-radius:4px;font-size:0.75rem;cursor:pointer;white-space:nowrap;" title="사유 저장"><i class="fas fa-save"></i></button>
+        </form>
+      </td>
       <td style="white-space:nowrap;">{{ b.blocked_at|datefmt('%Y-%m-%d %H:%M') }}</td>
       <td>
         <form method="POST" action="{{ url_for('admin_blocked_ips_delete', block_id=b.id) }}" style="display:inline;" onsubmit="return confirm('해제하시겠습니까?')">

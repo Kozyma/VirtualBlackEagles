@@ -115,7 +115,7 @@ def check_blocked_ip():
 		pass
 
 
-# 봇/크롤러 판별 키워드 (소문자)
+# 봇/크롤러 판별 키워드 (소문자) - 트래킹에서 제외
 BOT_KEYWORDS = [
 	'bot', 'crawl', 'spider', 'slurp', 'wget', 'curl', 'python', 'java/',
 	'httpclient', 'fetcher', 'scraper', 'scanner', 'archive', 'monitoring',
@@ -124,6 +124,22 @@ BOT_KEYWORDS = [
 	'yandex', 'baidu', 'bing', 'duckduck', 'facebookexternalhit', 'twitterbot',
 	'linkedinbot', 'whatsapp', 'telegrambot', 'discordbot', 'applebot',
 	'headlesschrome', 'phantomjs', 'selenium', 'puppeteer', 'playwright',
+]
+
+# 악성 봇/스캐너 키워드 - 자동 IP 차단 대상
+MALICIOUS_BOT_KEYWORDS = [
+	'sqlmap', 'nikto', 'nmap', 'masscan', 'zgrab', 'nuclei',
+	'dirbuster', 'gobuster', 'wfuzz', 'ffuf', 'burpsuite',
+	'nessus', 'openvas', 'acunetix', 'w3af', 'skipfish',
+	'havij', 'xerxes', 'slowloris', 'hulk', 'torshammer',
+]
+
+# 악성 경로 패턴 - 취약점 스캐닝 시도
+MALICIOUS_PATHS = [
+	'.env', '.git/', '.htaccess', 'wp-admin', 'wp-login', 'wp-content',
+	'phpmyadmin', 'phpinfo', 'admin/config', 'shell', 'cmd',
+	'../..', '%2e%2e', 'etc/passwd', 'proc/self',
+	'.asp', '.aspx', '.jsp', '.cgi',
 ]
 
 def is_human(user_agent_str):
@@ -138,6 +154,39 @@ def is_human(user_agent_str):
 	# 일반 브라우저 시그니처가 있어야 사람으로 판별
 	browser_signs = ['mozilla/', 'chrome/', 'safari/', 'firefox/', 'edge/', 'opera/', 'samsung']
 	return any(sign in ua for sign in browser_signs)
+
+
+def auto_block_ip(ip, reason):
+	"""악성 IP를 자동으로 차단 테이블에 추가"""
+	try:
+		conn = get_db()
+		conn.execute('INSERT OR IGNORE INTO blocked_ips (ip_address, reason) VALUES (?, ?)', (ip, reason))
+		conn.commit()
+		conn.close()
+	except Exception:
+		pass
+
+
+# 악성 봇/스캐너 자동 차단
+@app.before_request
+def auto_block_malicious():
+	if request.path.startswith(('/static/', '/admin/')):
+		return
+	ip = request.remote_addr
+	ua = str(request.user_agent).lower()
+
+	# 악성 봇 User-Agent 감지 → 즉시 차단
+	for keyword in MALICIOUS_BOT_KEYWORDS:
+		if keyword in ua:
+			auto_block_ip(ip, f'악성 봇 감지: {keyword}')
+			return '<h1>403 Forbidden</h1>', 403
+
+	# 악성 경로 접근 시도 → 즉시 차단
+	path_lower = request.path.lower()
+	for pattern in MALICIOUS_PATHS:
+		if pattern in path_lower:
+			auto_block_ip(ip, f'악성 경로 접근: {request.path}')
+			return '<h1>403 Forbidden</h1>', 403
 
 
 # 페이지 방문 트래킹 (사람만, 하루에 IP+페이지당 1회)
@@ -1636,6 +1685,18 @@ def admin_blocked_ips_delete(block_id):
 	if row:
 		flash(f'{row["ip_address"]} 차단 해제되었습니다.', 'success')
 	return redirect(url_for('admin_blocked_ips'))
+
+
+@app.route('/admin/blocked-ips/update/<int:block_id>', methods=['POST'])
+@login_required
+def admin_blocked_ips_update(block_id):
+	reason = request.form.get('reason', '').strip()
+	conn = get_db()
+	conn.execute('UPDATE blocked_ips SET reason = ? WHERE id = ?', (reason, block_id))
+	conn.commit()
+	conn.close()
+	flash('사유가 수정되었습니다.', 'success')
+	return redirect(request.referrer or url_for('admin_blocked_ips'))
 
 
 # ─── 관리자: 방문자 로그 ───
