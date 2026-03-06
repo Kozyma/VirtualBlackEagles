@@ -96,6 +96,25 @@ def add_cache_headers(response):
 	return response
 
 
+# IP 차단 체크
+@app.before_request
+def check_blocked_ip():
+	# 정적 파일, 관리자 페이지는 차단 체크 제외
+	if request.path.startswith(('/static/', '/admin/')):
+		return
+	try:
+		conn = get_db()
+		blocked = conn.execute(
+			'SELECT id FROM blocked_ips WHERE ip_address = ?',
+			(request.remote_addr,)
+		).fetchone()
+		conn.close()
+		if blocked:
+			return '<h1>403 Forbidden</h1><p>접근이 차단된 IP입니다.</p>', 403
+	except Exception:
+		pass
+
+
 # 봇/크롤러 판별 키워드 (소문자)
 BOT_KEYWORDS = [
 	'bot', 'crawl', 'spider', 'slurp', 'wget', 'curl', 'python', 'java/',
@@ -1010,6 +1029,16 @@ def init_db():
 		)
 	''')
 
+	# 차단 IP 테이블
+	conn.execute('''
+		CREATE TABLE IF NOT EXISTS blocked_ips (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			ip_address TEXT NOT NULL UNIQUE,
+			reason TEXT DEFAULT '',
+			blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	''')
+
 	# DDL commit - 나머지 테이블 모두 확정
 	conn.commit()
 
@@ -1541,6 +1570,72 @@ def api_traffic_reset():
 	conn.commit()
 	conn.close()
 	return jsonify({'success': True, 'message': '트래픽 데이터가 초기화되었습니다.'})
+
+
+# ─── 관리자: IP 차단 관리 ───
+@app.route('/admin/blocked-ips')
+@login_required
+def admin_blocked_ips():
+	page = request.args.get('page', 1, type=int)
+	per_page = 50
+	search = request.args.get('q', '')
+
+	conn = get_db()
+
+	where_sql = ''
+	params = []
+	if search:
+		where_sql = ' WHERE ip_address LIKE ? OR reason LIKE ?'
+		params = [f'%{search}%', f'%{search}%']
+
+	total = conn.execute(f'SELECT COUNT(*) as count FROM blocked_ips{where_sql}', params).fetchone()['count']
+	total_pages = (total + per_page - 1) // per_page
+
+	offset = (page - 1) * per_page
+	rows = conn.execute(f'''
+		SELECT id, ip_address, reason, blocked_at
+		FROM blocked_ips{where_sql}
+		ORDER BY blocked_at DESC
+		LIMIT ? OFFSET ?
+	''', params + [per_page, offset]).fetchall()
+
+	conn.close()
+
+	return render_template('admin/blocked_ips.html',
+		blocked_ips=rows, page=page, total_pages=total_pages,
+		total=total, search=search)
+
+
+@app.route('/admin/blocked-ips/add', methods=['POST'])
+@login_required
+def admin_blocked_ips_add():
+	ip = request.form.get('ip_address', '').strip()
+	reason = request.form.get('reason', '').strip()
+	if not ip:
+		flash('IP 주소를 입력해주세요.', 'error')
+		return redirect(url_for('admin_blocked_ips'))
+	try:
+		conn = get_db()
+		conn.execute('INSERT INTO blocked_ips (ip_address, reason) VALUES (?, ?)', (ip, reason))
+		conn.commit()
+		conn.close()
+		flash(f'{ip} 차단되었습니다.', 'success')
+	except Exception:
+		flash(f'{ip}는 이미 차단된 IP입니다.', 'error')
+	return redirect(url_for('admin_blocked_ips'))
+
+
+@app.route('/admin/blocked-ips/delete/<int:block_id>', methods=['POST'])
+@login_required
+def admin_blocked_ips_delete(block_id):
+	conn = get_db()
+	row = conn.execute('SELECT ip_address FROM blocked_ips WHERE id = ?', (block_id,)).fetchone()
+	conn.execute('DELETE FROM blocked_ips WHERE id = ?', (block_id,))
+	conn.commit()
+	conn.close()
+	if row:
+		flash(f'{row["ip_address"]} 차단 해제되었습니다.', 'success')
+	return redirect(url_for('admin_blocked_ips'))
 
 
 # ─── 관리자: 방문자 로그 ───

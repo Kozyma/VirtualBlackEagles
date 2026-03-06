@@ -1,0 +1,120 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}IP 차단 관리{% endblock %}
+{% block page_title %}IP 차단 관리{% endblock %}
+
+{% block head %}
+<style>
+.block-stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+.block-stat { background: #fff; padding: 1.25rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); text-align: center; flex: 1; }
+.block-stat .stat-num { font-size: 2rem; font-weight: 700; color: #dc3545; }
+.block-stat .stat-txt { font-size: 0.85rem; color: #999; margin-top: 0.25rem; }
+.add-form { background: #fff; padding: 1.25rem; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+.add-form h4 { margin: 0 0 0.75rem; font-size: 0.95rem; color: #333; }
+.add-form .form-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+.add-form input { padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+.add-form input[name="ip_address"] { width: 200px; font-family: monospace; }
+.add-form input[name="reason"] { flex: 1; min-width: 150px; }
+.add-form button { padding: 0.5rem 1rem; background: #dc3545; color: #fff; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+.add-form button:hover { background: #b02a37; }
+.filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap; }
+.filter-bar input { padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+.filter-bar button { padding: 0.5rem 1rem; background: #007bff; color: #fff; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+.filter-bar button:hover { background: #0056b3; }
+.log-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+.log-table th { background: #f8f9fa; padding: 0.75rem; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid #e9ecef; }
+.log-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f0f0f0; color: #333; }
+.log-table tr:hover { background: #f8f9fa; }
+.btn-unblock { padding: 0.3rem 0.7rem; background: #28a745; color: #fff; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer; }
+.btn-unblock:hover { background: #1e7e34; }
+.pagination { display: flex; justify-content: center; gap: 0.25rem; margin-top: 1.5rem; }
+.pagination a, .pagination span { padding: 0.4rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #333; font-size: 0.85rem; }
+.pagination a:hover { background: #007bff; color: #fff; border-color: #007bff; }
+.pagination .active { background: #007bff; color: #fff; border-color: #007bff; }
+@media (max-width: 768px) {
+  .block-stats { flex-direction: column; }
+  .add-form .form-row { flex-direction: column; }
+  .add-form input[name="ip_address"] { width: 100%; }
+  .filter-bar { flex-direction: column; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 통계 -->
+<div class="block-stats">
+  <div class="block-stat">
+    <div class="stat-num">{{ "{:,}".format(total) }}</div>
+    <div class="stat-txt"><i class="fas fa-ban"></i> 차단된 IP</div>
+  </div>
+</div>
+
+<!-- IP 추가 폼 -->
+<div class="add-form">
+  <h4><i class="fas fa-plus-circle"></i> IP 차단 추가</h4>
+  <form class="form-row" method="POST" action="{{ url_for('admin_blocked_ips_add') }}">
+    <input type="text" name="ip_address" placeholder="IP 주소 (예: 123.45.67.89)" required>
+    <input type="text" name="reason" placeholder="차단 사유 (선택)">
+    <button type="submit"><i class="fas fa-ban"></i> 차단</button>
+  </form>
+</div>
+
+<!-- 검색 -->
+<form class="filter-bar" method="GET" action="{{ url_for('admin_blocked_ips') }}">
+  <input type="text" name="q" value="{{ search }}" placeholder="IP 또는 사유 검색">
+  <button type="submit"><i class="fas fa-search"></i> 검색</button>
+  <a href="{{ url_for('admin_blocked_ips') }}" style="padding:0.5rem 1rem;background:#6c757d;color:#fff;border-radius:6px;text-decoration:none;font-size:0.9rem;">초기화</a>
+  <span style="color:#999;font-size:0.85rem;margin-left:auto;">총 {{ "{:,}".format(total) }}건</span>
+</form>
+
+<!-- 차단 목록 -->
+<table class="log-table">
+  <thead>
+    <tr>
+      <th style="width:50px;">#</th>
+      <th>IP 주소</th>
+      <th>차단 사유</th>
+      <th>차단일</th>
+      <th style="width:80px;">관리</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for b in blocked_ips %}
+    <tr>
+      <td style="color:#999;">{{ b.id }}</td>
+      <td style="font-family:monospace;color:#dc3545;">{{ b.ip_address }}</td>
+      <td>{{ b.reason or '-' }}</td>
+      <td style="white-space:nowrap;">{{ b.blocked_at|datefmt('%Y-%m-%d %H:%M') }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('admin_blocked_ips_delete', block_id=b.id) }}" style="display:inline;" onsubmit="return confirm('해제하시겠습니까?')">
+          <button type="submit" class="btn-unblock"><i class="fas fa-unlock"></i> 해제</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    {% if not blocked_ips %}
+    <tr><td colspan="5" style="text-align:center;color:#999;padding:2rem;">차단된 IP가 없습니다.</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<!-- 페이지네이션 -->
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="?page={{ page - 1 }}&q={{ search }}">&laquo;</a>
+  {% endif %}
+  {% for p in range(1, total_pages + 1) %}
+    {% if p == page %}
+    <span class="active">{{ p }}</span>
+    {% elif p <= 3 or p > total_pages - 3 or (p >= page - 2 and p <= page + 2) %}
+    <a href="?page={{ p }}&q={{ search }}">{{ p }}</a>
+    {% elif p == 4 or p == total_pages - 3 %}
+    <span>...</span>
+    {% endif %}
+  {% endfor %}
+  {% if page < total_pages %}
+  <a href="?page={{ page + 1 }}&q={{ search }}">&raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

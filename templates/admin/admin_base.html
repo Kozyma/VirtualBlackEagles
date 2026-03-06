@@ -75,6 +75,9 @@
                 <a href="{{ url_for('admin_visitors') }}" class="sidebar-link {% if 'visitor' in request.endpoint|default('') %}active{% endif %}">
                     <i class="fas fa-chart-line"></i> 방문자 로그
                 </a>
+                <a href="{{ url_for('admin_blocked_ips') }}" class="sidebar-link {% if 'blocked_ip' in request.endpoint|default('') %}active{% endif %}">
+                    <i class="fas fa-ban"></i> IP 차단
+                </a>
             </div>
         </nav>
         <div class="sidebar-footer">
