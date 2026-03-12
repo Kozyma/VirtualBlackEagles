@@ -73,6 +73,7 @@
       <th style="width:50px;">#</th>
       <th>IP 주소</th>
       <th>차단 사유</th>
+      <th>유형</th>
       <th>차단일</th>
       <th style="width:80px;">관리</th>
     </tr>
@@ -88,6 +89,13 @@
           <button type="submit" style="padding:0.3rem 0.5rem;background:#007bff;color:#fff;border:none;border-radius:4px;font-size:0.75rem;cursor:pointer;white-space:nowrap;" title="사유 저장"><i class="fas fa-save"></i></button>
         </form>
       </td>
+      <td style="white-space:nowrap;">
+        {% if b.expires_at %}
+          <span style="background:#ffc107;color:#333;padding:0.15rem 0.5rem;border-radius:10px;font-size:0.75rem;">자동 ({{ b.expires_at|datefmt('%m-%d %H:%M') }}까지)</span>
+        {% else %}
+          <span style="background:#dc3545;color:#fff;padding:0.15rem 0.5rem;border-radius:10px;font-size:0.75rem;">영구</span>
+        {% endif %}
+      </td>
       <td style="white-space:nowrap;">{{ b.blocked_at|datefmt('%Y-%m-%d %H:%M') }}</td>
       <td>
         <form method="POST" action="{{ url_for('admin_blocked_ips_delete', block_id=b.id) }}" style="display:inline;" onsubmit="return confirm('해제하시겠습니까?')">
@@ -97,7 +105,7 @@
     </tr>
     {% endfor %}
     {% if not blocked_ips %}
-    <tr><td colspan="5" style="text-align:center;color:#999;padding:2rem;">차단된 IP가 없습니다.</td></tr>
+    <tr><td colspan="6" style="text-align:center;color:#999;padding:2rem;">차단된 IP가 없습니다.</td></tr>
     {% endif %}
   </tbody>
 </table>

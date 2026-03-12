@@ -3,7 +3,24 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="{% block meta_description %}Virtual Black Eagles - 가상 대한민국 공군 특수비행팀. DCS World 에어쇼 시뮬레이션 팀.{% endblock %}">
+    <meta name="keywords" content="Virtual Black Eagles, 블랙이글스, DCS World, 에어쇼, 시뮬레이션, 공군">
     <title>{% block title %}Virtual Black Eagles{% endblock %}</title>
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/png" href="/static/images/logo.jpg.png">
+    <link rel="apple-touch-icon" href="/static/images/logo.jpg.png">
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Virtual Black Eagles">
+    <meta property="og:title" content="{% block og_title %}Virtual Black Eagles - 가상 대한민국 공군 특수비행팀{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}DCS World 기반 가상 블랙이글스 에어쇼 시뮬레이션 팀{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}/static/images/logo.jpg.png{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Virtual Black Eagles">
+    <meta name="twitter:description" content="DCS World 기반 가상 블랙이글스 에어쇼 시뮬레이션 팀">
+    <meta name="twitter:image" content="/static/images/logo.jpg.png">
     <!-- Google Fonts - 다양한 글씨체 지원 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -130,6 +147,13 @@
     </script>
     <script src="/static/chat-widget.js?v=10"></script>
     <script>document.addEventListener('click',function(e){var d=document.getElementById('userDropdown');if(d&&!e.target.closest('#userMenuWrap'))d.style.display='none';});</script>
+    <!-- CSRF 토큰 자동 삽입 -->
+    <script>document.querySelectorAll('form[method="POST"],form[method="post"]').forEach(function(f){if(!f.querySelector('[name="_csrf_token"]')){var i=document.createElement('input');i.type='hidden';i.name='_csrf_token';i.value='{{ csrf_token() }}';f.appendChild(i);}});</script>
+    <!-- 맨 위로 가기 버튼 -->
+    <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="display:none;position:fixed;bottom:90px;right:24px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:1.2rem;cursor:pointer;z-index:9998;backdrop-filter:blur(4px);transition:opacity 0.3s,transform 0.3s;" aria-label="맨 위로">&#9650;</button>
+    <script>window.addEventListener('scroll',function(){var b=document.getElementById('backToTop');if(b)b.style.display=window.scrollY>300?'block':'none';});</script>
+    <!-- 이미지 lazy loading 자동 적용 -->
+    <script>document.querySelectorAll('img:not([loading])').forEach(function(img){img.setAttribute('loading','lazy');});</script>
     {% block scripts %}
     {% endblock %}
 </body>

@@ -8,11 +8,13 @@ import re
 import time as _time
 import sqlite3
 import hashlib
+import bcrypt
 import urllib.request
 import urllib.error
 from datetime import datetime
 from html.parser import HTMLParser
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+import secrets
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, abort
 from flask_mail import Mail, Message
 from markupsafe import Markup, escape
 from functools import wraps
@@ -88,13 +90,41 @@ UPLOAD_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 
 # 업로드 이미지 캐시 방지 (브라우저가 항상 최신 이미지를 로드하도록)
 @app.after_request
-def add_cache_headers(response):
+def add_security_and_cache_headers(response):
+	# 보안 헤더
+	response.headers['X-Content-Type-Options'] = 'nosniff'
+	response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+	response.headers['X-XSS-Protection'] = '1; mode=block'
+	response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+	response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
+	if request.is_secure:
+		response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
 	# 업로드 이미지 경로의 정적 파일은 캐시하지 않음
 	if request.path.startswith(('/static/images/', '/static/members/', '/static/gallery/', '/static/Picture/')):
 		response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
 		response.headers['Pragma'] = 'no-cache'
 		response.headers['Expires'] = '0'
 	return response
+
+
+# ─── CSRF 토큰 ───
+def generate_csrf_token():
+	if '_csrf_token' not in session:
+		session['_csrf_token'] = secrets.token_hex(32)
+	return session['_csrf_token']
+
+app.jinja_env.globals['csrf_token'] = generate_csrf_token
+
+@app.before_request
+def csrf_protect():
+	if request.method == 'POST':
+		# API 엔드포인트와 채팅은 CSRF 제외
+		if request.path.startswith(('/api/', '/chat/', '/send_mail')):
+			return
+		token = session.get('_csrf_token', None)
+		form_token = request.form.get('_csrf_token') or request.headers.get('X-CSRF-Token')
+		if not token or token != form_token:
+			abort(403)
 
 
 # IP 차단 체크
@@ -105,6 +135,11 @@ def check_blocked_ip():
 		return
 	try:
 		conn = get_db()
+		# 만료된 자동 차단 정리
+		conn.execute(
+			"DELETE FROM blocked_ips WHERE expires_at IS NOT NULL AND expires_at < datetime('now')"
+		)
+		conn.commit()
 		blocked = conn.execute(
 			'SELECT id FROM blocked_ips WHERE ip_address = ?',
 			(request.remote_addr,)
@@ -149,33 +184,37 @@ MALICIOUS_PATHS = [
 	'administrator/', 'joomla', 'drupal', 'magento',
 	# 관리 도구 스캐닝
 	'phpmyadmin', 'adminer', 'phpinfo', 'info.php', 'test.php',
-	'server-status', 'server-info', 'debug/', 'console/',
+	'server-status', 'server-info',
 	'cpanel', 'webmail', 'cgi-bin/',
-	# 쉘/백도어
-	'shell', 'cmd', 'c99', 'r57', 'webshell', 'backdoor',
-	'filemanager', 'upload.php', 'eval', 'exec',
+	# 쉘/백도어 (구체적 파일명만)
+	'shell.php', 'cmd.php', 'cmd.exe', 'c99.php', 'r57.php',
+	'webshell', 'backdoor', 'filemanager.php',
+	'upload.php', 'eval.php', 'exec.php',
 	# 경로 트래버설 / 인젝션
 	'../..', '%2e%2e', 'etc/passwd', 'etc/shadow', 'proc/self',
 	'boot.ini', 'win.ini',
 	# 타 플랫폼 확장자
 	'.asp', '.aspx', '.jsp', '.cgi', '.pl', '.cfm',
 	# API/DB 노출
-	'_debug', 'graphql', 'api/v1', '.sql', 'dump.sql', 'backup.sql',
-	'elasticsearch', 'kibana', 'solr', 'redis', 'mongo',
+	'_debug', 'graphql', '.sql', 'dump.sql', 'backup.sql',
+	'elasticsearch', 'kibana', 'solr',
 ]
 
 # 의심스러운 쿼리 파라미터 패턴 (SQL 인젝션, XSS 등)
 MALICIOUS_QUERY_PATTERNS = [
-	re.compile(r"('|\"|;|--|\bOR\b|\bAND\b|\bUNION\b|\bSELECT\b|\bDROP\b|\bINSERT\b|\bDELETE\b|\bUPDATE\b)", re.IGNORECASE),
-	re.compile(r"(<script|javascript:|onerror|onload|onclick|alert\(|prompt\(|confirm\()", re.IGNORECASE),
+	# SQL 인젝션: 단독 OR/AND는 허용, 조합 패턴만 차단
+	re.compile(r"(UNION\s+(ALL\s+)?SELECT|;\s*(DROP|DELETE|INSERT|UPDATE|ALTER)\b|'\s*(OR|AND)\s+'|--\s*$|/\*.*\*/)", re.IGNORECASE),
+	re.compile(r"(<script|javascript:|onerror\s*=|onload\s*=|onclick\s*=|alert\s*\(|prompt\s*\(|confirm\s*\()", re.IGNORECASE),
 	re.compile(r"(\.\./|\.\.\\|%2e%2e|%252e)", re.IGNORECASE),
 ]
 
 # 레이트 리밋 (메모리 기반, IP별 요청 횟수 추적)
 from collections import defaultdict
 _rate_limit_data = defaultdict(list)  # {ip: [timestamp, ...]}
+_rate_limit_blocked = {}  # {ip: block_until_timestamp} - 임시 차단
 RATE_LIMIT_WINDOW = 10   # 10초 이내
-RATE_LIMIT_MAX = 30       # 최대 30회 (초과 시 자동 차단)
+RATE_LIMIT_MAX = 50       # 최대 50회 (여유 확보)
+RATE_LIMIT_BLOCK_SECONDS = 300  # 초과 시 5분간 임시 차단 (영구 차단 아님)
 
 def is_human(user_agent_str):
 	"""User-Agent를 분석하여 실제 사람인지 판별"""
@@ -191,11 +230,18 @@ def is_human(user_agent_str):
 	return any(sign in ua for sign in browser_signs)
 
 
-def auto_block_ip(ip, reason):
-	"""악성 IP를 자동으로 차단 테이블에 추가"""
+AUTO_BLOCK_HOURS = 24  # 자동 차단 지속 시간 (시간)
+
+def auto_block_ip(ip, reason, hours=None):
+	"""악성 IP를 자동으로 차단 테이블에 추가 (기본 24시간 후 만료)"""
+	if hours is None:
+		hours = AUTO_BLOCK_HOURS
 	try:
 		conn = get_db()
-		conn.execute('INSERT OR IGNORE INTO blocked_ips (ip_address, reason) VALUES (?, ?)', (ip, reason))
+		conn.execute(
+			"INSERT OR IGNORE INTO blocked_ips (ip_address, reason, expires_at) VALUES (?, ?, datetime('now', '+' || ? || ' hours'))",
+			(ip, reason, hours)
+		)
 		conn.commit()
 		conn.close()
 	except Exception:
@@ -217,9 +263,8 @@ def auto_block_malicious():
 			auto_block_ip(ip, f'악성 봇: {keyword}')
 			return '<h1>403 Forbidden</h1>', 403
 
-	# 2) User-Agent 없음 또는 비정상적으로 짧음
-	if not ua_raw or len(ua_raw.strip()) < 10:
-		auto_block_ip(ip, 'User-Agent 없음/비정상')
+	# 2) User-Agent 없음 또는 비정상적으로 짧음 → 요청만 거부 (즉시 영구 차단하지 않음)
+	if not ua_raw or len(ua_raw.strip()) < 5:
 		return '<h1>403 Forbidden</h1>', 403
 
 	# 3) 악성 경로 접근 시도
@@ -248,19 +293,24 @@ def auto_block_malicious():
 		except Exception:
 			pass
 
-	# 6) 필수 헤더 누락 (진짜 브라우저는 항상 보냄)
+	# 6) 필수 헤더 누락 → 요청만 거부 (즉시 영구 차단하지 않음)
 	if not request.headers.get('Accept') and not request.headers.get('Accept-Language'):
-		auto_block_ip(ip, '필수 헤더 누락 (Accept/Accept-Language)')
 		return '<h1>403 Forbidden</h1>', 403
 
-	# 7) 레이트 리밋 - 단시간 대량 요청 차단
+	# 7) 레이트 리밋 - 단시간 대량 요청 시 임시 차단 (영구 차단 아님)
 	now = _time.time()
+	# 이미 임시 차단 중이면 바로 거부
+	if ip in _rate_limit_blocked:
+		if now < _rate_limit_blocked[ip]:
+			return '<h1>429 Too Many Requests</h1><p>잠시 후 다시 시도해주세요.</p>', 429
+		else:
+			del _rate_limit_blocked[ip]
 	_rate_limit_data[ip] = [t for t in _rate_limit_data[ip] if now - t < RATE_LIMIT_WINDOW]
 	_rate_limit_data[ip].append(now)
 	if len(_rate_limit_data[ip]) > RATE_LIMIT_MAX:
-		auto_block_ip(ip, f'레이트 초과: {RATE_LIMIT_WINDOW}초 내 {len(_rate_limit_data[ip])}회 요청')
+		_rate_limit_blocked[ip] = now + RATE_LIMIT_BLOCK_SECONDS
 		del _rate_limit_data[ip]
-		return '<h1>403 Forbidden</h1>', 403
+		return '<h1>429 Too Many Requests</h1><p>잠시 후 다시 시도해주세요.</p>', 429
 
 
 # 페이지 방문 트래킹 (사람만, 하루에 IP+페이지당 1회)
@@ -1158,9 +1208,15 @@ def init_db():
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			ip_address TEXT NOT NULL UNIQUE,
 			reason TEXT DEFAULT '',
-			blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			expires_at TIMESTAMP DEFAULT NULL
 		)
 	''')
+	# 기존 테이블에 expires_at 컬럼이 없으면 추가
+	try:
+		conn.execute('ALTER TABLE blocked_ips ADD COLUMN expires_at TIMESTAMP DEFAULT NULL')
+	except Exception:
+		pass  # 이미 존재하면 무시
 
 	# DDL commit - 나머지 테이블 모두 확정
 	conn.commit()
@@ -1307,9 +1363,13 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'blackeagles2025')
 
 # 비밀번호 해싱
 def hash_password(password):
-	return hashlib.sha256(password.encode()).hexdigest()
+	return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def verify_password(password, password_hash):
+	# bcrypt 해시인지 확인 (bcrypt는 $2b$로 시작)
+	if password_hash and password_hash.startswith('$2'):
+		return bcrypt.checkpw(password.encode(), password_hash.encode())
+	# 기존 SHA256 해시 호환 (마이그레이션 용)
 	return hashlib.sha256(password.encode()).hexdigest() == password_hash
 
 # 로그인 체크 데코레이터 (관리자 전용)
@@ -1716,7 +1776,7 @@ def admin_blocked_ips():
 
 	offset = (page - 1) * per_page
 	rows = conn.execute(f'''
-		SELECT id, ip_address, reason, blocked_at
+		SELECT id, ip_address, reason, blocked_at, expires_at
 		FROM blocked_ips{where_sql}
 		ORDER BY blocked_at DESC
 		LIMIT ? OFFSET ?
@@ -4735,6 +4795,32 @@ def admin_test_email():
 	return redirect(url_for('admin_donate_settings'))
 
 
+# ─── SEO: robots.txt & sitemap.xml ───
+@app.route('/robots.txt')
+def robots_txt():
+	content = "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\nDisallow: /auth/\nSitemap: https://virtualblackeagles.kr/sitemap.xml\n"
+	return content, 200, {'Content-Type': 'text/plain'}
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+	pages = ['/', '/about', '/contact', '/donate', '/notice', '/schedule', '/gallery/photos', '/gallery/videos']
+	xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+	xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+	for page in pages:
+		xml += f'  <url><loc>https://virtualblackeagles.kr{page}</loc><changefreq>weekly</changefreq></url>\n'
+	# 공지사항 개별 페이지
+	try:
+		conn = get_db()
+		notices = conn.execute('SELECT id FROM notices WHERE is_active = 1 ORDER BY id DESC LIMIT 50').fetchall()
+		for n in notices:
+			xml += f'  <url><loc>https://virtualblackeagles.kr/notice/{n["id"]}</loc><changefreq>monthly</changefreq></url>\n'
+		conn.close()
+	except Exception:
+		pass
+	xml += '</urlset>'
+	return xml, 200, {'Content-Type': 'application/xml'}
+
+
 # 헬스 체크 & 환경 진단 (배포 문제 디버깅용)
 @app.route('/health')
 def health_check():
@@ -4754,13 +4840,16 @@ def health_check():
 		'env_keys_count': len([k for k in os.environ.keys() if 'GOOGLE' in k or 'RENDER' in k]),
 	})
 
-# 에러 핸들러 추가 (디버깅용)
+# ─── 에러 핸들러 ───
+@app.errorhandler(404)
+def page_not_found(error):
+	return render_template('404.html'), 404
+
 @app.errorhandler(500)
 def internal_error(error):
 	import traceback
-	error_msg = traceback.format_exc()
-	app.logger.error(f"500 Internal Server Error: {error_msg}")
-	return f"Internal Server Error: {str(error)}<br><br>Check Render logs for details.", 500
+	app.logger.error(f"500 Internal Server Error: {traceback.format_exc()}")
+	return render_template('500.html'), 500
 
 
 """

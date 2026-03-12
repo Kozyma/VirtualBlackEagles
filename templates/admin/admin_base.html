@@ -113,6 +113,8 @@
         </div>
     </div>
 
+    <!-- CSRF 토큰 자동 삽입 -->
+    <script>document.querySelectorAll('form[method="POST"],form[method="post"]').forEach(function(f){if(!f.querySelector('[name="_csrf_token"]')){var i=document.createElement('input');i.type='hidden';i.name='_csrf_token';i.value='{{ csrf_token() }}';f.appendChild(i);}});</script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
