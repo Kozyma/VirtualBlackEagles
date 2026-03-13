@@ -118,8 +118,9 @@ app.jinja_env.globals['csrf_token'] = generate_csrf_token
 @app.before_request
 def csrf_protect():
 	if request.method == 'POST':
-		# API 엔드포인트와 채팅은 CSRF 제외
-		if request.path.startswith(('/api/', '/chat/', '/send_mail')):
+		# CSRF 제외 경로: API, 채팅, 메일, 로그인, OAuth 콜백
+		exempt = ('/api/', '/chat/', '/send_mail', '/admin/login', '/auth/login', '/auth/callback')
+		if request.path.startswith(exempt):
 			return
 		token = session.get('_csrf_token', None)
 		form_token = request.form.get('_csrf_token') or request.headers.get('X-CSRF-Token')
