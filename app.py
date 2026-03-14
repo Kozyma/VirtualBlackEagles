@@ -3127,7 +3127,7 @@ def admin_page_quick_edit(page_name):
 			return redirect(url_for('admin_page_quick_edit', page_name=page_name, lang=lang))
 		conn.close()
 		flash('페이지가 저장되었습니다.', 'success')
-		return redirect(url_for('admin_page_quick_edit', page_name=page_name, lang=lang))
+		return redirect(url_for(page_name, lang=lang))
 
 	# GET: load sections
 	rows = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND lang = ?', (page_name, lang)).fetchall()
@@ -3234,7 +3234,7 @@ def admin_page_section_save():
 	
 	conn.commit()
 	conn.close()
-	return redirect(url_for('admin_pages'))
+	return redirect(_get_public_url(page_name, lang))
 
 
 # 페이지 섹션 삭제
@@ -3247,6 +3247,15 @@ def admin_page_section_delete(section_id):
 	conn.close()
 	flash('섹션이 삭제되었습니다.', 'success')
 	return redirect(url_for('admin_pages'))
+
+
+# 저장 후 공개 페이지로 리다이렉트하기 위한 헬퍼
+def _get_public_url(page_name, lang):
+	route_map = {
+		'home': 'index', 'about': 'about', 'contact': 'contact',
+		'donate': 'donate', 'gallery': 'gallery', 'schedule': 'schedule', 'notice': 'notice'
+	}
+	return url_for(route_map.get(page_name, 'index'), lang=lang)
 
 
 # 배너 설정 관리
@@ -3313,11 +3322,13 @@ def admin_banner_edit(banner_id):
 		''', (background_image, title, subtitle, description, button_text, button_link,
 		      title_font, title_color, subtitle_color, description_color, vertical_position,
 		      padding_top_int, lang, banner_id))
+		banner_row = conn.execute('SELECT page_name FROM banner_settings WHERE id = ?', (banner_id,)).fetchone()
+		banner_page = banner_row['page_name'] if banner_row else 'home'
 		conn.commit()
 		conn.close()
 
 		flash('배너 설정이 수정되었습니다.', 'success')
-		return redirect(url_for('admin_banner'))
+		return redirect(_get_public_url(banner_page, lang))
 	
 	banner = conn.execute('SELECT * FROM banner_settings WHERE id = ?', (banner_id,)).fetchone()
 	conn.close()
@@ -3381,7 +3392,7 @@ def admin_banner_new():
 		conn.close()
 
 		flash('배너가 추가되었습니다.', 'success')
-		return redirect(url_for('admin_banner'))
+		return redirect(_get_public_url(page_name, lang))
 
 	# GET: 빈 배너 폼 표시
 	empty_banner = {
@@ -3456,7 +3467,7 @@ def admin_pilot_new():
 		conn.close()
 
 		flash('조종사가 추가되었습니다.', 'success')
-		return redirect(url_for('admin_pilots'))
+		return redirect(url_for('about', lang=lang))
 	
 	return render_template('admin/pilot_form.html', pilot=None)
 
@@ -3515,7 +3526,7 @@ def admin_pilot_edit(pilot_id):
 		conn.close()
 		
 		flash('조종사 정보가 수정되었습니다.', 'success')
-		return redirect(url_for('admin_pilots'))
+		return redirect(url_for('about', lang=lang))
 	
 	pilot = conn.execute('SELECT * FROM pilots WHERE id = ?', (pilot_id,)).fetchone()
 	conn.close()
@@ -3615,7 +3626,7 @@ def admin_maintenance_new():
 		conn.close()
 
 		flash('정비사가 추가되었습니다.', 'success')
-		return redirect(url_for('admin_maintenance'))
+		return redirect(url_for('about', lang=lang))
 	
 	return render_template('admin/maintenance_form.html', crew=None)
 
@@ -3684,7 +3695,7 @@ def admin_maintenance_edit(crew_id):
 		conn.close()
 		
 		flash('정비사 정보가 수정되었습니다.', 'success')
-		return redirect(url_for('admin_maintenance'))
+		return redirect(url_for('about', lang=lang))
 	
 	crew = conn.execute('SELECT * FROM maintenance_crew WHERE id = ?', (crew_id,)).fetchone()
 	conn.close()
@@ -3781,7 +3792,7 @@ def admin_candidate_new():
 		conn.close()
 
 		flash('후보자가 추가되었습니다.', 'success')
-		return redirect(url_for('admin_candidates'))
+		return redirect(url_for('about', lang=lang))
 	
 	return render_template('admin/candidate_form.html', candidate=None)
 
@@ -3847,7 +3858,7 @@ def admin_candidate_edit(candidate_id):
 		conn.close()
 		
 		flash('후보자 정보가 수정되었습니다.', 'success')
-		return redirect(url_for('admin_candidates'))
+		return redirect(url_for('about', lang=lang))
 	
 	candidate = conn.execute('SELECT * FROM candidates WHERE id = ?', (candidate_id,)).fetchone()
 	conn.close()
@@ -3935,7 +3946,7 @@ def admin_commander_new():
 		conn.close()
 		
 		flash('전대장 인사말이 추가되었습니다.', 'success')
-		return redirect(url_for('admin_commanders'))
+		return redirect(url_for('about', lang=lang))
 	
 	return render_template('admin/commander_form.html', commander=None)
 
@@ -3995,7 +4006,7 @@ def admin_commander_edit(commander_id):
 		conn.close()
 		
 		flash('전대장 인사말이 수정되었습니다.', 'success')
-		return redirect(url_for('admin_commanders'))
+		return redirect(url_for('about', lang=lang))
 	
 	commander = conn.execute('SELECT * FROM commander_greeting WHERE id = ?', (commander_id,)).fetchone()
 	conn.close()
@@ -4064,7 +4075,7 @@ def admin_home_content_new():
 		conn.close()
 		
 		flash('홈 콘텐츠가 추가되었습니다.', 'success')
-		return redirect(url_for('admin_home_contents'))
+		return redirect(url_for('index', lang=lang))
 	
 	return render_template('admin/home_content_form.html', content=None)
 
@@ -4102,7 +4113,7 @@ def admin_home_content_edit(content_id):
 		conn.close()
 		
 		flash('홈 콘텐츠가 수정되었습니다.', 'success')
-		return redirect(url_for('admin_home_contents'))
+		return redirect(url_for('index', lang=lang))
 	
 	content = conn.execute('SELECT * FROM home_contents WHERE id = ?', (content_id,)).fetchone()
 	conn.close()
@@ -4187,7 +4198,7 @@ def admin_about_section_new():
 		conn.close()
 		
 		flash('팀소개 섹션이 추가되었습니다.', 'success')
-		return redirect(url_for('admin_about_sections'))
+		return redirect(url_for('about', lang=lang))
 	
 	return render_template('admin/about_section_form.html', section=None)
 
@@ -4243,7 +4254,7 @@ def admin_about_section_edit(section_id):
 		conn.close()
 		
 		flash('팀소개 섹션이 수정되었습니다.', 'success')
-		return redirect(url_for('admin_about_sections'))
+		return redirect(url_for('about', lang=lang))
 	
 	section = conn.execute('SELECT * FROM about_sections WHERE id = ?', (section_id,)).fetchone()
 	conn.close()
