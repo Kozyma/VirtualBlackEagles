@@ -678,8 +678,9 @@ def init_db():
 			link_text TEXT,
 			order_num INTEGER DEFAULT 0,
 			is_active INTEGER DEFAULT 1,
+			lang TEXT DEFAULT 'ko',
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			UNIQUE(page_name, section_id)
+			UNIQUE(page_name, section_id, lang)
 		)
 	''')
 
@@ -687,7 +688,7 @@ def init_db():
 	conn.execute('''
 		CREATE TABLE IF NOT EXISTS banner_settings (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			page_name TEXT UNIQUE NOT NULL,
+			page_name TEXT NOT NULL,
 			background_image TEXT,
 			title TEXT NOT NULL,
 			subtitle TEXT,
@@ -700,7 +701,9 @@ def init_db():
 			description_color TEXT DEFAULT '#ffffff',
 			vertical_position TEXT DEFAULT 'center',
 			padding_top INTEGER DEFAULT 250,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			lang TEXT DEFAULT 'ko',
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(page_name, lang)
 		)
 	''')
 
@@ -972,50 +975,95 @@ def init_db():
 	# page_sections UNIQUE 제약조건 변경: (page_name, section_id) → (page_name, section_id, lang)
 	if USE_POSTGRES:
 		try:
-			conn.execute("ALTER TABLE page_sections DROP CONSTRAINT IF EXISTS page_sections_page_name_section_id_key")
+			# 기존 UNIQUE 제약조건 이름을 동적으로 찾아서 삭제 (이름 불일치 방지)
+			old_constraints = conn.execute("""
+				SELECT constraint_name FROM information_schema.table_constraints
+				WHERE table_name = 'page_sections' AND constraint_type = 'UNIQUE'
+				AND constraint_name != 'uq_page_sections_lang'
+			""").fetchall()
+			for row in old_constraints:
+				cname = row['constraint_name'] if isinstance(row, dict) else row[0]
+				conn.execute(f"ALTER TABLE page_sections DROP CONSTRAINT IF EXISTS {cname}")
+			# 기존 UNIQUE 인덱스도 삭제 (제약조건과 별개로 존재할 수 있음)
+			old_indexes = conn.execute("""
+				SELECT indexname FROM pg_indexes
+				WHERE tablename = 'page_sections' AND indexname != 'uq_page_sections_lang'
+				AND indexname != 'page_sections_pkey' AND indexdef LIKE '%UNIQUE%'
+			""").fetchall()
+			for row in old_indexes:
+				iname = row['indexname'] if isinstance(row, dict) else row[0]
+				conn.execute(f"DROP INDEX IF EXISTS {iname}")
 			conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_page_sections_lang ON page_sections(page_name, section_id, lang)")
 			conn.commit()
 		except Exception:
 			conn.rollback()
 	else:
 		try:
-			# SQLite: 테이블 재생성으로 UNIQUE 제약조건 변경
+			# SQLite: UNIQUE 제약조건에 lang이 포함되어 있는지 확인
 			existing_cols = conn.execute("PRAGMA table_info(page_sections)").fetchall()
 			col_names = [col[1] if isinstance(col, tuple) else col['name'] for col in existing_cols]
 			if 'lang' in col_names:
-				conn.execute('ALTER TABLE page_sections RENAME TO page_sections_old')
-				conn.execute('''
-					CREATE TABLE page_sections (
-						id INTEGER PRIMARY KEY AUTOINCREMENT,
-						page_name TEXT NOT NULL,
-						section_id TEXT NOT NULL,
-						section_type TEXT NOT NULL,
-						title TEXT,
-						content TEXT,
-						image_url TEXT,
-						link_url TEXT,
-						link_text TEXT,
-						order_num INTEGER DEFAULT 0,
-						is_active INTEGER DEFAULT 1,
-						lang TEXT DEFAULT 'ko',
-						updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-						UNIQUE(page_name, section_id, lang)
-					)
-				''')
-				conn.execute('''
-					INSERT INTO page_sections (id, page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active, lang, updated_at)
-					SELECT id, page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active, COALESCE(lang, 'ko'), updated_at
-					FROM page_sections_old
-				''')
-				conn.execute('DROP TABLE page_sections_old')
-				conn.commit()
+				# 현재 인덱스 확인 - lang이 포함된 UNIQUE 제약조건이 있는지 체크
+				indexes = conn.execute("PRAGMA index_list(page_sections)").fetchall()
+				needs_migration = True
+				for idx in indexes:
+					idx_name = idx[1] if isinstance(idx, tuple) else idx['name']
+					idx_info = conn.execute(f"PRAGMA index_info({idx_name})").fetchall()
+					idx_cols = [i[2] if isinstance(i, tuple) else i['name'] for i in idx_info]
+					if 'lang' in idx_cols and 'page_name' in idx_cols and 'section_id' in idx_cols:
+						needs_migration = False
+						break
+				if needs_migration:
+					conn.execute('ALTER TABLE page_sections RENAME TO page_sections_old')
+					conn.execute('''
+						CREATE TABLE page_sections (
+							id INTEGER PRIMARY KEY AUTOINCREMENT,
+							page_name TEXT NOT NULL,
+							section_id TEXT NOT NULL,
+							section_type TEXT NOT NULL,
+							title TEXT,
+							content TEXT,
+							image_url TEXT,
+							link_url TEXT,
+							link_text TEXT,
+							order_num INTEGER DEFAULT 0,
+							is_active INTEGER DEFAULT 1,
+							lang TEXT DEFAULT 'ko',
+							updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+							UNIQUE(page_name, section_id, lang)
+						)
+					''')
+					conn.execute('''
+						INSERT INTO page_sections (id, page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active, lang, updated_at)
+						SELECT id, page_name, section_id, section_type, title, content, image_url, link_url, link_text, order_num, is_active, COALESCE(lang, 'ko'), updated_at
+						FROM page_sections_old
+					''')
+					conn.execute('DROP TABLE page_sections_old')
+					conn.commit()
 		except Exception:
 			conn.rollback()
 
 	# banner_settings UNIQUE 제약조건 변경: page_name UNIQUE → (page_name, lang) UNIQUE
 	if USE_POSTGRES:
 		try:
-			conn.execute("ALTER TABLE banner_settings DROP CONSTRAINT IF EXISTS banner_settings_page_name_key")
+			# 기존 UNIQUE 제약조건 이름을 동적으로 찾아서 삭제
+			old_constraints = conn.execute("""
+				SELECT constraint_name FROM information_schema.table_constraints
+				WHERE table_name = 'banner_settings' AND constraint_type = 'UNIQUE'
+				AND constraint_name != 'uq_banner_settings_lang'
+			""").fetchall()
+			for row in old_constraints:
+				cname = row['constraint_name'] if isinstance(row, dict) else row[0]
+				conn.execute(f"ALTER TABLE banner_settings DROP CONSTRAINT IF EXISTS {cname}")
+			# 기존 UNIQUE 인덱스도 삭제
+			old_indexes = conn.execute("""
+				SELECT indexname FROM pg_indexes
+				WHERE tablename = 'banner_settings' AND indexname != 'uq_banner_settings_lang'
+				AND indexname != 'banner_settings_pkey' AND indexdef LIKE '%UNIQUE%'
+			""").fetchall()
+			for row in old_indexes:
+				iname = row['indexname'] if isinstance(row, dict) else row[0]
+				conn.execute(f"DROP INDEX IF EXISTS {iname}")
 			conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_banner_settings_lang ON banner_settings(page_name, lang)")
 			conn.commit()
 		except Exception:
@@ -1025,35 +1073,46 @@ def init_db():
 			existing_cols = conn.execute("PRAGMA table_info(banner_settings)").fetchall()
 			col_names = [col[1] if isinstance(col, tuple) else col['name'] for col in existing_cols]
 			if 'lang' in col_names:
-				conn.execute('ALTER TABLE banner_settings RENAME TO banner_settings_old')
-				conn.execute('''
-					CREATE TABLE banner_settings (
-						id INTEGER PRIMARY KEY AUTOINCREMENT,
-						page_name TEXT NOT NULL,
-						background_image TEXT,
-						title TEXT NOT NULL,
-						subtitle TEXT,
-						description TEXT,
-						button_text TEXT,
-						button_link TEXT,
-						title_font TEXT DEFAULT 'Arial, sans-serif',
-						title_color TEXT DEFAULT '#ffffff',
-						subtitle_color TEXT DEFAULT '#ffffff',
-						description_color TEXT DEFAULT '#ffffff',
-						vertical_position TEXT DEFAULT 'center',
-						padding_top INTEGER DEFAULT 250,
-						lang TEXT DEFAULT 'ko',
-						updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-						UNIQUE(page_name, lang)
-					)
-				''')
-				conn.execute('''
-					INSERT INTO banner_settings (id, page_name, background_image, title, subtitle, description, button_text, button_link, title_font, title_color, subtitle_color, description_color, vertical_position, padding_top, lang, updated_at)
-					SELECT id, page_name, background_image, title, subtitle, description, button_text, button_link, title_font, title_color, subtitle_color, description_color, vertical_position, padding_top, COALESCE(lang, 'ko'), updated_at
-					FROM banner_settings_old
-				''')
-				conn.execute('DROP TABLE banner_settings_old')
-				conn.commit()
+				# 현재 인덱스 확인 - lang이 포함된 UNIQUE 제약조건이 있는지 체크
+				indexes = conn.execute("PRAGMA index_list(banner_settings)").fetchall()
+				needs_migration = True
+				for idx in indexes:
+					idx_name = idx[1] if isinstance(idx, tuple) else idx['name']
+					idx_info = conn.execute(f"PRAGMA index_info({idx_name})").fetchall()
+					idx_cols = [i[2] if isinstance(i, tuple) else i['name'] for i in idx_info]
+					if 'lang' in idx_cols and 'page_name' in idx_cols:
+						needs_migration = False
+						break
+				if needs_migration:
+					conn.execute('ALTER TABLE banner_settings RENAME TO banner_settings_old')
+					conn.execute('''
+						CREATE TABLE banner_settings (
+							id INTEGER PRIMARY KEY AUTOINCREMENT,
+							page_name TEXT NOT NULL,
+							background_image TEXT,
+							title TEXT NOT NULL,
+							subtitle TEXT,
+							description TEXT,
+							button_text TEXT,
+							button_link TEXT,
+							title_font TEXT DEFAULT 'Arial, sans-serif',
+							title_color TEXT DEFAULT '#ffffff',
+							subtitle_color TEXT DEFAULT '#ffffff',
+							description_color TEXT DEFAULT '#ffffff',
+							vertical_position TEXT DEFAULT 'center',
+							padding_top INTEGER DEFAULT 250,
+							lang TEXT DEFAULT 'ko',
+							updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+							UNIQUE(page_name, lang)
+						)
+					''')
+					conn.execute('''
+						INSERT INTO banner_settings (id, page_name, background_image, title, subtitle, description, button_text, button_link, title_font, title_color, subtitle_color, description_color, vertical_position, padding_top, lang, updated_at)
+						SELECT id, page_name, background_image, title, subtitle, description, button_text, button_link, title_font, title_color, subtitle_color, description_color, vertical_position, padding_top, COALESCE(lang, 'ko'), updated_at
+						FROM banner_settings_old
+					''')
+					conn.execute('DROP TABLE banner_settings_old')
+					conn.commit()
 		except Exception:
 			conn.rollback()
 
@@ -2128,7 +2187,7 @@ def schedule():
 	per_page = 10
 
 	conn = get_db()
-	banner = conn.execute("SELECT * FROM banner_settings WHERE page_name = ?", ('schedule',)).fetchone()
+	banner = get_banner_for_lang(conn, 'schedule', lang)
 	count_row = conn.execute('SELECT COUNT(*) as cnt FROM schedules').fetchone()
 	total = count_row['cnt']
 	schedules = conn.execute('SELECT * FROM schedules ORDER BY event_date DESC LIMIT ? OFFSET ?',
@@ -3012,27 +3071,45 @@ def admin_page_quick_edit(page_name):
 	if request.method == 'POST':
 		lang = request.form.get('lang', 'ko')
 		fields = request.form.to_dict()
-		for key, value in fields.items():
-			if key in ('lang',):
-				continue
-			# key format: field__section_id  (e.g. title__intro, content__discord, link_url__link_facebook)
-			if '__' not in key:
-				continue
-			field_type, section_id = key.split('__', 1)
-			if field_type not in ('title', 'content', 'link_url'):
-				continue
-			existing = conn.execute(
-				'SELECT id FROM page_sections WHERE page_name = ? AND section_id = ? AND lang = ?',
-				(page_name, section_id, lang)
-			).fetchone()
-			if existing:
-				conn.execute(f'UPDATE page_sections SET {field_type} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-					(value.strip(), existing['id']))
-			else:
-				conn.execute('''INSERT INTO page_sections (page_name, section_id, section_type, {col}, order_num, is_active, lang)
-					VALUES (?, ?, 'text', ?, 0, 1, ?)'''.format(col=field_type),
-					(page_name, section_id, value.strip(), lang))
-		conn.commit()
+		try:
+			for key, value in fields.items():
+				if key in ('lang',):
+					continue
+				# key format: field__section_id  (e.g. title__intro, content__discord, link_url__link_facebook)
+				if '__' not in key:
+					continue
+				field_type, section_id = key.split('__', 1)
+				if field_type not in ('title', 'content', 'link_url'):
+					continue
+				existing = conn.execute(
+					'SELECT id FROM page_sections WHERE page_name = ? AND section_id = ? AND lang = ?',
+					(page_name, section_id, lang)
+				).fetchone()
+				if existing:
+					conn.execute(f'UPDATE page_sections SET {field_type} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+						(value.strip(), existing['id']))
+				else:
+					try:
+						conn.execute('''INSERT INTO page_sections (page_name, section_id, section_type, {col}, order_num, is_active, lang)
+							VALUES (?, ?, 'text', ?, 0, 1, ?)'''.format(col=field_type),
+							(page_name, section_id, value.strip(), lang))
+					except Exception:
+						conn.rollback()
+						# UNIQUE 제약조건 충돌 시 lang 없이 기존 레코드를 찾아 업데이트 시도
+						existing_any = conn.execute(
+							'SELECT id FROM page_sections WHERE page_name = ? AND section_id = ?',
+							(page_name, section_id)
+						).fetchone()
+						if existing_any:
+							conn.execute(f'UPDATE page_sections SET {field_type} = ?, lang = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+								(value.strip(), lang, existing_any['id']))
+			conn.commit()
+		except Exception as e:
+			conn.rollback()
+			app.logger.error(f"페이지 빠른 편집 저장 오류: {str(e)}")
+			flash('저장 중 오류가 발생했습니다.', 'error')
+			conn.close()
+			return redirect(url_for('admin_page_quick_edit', page_name=page_name, lang=lang))
 		conn.close()
 		flash('페이지가 저장되었습니다.', 'success')
 		return redirect(url_for('admin_page_quick_edit', page_name=page_name, lang=lang))
