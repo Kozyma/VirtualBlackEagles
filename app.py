@@ -762,6 +762,7 @@ def init_db():
 			photo_url TEXT,
 			order_num INTEGER DEFAULT 0,
 			is_active INTEGER DEFAULT 1,
+			lang TEXT DEFAULT 'ko',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
@@ -776,6 +777,7 @@ def init_db():
 			content_data TEXT,
 			order_num INTEGER DEFAULT 0,
 			is_active INTEGER DEFAULT 1,
+			lang TEXT DEFAULT 'ko',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
@@ -871,6 +873,7 @@ def init_db():
 			bio TEXT,
 			order_num INTEGER DEFAULT 0,
 			is_active INTEGER DEFAULT 1,
+			lang TEXT DEFAULT 'ko',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
@@ -886,6 +889,7 @@ def init_db():
 			bio TEXT,
 			order_num INTEGER DEFAULT 0,
 			is_active INTEGER DEFAULT 1,
+			lang TEXT DEFAULT 'ko',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
