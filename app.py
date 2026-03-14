@@ -597,17 +597,13 @@ def _get_count(row):
 		return 0
 
 def get_banner_for_lang(conn, page_name, lang):
-	"""언어별 배너를 가져오고, 해당 언어가 없으면 한국어 폴백"""
+	"""언어별 배너를 가져옴 (해당 언어 전용, 폴백 없음)"""
 	banner = conn.execute('SELECT * FROM banner_settings WHERE page_name = ? AND lang = ?', (page_name, lang)).fetchone()
-	if not banner and lang != 'ko':
-		banner = conn.execute('SELECT * FROM banner_settings WHERE page_name = ? AND lang = ?', (page_name, 'ko')).fetchone()
 	return banner
 
 def get_sections_dict(conn, page_name, lang):
-	"""페이지 섹션을 section_id를 키로 하는 딕셔너리로 반환 (한국어 폴백 포함)"""
+	"""페이지 섹션을 section_id를 키로 하는 딕셔너리로 반환 (해당 언어 전용, 폴백 없음)"""
 	rows = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', (page_name, lang)).fetchall()
-	if not rows and lang != 'ko':
-		rows = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', (page_name, 'ko')).fetchall()
 	result = {}
 	for r in rows:
 		result[r['section_id']] = {
@@ -1971,48 +1967,28 @@ def notice():
 	conn = get_db()
 	banner = get_banner_for_lang(conn, 'notice', lang)
 
-	# 검색에 사용할 언어 결정 (영어 콘텐츠 없으면 한국어 폴백)
-	effective_lang = lang
-	if lang != 'ko' and not search_query:
-		lang_count = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE lang = ?', (lang,)).fetchone()
-		if lang_count['cnt'] == 0:
-			effective_lang = 'ko'
-
-	# 검색 쿼리 처리
+	# 검색 쿼리 처리 (해당 언어 전용, 폴백 없음)
 	if search_query:
 		if search_type == 'content':
-			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE content LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
+			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE content LIKE ? AND lang = ?', (f'%{search_query}%', lang)).fetchone()
 			total = count_row['cnt']
-			# 검색 결과 없으면 한국어 폴백
-			if total == 0 and effective_lang != 'ko':
-				effective_lang = 'ko'
-				count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE content LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
-				total = count_row['cnt']
 			notices = conn.execute('SELECT * FROM notices WHERE content LIKE ? AND lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-				(f'%{search_query}%', effective_lang, per_page, (page - 1) * per_page)).fetchall()
+				(f'%{search_query}%', lang, per_page, (page - 1) * per_page)).fetchall()
 		elif search_type == 'author':
-			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE author LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
+			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE author LIKE ? AND lang = ?', (f'%{search_query}%', lang)).fetchone()
 			total = count_row['cnt']
-			if total == 0 and effective_lang != 'ko':
-				effective_lang = 'ko'
-				count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE author LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
-				total = count_row['cnt']
 			notices = conn.execute('SELECT * FROM notices WHERE author LIKE ? AND lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-				(f'%{search_query}%', effective_lang, per_page, (page - 1) * per_page)).fetchall()
+				(f'%{search_query}%', lang, per_page, (page - 1) * per_page)).fetchall()
 		else:
-			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE title LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
+			count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE title LIKE ? AND lang = ?', (f'%{search_query}%', lang)).fetchone()
 			total = count_row['cnt']
-			if total == 0 and effective_lang != 'ko':
-				effective_lang = 'ko'
-				count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE title LIKE ? AND lang = ?', (f'%{search_query}%', effective_lang)).fetchone()
-				total = count_row['cnt']
 			notices = conn.execute('SELECT * FROM notices WHERE title LIKE ? AND lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-				(f'%{search_query}%', effective_lang, per_page, (page - 1) * per_page)).fetchall()
+				(f'%{search_query}%', lang, per_page, (page - 1) * per_page)).fetchall()
 	else:
-		count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE lang = ?', (effective_lang,)).fetchone()
+		count_row = conn.execute('SELECT COUNT(*) as cnt FROM notices WHERE lang = ?', (lang,)).fetchone()
 		total = count_row['cnt']
 		notices = conn.execute('SELECT * FROM notices WHERE lang = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-			(effective_lang, per_page, (page - 1) * per_page)).fetchall()
+			(lang, per_page, (page - 1) * per_page)).fetchall()
 
 	conn.close()
 	total_pages = max(1, (total + per_page - 1) // per_page)
@@ -2044,37 +2020,23 @@ def about():
 	conn = get_db()
 	banner = get_banner_for_lang(conn, 'about', lang)
 	sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('about', lang)).fetchall()
-	if not sections and lang != 'ko':
-		sections = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND is_active = 1 AND lang = ? ORDER BY order_num', ('about', 'ko')).fetchall()
 	lang_param = 'en' if lang == 'en' else 'ko'
 	pilots = conn.execute('SELECT * FROM pilots WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
-	if not pilots and lang_param != 'ko':
-		pilots = conn.execute('SELECT * FROM pilots WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
 
 	# 정비사 가져오기
 	maintenance_crew = conn.execute('SELECT * FROM maintenance_crew WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
-	if not maintenance_crew and lang_param != 'ko':
-		maintenance_crew = conn.execute('SELECT * FROM maintenance_crew WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
 
 	# 후보자 가져오기
 	candidates = conn.execute('SELECT * FROM candidates WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
-	if not candidates and lang_param != 'ko':
-		candidates = conn.execute('SELECT * FROM candidates WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
 
-	# 전대장 인사말 가져오기 - 언어별로 가져오기 (한국어 폴백)
+	# 전대장 인사말 가져오기 - 해당 언어만
 	commanders = conn.execute('SELECT * FROM commander_greeting WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
-	if not commanders and lang_param != 'ko':
-		commanders = conn.execute('SELECT * FROM commander_greeting WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
 
-	# 개요 섹션 가져오기 (임무, 선발, 편대) - 언어별로 가져오기 (한국어 폴백)
+	# 개요 섹션 가져오기 (임무, 선발, 편대) - 해당 언어만
 	overview_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('mission', 'selection', 'formation', lang_param)).fetchall()
-	if not overview_sections and lang_param != 'ko':
-		overview_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('mission', 'selection', 'formation', 'ko')).fetchall()
 
-	# 항공기 섹션 가져오기 (한국어 폴백)
+	# 항공기 섹션 가져오기 - 해당 언어만
 	aircraft_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('aircraft_intro', 'aircraft_specs', 'aircraft_features', lang_param)).fetchall()
-	if not aircraft_sections and lang_param != 'ko':
-		aircraft_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('aircraft_intro', 'aircraft_specs', 'aircraft_features', 'ko')).fetchall()
 
 	# 사이트 이미지 가져오기
 	site_images = {}
@@ -2136,8 +2098,6 @@ def gallery_photos():
 	lang = request.args.get('lang', 'ko')
 	conn = get_db()
 	photos = conn.execute('SELECT * FROM gallery WHERE is_active = 1 AND lang = ? ORDER BY order_num, upload_date DESC', (lang,)).fetchall()
-	if not photos and lang != 'ko':
-		photos = conn.execute('SELECT * FROM gallery WHERE is_active = 1 AND lang = ? ORDER BY order_num, upload_date DESC', ('ko',)).fetchall()
 	banner = get_banner_for_lang(conn, 'gallery', lang)
 	conn.close()
 
