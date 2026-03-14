@@ -2057,14 +2057,20 @@ def about():
 	if not candidates and lang_param != 'ko':
 		candidates = conn.execute('SELECT * FROM candidates WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
 
-	# 전대장 인사말 가져오기 - 언어별로 가져오기
+	# 전대장 인사말 가져오기 - 언어별로 가져오기 (한국어 폴백)
 	commanders = conn.execute('SELECT * FROM commander_greeting WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
-	
-	# 개요 섹션 가져오기 (임무, 선발, 편대) - 언어별로 가져오기
-	overview_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('mission', 'selection', 'formation', lang_param)).fetchall()
+	if not commanders and lang_param != 'ko':
+		commanders = conn.execute('SELECT * FROM commander_greeting WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
 
-	# 항공기 섹션 가져오기
+	# 개요 섹션 가져오기 (임무, 선발, 편대) - 언어별로 가져오기 (한국어 폴백)
+	overview_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('mission', 'selection', 'formation', lang_param)).fetchall()
+	if not overview_sections and lang_param != 'ko':
+		overview_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('mission', 'selection', 'formation', 'ko')).fetchall()
+
+	# 항공기 섹션 가져오기 (한국어 폴백)
 	aircraft_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('aircraft_intro', 'aircraft_specs', 'aircraft_features', lang_param)).fetchall()
+	if not aircraft_sections and lang_param != 'ko':
+		aircraft_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('aircraft_intro', 'aircraft_specs', 'aircraft_features', 'ko')).fetchall()
 
 	# 사이트 이미지 가져오기
 	site_images = {}
@@ -3072,37 +3078,42 @@ def admin_page_quick_edit(page_name):
 		lang = request.form.get('lang', 'ko')
 		fields = request.form.to_dict()
 		try:
+			# 섹션별로 필드를 모아서 처리
+			section_fields = {}
 			for key, value in fields.items():
 				if key in ('lang',):
 					continue
-				# key format: field__section_id  (e.g. title__intro, content__discord, link_url__link_facebook)
 				if '__' not in key:
 					continue
 				field_type, section_id = key.split('__', 1)
 				if field_type not in ('title', 'content', 'link_url'):
 					continue
+				if section_id not in section_fields:
+					section_fields[section_id] = {}
+				section_fields[section_id][field_type] = value.strip()
+
+			for section_id, updates in section_fields.items():
 				existing = conn.execute(
-					'SELECT id FROM page_sections WHERE page_name = ? AND section_id = ? AND lang = ?',
+					'SELECT id, title, content, link_url FROM page_sections WHERE page_name = ? AND section_id = ? AND lang = ?',
 					(page_name, section_id, lang)
 				).fetchone()
 				if existing:
-					conn.execute(f'UPDATE page_sections SET {field_type} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-						(value.strip(), existing['id']))
+					# 기존 레코드 업데이트
+					set_clauses = []
+					params = []
+					for col in ('title', 'content', 'link_url'):
+						if col in updates:
+							set_clauses.append(f'{col} = ?')
+							params.append(updates[col])
+					if set_clauses:
+						set_clauses.append('updated_at = CURRENT_TIMESTAMP')
+						params.append(existing['id'])
+						conn.execute(f'UPDATE page_sections SET {", ".join(set_clauses)} WHERE id = ?', params)
 				else:
-					try:
-						conn.execute('''INSERT INTO page_sections (page_name, section_id, section_type, {col}, order_num, is_active, lang)
-							VALUES (?, ?, 'text', ?, 0, 1, ?)'''.format(col=field_type),
-							(page_name, section_id, value.strip(), lang))
-					except Exception:
-						conn.rollback()
-						# UNIQUE 제약조건 충돌 시 lang 없이 기존 레코드를 찾아 업데이트 시도
-						existing_any = conn.execute(
-							'SELECT id FROM page_sections WHERE page_name = ? AND section_id = ?',
-							(page_name, section_id)
-						).fetchone()
-						if existing_any:
-							conn.execute(f'UPDATE page_sections SET {field_type} = ?, lang = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-								(value.strip(), lang, existing_any['id']))
+					# 새 레코드 삽입 (모든 필드를 한번에)
+					conn.execute('''INSERT INTO page_sections (page_name, section_id, section_type, title, content, link_url, order_num, is_active, lang)
+						VALUES (?, ?, 'text', ?, ?, ?, 0, 1, ?)''',
+						(page_name, section_id, updates.get('title', ''), updates.get('content', ''), updates.get('link_url', ''), lang))
 			conn.commit()
 		except Exception as e:
 			conn.rollback()
