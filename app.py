@@ -909,6 +909,36 @@ def init_db():
 	# DDL commit - commander_greeting, maintenance_crew, candidates, gallery 테이블 확정
 	conn.commit()
 
+	# 기본 전대장 인사말 데이터 (데이터가 없을 때만)
+	existing_cmdr = _get_count(conn.execute('SELECT COUNT(*) FROM commander_greeting').fetchone())
+	if existing_cmdr == 0:
+		conn.execute('''
+			INSERT INTO commander_greeting (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num, is_active, lang)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'ko')
+		''', ('전대장', '중령', 'Bulta', 'VBE 1기', 'F-5', '/static/members/moon.jpeg',
+			'제53특수비행전대장입니다.\n\n'
+			'먼저 변함없는 성원과 격려를 보내주시는 여러분께 깊은 감사의 말씀을 드립니다.\n\n'
+			'블랙이글스는 여러분의 신뢰와 성원 덕분에 크게 성장해 왔습니다. 앞으로도 새로운 각오와 헌신으로 발전해 나가겠습니다.\n\n'
+			'대한민국을 빛내는 가장 멋진 블랙이글스가 되도록 노력하겠습니다.',
+			1, 1))
+
+	# 기본 about_sections 데이터 (KO)
+	existing_about_ko = _get_count(conn.execute("SELECT COUNT(*) FROM about_sections WHERE lang = 'ko'").fetchone())
+	if existing_about_ko == 0:
+		ko_about_sections = [
+			('mission', '임무', '블랙이글스는 대한민국 공군의 우수성과 정밀성을 보여주는 공중시범을 수행합니다. 숨막히는 기동을 통해 우리 공군력에 대한 자부심과 신뢰를 불어넣습니다.', '/static/Picture/test.jpg', 1, 1),
+			('selection', '선발', '조종사는 뛰어난 비행 기량, 팀워크, 헌신을 평가하는 엄격한 선발 과정을 통해 선발됩니다. 대한민국 공군 최고의 조종사만이 이 정예 특수비행팀에 합류할 수 있습니다.', '/static/Picture/test.jpg', 2, 1),
+			('formation', '편대', '8대의 T-50B 초음속 항공기로 구성된 팀이 밀집 편대비행을 수행합니다. 기동 중 항공기 간 거리가 2미터까지 가까워지는 최고 수준의 정밀 비행을 선보입니다.', '/static/Picture/test.jpg', 3, 1),
+			('aircraft_intro', 'T-50B 골든이글', 'T-50B는 세계 최초의 초음속 고등훈련기 KAI T-50 골든이글의 곡예비행 변형 기종입니다. 향상된 성능으로 공중시범에 특화되어 있습니다.', '/static/Picture/test.jpg', 4, 1),
+			('aircraft_specs', '제원', '<ul><li>길이: 13.14m</li><li>날개폭: 9.45m</li><li>최대속도: 마하 1.5</li><li>엔진: GE F404-102</li><li>승무원: 1명</li></ul>', '/static/Picture/test.jpg', 5, 1),
+			('aircraft_features', '특징', 'T-50B는 디지털 전자식 비행제어 시스템, 첨단 항전장비, 강력한 애프터버닝 터보팬 엔진을 갖추고 있습니다. 뛰어난 기동성으로 정밀 곡예비행에 최적화되어 있습니다.', '/static/Picture/test.jpg', 6, 1),
+		]
+		for sec_type, title, content, img, order, active in ko_about_sections:
+			conn.execute('''
+				INSERT INTO about_sections (section_type, title, content, image_url, order_num, is_active, lang)
+				VALUES (?, ?, ?, ?, ?, ?, 'ko')
+			''', (sec_type, title, content, img, order, active))
+
 	# commander_greeting 테이블에 lang 컬럼이 없을 수 있으므로 동적으로 추가
 	try:
 		conn.execute("ALTER TABLE commander_greeting ADD COLUMN lang TEXT DEFAULT 'ko'")
@@ -1410,6 +1440,88 @@ def init_db():
 			INSERT OR IGNORE INTO page_sections (page_name, section_id, section_type, title, content, order_num, is_active, lang)
 			VALUES (?, ?, ?, ?, ?, ?, 1, ?)
 		''', (page, sec_id, sec_type, title, content, order, lang))
+
+	# ===== 영어(EN) 시드 데이터 =====
+	# 배포 시마다 SQLite DB가 초기화되므로 영어 페이지에도 기본 데이터를 삽입
+
+	# 1) 영어 배너 설정
+	en_banners = [
+		('home', '/static/images/hero.jpg', 'Black Eagles', 'Republic Of Korea AirForce', 'The Virtual Black Eagles is a virtual aerobatic team showcasing advanced flight capabilities through various special maneuvers.', 'more', '#about'),
+		('about', '/static/images/hero.jpg', 'About Us', 'Meet the Team', None, None, None),
+		('contact', '/static/images/hero.jpg', 'Contact', 'Get in Touch', None, None, None),
+		('donate', '/static/images/hero.jpg', 'Support Us', 'Donate', None, None, None),
+		('gallery', '/static/images/hero.jpg', 'Gallery', 'Activities', None, None, None),
+		('schedule', '/static/images/hero.jpg', 'Schedule', 'Events', None, None, None),
+		('notice', '/static/images/hero.jpg', 'Notices', 'Announcements', None, None, None),
+	]
+	for page_name, bg_img, title, subtitle, desc, btn_text, btn_link in en_banners:
+		conn.execute('''
+			INSERT OR IGNORE INTO banner_settings (page_name, background_image, title, subtitle, description, button_text, button_link, lang)
+			VALUES (?, ?, ?, ?, ?, ?, ?, 'en')
+		''', (page_name, bg_img, title, subtitle, desc, btn_text, btn_link))
+
+	# 2) 영어 조종사 데이터
+	existing_en_pilots = _get_count(conn.execute("SELECT COUNT(*) FROM pilots WHERE lang = 'en'").fetchone())
+	if existing_en_pilots == 0:
+		en_pilots = [
+			(1, 'LEADER', 'Bulta', 'VBE 1st Gen', 'F-5', '/static/members/moon.jpeg', 1, 1),
+			(2, 'LEFT WING', 'Fox9', 'VBE 2nd Gen', 'F-18', '/static/members/moon.jpeg', 2, 1),
+			(3, 'RIGHT WING', 'Ace', 'VBE 1st Gen', 'F-18', '/static/members/moon.jpeg', 3, 1),
+			(4, 'SLOT', 'Moon', 'VBE 1st Gen', 'F-5', '/static/members/moon.jpeg', 4, 1),
+			(5, 'SYNCHRO-1', 'ZeroDistance', 'VBE 1st Gen', 'F-5', '/static/members/moon.jpeg', 5, 1),
+			(6, 'SYNCHRO-2', 'Lewis', 'VBE 1st Gen', 'F-5', '/static/members/Lewis.jpg', 6, 1),
+			(7, 'SOLO-1', 'Sonic', 'VBE 1st Gen', 'F-5', '/static/members/moon.jpeg', 7, 1),
+			(8, 'SOLO-2', 'Strike', 'VBE 1st Gen', 'F-5', '/static/members/moon.jpeg', 8, 1),
+		]
+		for pilot in en_pilots:
+			conn.execute('''
+				INSERT INTO pilots (number, position, callsign, generation, aircraft, photo_url, order_num, is_active, lang)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'en')
+			''', pilot)
+
+	# 3) 영어 전대장 인사말
+	existing_en_cmdr = _get_count(conn.execute("SELECT COUNT(*) FROM commander_greeting WHERE lang = 'en'").fetchone())
+	if existing_en_cmdr == 0:
+		conn.execute('''
+			INSERT INTO commander_greeting (name, rank, callsign, generation, aircraft, photo_url, greeting_text, order_num, is_active, lang)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'en')
+		''', ('Commander', 'Squadron Leader', 'Bulta', 'VBE 1st Gen', 'F-5', '/static/members/moon.jpeg',
+			'I am the Commander of the 53rd Special Flight Squadron.\n\n'
+			'First, I would like to express my deep gratitude to all of you for your unwavering support and encouragement.\n\n'
+			'The Black Eagles have grown significantly thanks to your trust and support. We will continue to advance with renewed dedication and commitment.\n\n'
+			'We will strive to become the most magnificent Black Eagles that illuminate the Republic of Korea.',
+			1, 1))
+
+	# 4) 영어 about_sections (Overview: mission, selection, formation)
+	existing_en_about = _get_count(conn.execute("SELECT COUNT(*) FROM about_sections WHERE lang = 'en'").fetchone())
+	if existing_en_about == 0:
+		en_about_sections = [
+			('mission', 'Mission', 'The Black Eagles perform aerial demonstrations that showcase the excellence and precision of the Republic of Korea Air Force. Through breathtaking maneuvers, we inspire pride and confidence in our nation\'s air power.', '/static/Picture/test.jpg', 1, 1),
+			('selection', 'Selection', 'Pilots are selected through a rigorous evaluation process that assesses exceptional flying skills, teamwork, and dedication. Only the best pilots from the ROKAF are chosen to join this elite aerobatic team.', '/static/Picture/test.jpg', 2, 1),
+			('formation', 'Formation', 'The team consists of eight T-50B supersonic aircraft performing in close formation. Our formations demonstrate the highest level of precision flying, with aircraft maintaining distances as close as 2 meters during maneuvers.', '/static/Picture/test.jpg', 3, 1),
+			('aircraft_intro', 'T-50B Golden Eagle', 'The T-50B is the aerobatic variant of the KAI T-50 Golden Eagle, the world\'s first supersonic advanced trainer. It is specially modified for aerobatic demonstrations with enhanced performance capabilities.', '/static/Picture/test.jpg', 4, 1),
+			('aircraft_specs', 'Specifications', '<ul><li>Length: 13.14m</li><li>Wingspan: 9.45m</li><li>Max Speed: Mach 1.5</li><li>Engine: GE F404-102</li><li>Crew: 1 pilot</li></ul>', '/static/Picture/test.jpg', 5, 1),
+			('aircraft_features', 'Features', 'The T-50B features a digital fly-by-wire flight control system, advanced avionics, and a powerful afterburning turbofan engine. Its exceptional maneuverability makes it ideal for precision aerobatic performances.', '/static/Picture/test.jpg', 6, 1),
+		]
+		for sec_type, title, content, img, order, active in en_about_sections:
+			conn.execute('''
+				INSERT INTO about_sections (section_type, title, content, image_url, order_num, is_active, lang)
+				VALUES (?, ?, ?, ?, ?, ?, 'en')
+			''', (sec_type, title, content, img, order, active))
+
+	# 5) 영어 홈 페이지 섹션
+	conn.execute('''
+		INSERT OR IGNORE INTO page_sections (page_name, section_id, section_type, title, content, order_num, is_active, lang)
+		VALUES ('home', 'about', 'text', 'About Us',
+		        'The Virtual Black Eagles is the Republic of Korea''s premier virtual aerobatic team, demonstrating advanced flight capabilities through various special maneuvers with exceptional teamwork.',
+		        1, 1, 'en')
+	''')
+	conn.execute('''
+		INSERT OR IGNORE INTO page_sections (page_name, section_id, section_type, title, content, order_num, is_active, lang)
+		VALUES ('about', 'intro', 'text', 'About Us',
+		        'The Black Eagles are the pride of the Republic of Korea Air Force.',
+		        1, 1, 'en')
+	''')
 
 	conn.commit()
 
@@ -2780,13 +2892,19 @@ def admin_lang_debug():
 		except Exception as e:
 			result[tbl] = {'error': str(e)}
 	conn.close()
-	html = '<h2>언어별 데이터 현황</h2><table border="1" cellpadding="8"><tr><th>테이블</th><th>전체</th><th>ko</th><th>en</th><th>NULL</th></tr>'
+	# DB 타입 표시
+	db_type = 'PostgreSQL' if USE_POSTGRES else 'SQLite'
+	html = f'<h2>언어별 데이터 현황 (DB: {db_type})</h2>'
+	html += '<table border="1" cellpadding="8"><tr><th>테이블</th><th>전체</th><th>ko</th><th>en</th><th>NULL</th></tr>'
 	for tbl, data in result.items():
 		if 'error' in data:
 			html += f'<tr><td>{tbl}</td><td colspan="4">오류: {data["error"]}</td></tr>'
 		else:
-			html += f'<tr><td>{tbl}</td><td>{data["total"]}</td><td>{data["ko"]}</td><td>{data["en"]}</td><td>{data["null"]}</td></tr>'
-	html += '</table><br><a href="/admin">← 대시보드</a>'
+			en_style = ' style="background:#ffcccc"' if data["en"] == 0 else ' style="background:#ccffcc"'
+			html += f'<tr><td>{tbl}</td><td>{data["total"]}</td><td>{data["ko"]}</td><td{en_style}>{data["en"]}</td><td>{data["null"]}</td></tr>'
+	html += '</table>'
+	html += '<br><p><b>참고:</b> SQLite 사용 시 git push 후 배포마다 DB가 초기화됩니다. 영구 저장이 필요하면 PostgreSQL을 사용하세요.</p>'
+	html += '<br><a href="/admin">← 대시보드</a>'
 	return html
 
 
