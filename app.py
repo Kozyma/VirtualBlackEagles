@@ -128,7 +128,9 @@ def csrf_protect():
 			abort(403)
 
 
-# IP 차단 체크
+# IP 차단 체크 - 만료 정리는 주기적으로만 수행
+_last_blocked_cleanup = [0]  # mutable for closure
+
 @app.before_request
 def check_blocked_ip():
 	# 정적 파일, 관리자 페이지는 차단 체크 제외
@@ -136,11 +138,15 @@ def check_blocked_ip():
 		return
 	try:
 		conn = get_db()
-		# 만료된 자동 차단 정리
-		conn.execute(
-			"DELETE FROM blocked_ips WHERE expires_at IS NOT NULL AND expires_at < datetime('now')"
-		)
-		conn.commit()
+		# 만료된 자동 차단 정리 (60초마다 1번만 실행하여 쓰기 충돌 방지)
+		import time as _time
+		now_ts = _time.time()
+		if now_ts - _last_blocked_cleanup[0] > 60:
+			_last_blocked_cleanup[0] = now_ts
+			conn.execute(
+				"DELETE FROM blocked_ips WHERE expires_at IS NOT NULL AND expires_at < datetime('now')"
+			)
+			conn.commit()
 		blocked = conn.execute(
 			'SELECT id FROM blocked_ips WHERE ip_address = ?',
 			(request.remote_addr,)
@@ -581,7 +587,9 @@ def get_db():
 		conn = psycopg2.connect(DATABASE_URL)
 		return DBWrapper(conn, is_pg=True)
 	else:
-		conn = sqlite3.connect(DATABASE)
+		conn = sqlite3.connect(DATABASE, timeout=30)
+		conn.execute('PRAGMA journal_mode=WAL')
+		conn.execute('PRAGMA busy_timeout=30000')
 		return DBWrapper(conn, is_pg=False)
 
 def _get_count(row):
@@ -629,6 +637,7 @@ def init_db():
 			title TEXT NOT NULL,
 			content TEXT NOT NULL,
 			author TEXT NOT NULL,
+			lang TEXT DEFAULT 'ko',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
@@ -642,6 +651,7 @@ def init_db():
 			location TEXT,
 			event_date DATE NOT NULL,
 			description TEXT,
+			lang TEXT DEFAULT 'ko',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
@@ -981,6 +991,20 @@ def init_db():
 	except Exception:
 		conn.rollback()
 
+	# schedules 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE schedules ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
+	# videos 테이블에 lang 컬럼 추가
+	try:
+		conn.execute("ALTER TABLE videos ADD COLUMN lang TEXT DEFAULT 'ko'")
+		conn.commit()
+	except Exception:
+		conn.rollback()
+
 	# pilots 테이블에 lang 컬럼 추가
 	try:
 		conn.execute("ALTER TABLE pilots ADD COLUMN lang TEXT DEFAULT 'ko'")
@@ -1232,6 +1256,7 @@ def init_db():
 			thumbnail_url TEXT,
 			order_num INTEGER DEFAULT 0,
 			is_active INTEGER DEFAULT 1,
+			lang TEXT DEFAULT 'ko',
 			upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -3249,7 +3274,7 @@ def admin_page_quick_edit(page_name):
 			return redirect(url_for('admin_page_quick_edit', page_name=page_name, lang=lang))
 		conn.close()
 		flash('페이지가 저장되었습니다.', 'success')
-		return redirect(url_for(page_name, lang=lang))
+		return redirect(url_for('admin_page_quick_edit', page_name=page_name, lang=lang))
 
 	# GET: load sections
 	rows = conn.execute('SELECT * FROM page_sections WHERE page_name = ? AND lang = ?', (page_name, lang)).fetchall()
@@ -3356,7 +3381,7 @@ def admin_page_section_save():
 	
 	conn.commit()
 	conn.close()
-	return redirect(_get_public_url(page_name, lang))
+	return redirect(url_for('admin_pages'))
 
 
 # 페이지 섹션 삭제
@@ -3369,15 +3394,6 @@ def admin_page_section_delete(section_id):
 	conn.close()
 	flash('섹션이 삭제되었습니다.', 'success')
 	return redirect(url_for('admin_pages'))
-
-
-# 저장 후 공개 페이지로 리다이렉트하기 위한 헬퍼
-def _get_public_url(page_name, lang):
-	route_map = {
-		'home': 'index', 'about': 'about', 'contact': 'contact',
-		'donate': 'donate', 'gallery': 'gallery', 'schedule': 'schedule', 'notice': 'notice'
-	}
-	return url_for(route_map.get(page_name, 'index'), lang=lang)
 
 
 # 배너 설정 관리
@@ -3444,13 +3460,11 @@ def admin_banner_edit(banner_id):
 		''', (background_image, title, subtitle, description, button_text, button_link,
 		      title_font, title_color, subtitle_color, description_color, vertical_position,
 		      padding_top_int, lang, banner_id))
-		banner_row = conn.execute('SELECT page_name FROM banner_settings WHERE id = ?', (banner_id,)).fetchone()
-		banner_page = banner_row['page_name'] if banner_row else 'home'
 		conn.commit()
 		conn.close()
 
 		flash('배너 설정이 수정되었습니다.', 'success')
-		return redirect(_get_public_url(banner_page, lang))
+		return redirect(url_for('admin_banner'))
 	
 	banner = conn.execute('SELECT * FROM banner_settings WHERE id = ?', (banner_id,)).fetchone()
 	conn.close()
@@ -3514,7 +3528,7 @@ def admin_banner_new():
 		conn.close()
 
 		flash('배너가 추가되었습니다.', 'success')
-		return redirect(_get_public_url(page_name, lang))
+		return redirect(url_for('admin_banner'))
 
 	# GET: 빈 배너 폼 표시
 	empty_banner = {
@@ -3589,7 +3603,7 @@ def admin_pilot_new():
 		conn.close()
 
 		flash('조종사가 추가되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_pilots'))
 	
 	return render_template('admin/pilot_form.html', pilot=None)
 
@@ -3648,7 +3662,7 @@ def admin_pilot_edit(pilot_id):
 		conn.close()
 		
 		flash('조종사 정보가 수정되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_pilots'))
 	
 	pilot = conn.execute('SELECT * FROM pilots WHERE id = ?', (pilot_id,)).fetchone()
 	conn.close()
@@ -3748,7 +3762,7 @@ def admin_maintenance_new():
 		conn.close()
 
 		flash('정비사가 추가되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_maintenance'))
 	
 	return render_template('admin/maintenance_form.html', crew=None)
 
@@ -3817,7 +3831,7 @@ def admin_maintenance_edit(crew_id):
 		conn.close()
 		
 		flash('정비사 정보가 수정되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_maintenance'))
 	
 	crew = conn.execute('SELECT * FROM maintenance_crew WHERE id = ?', (crew_id,)).fetchone()
 	conn.close()
@@ -3914,7 +3928,7 @@ def admin_candidate_new():
 		conn.close()
 
 		flash('후보자가 추가되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_candidates'))
 	
 	return render_template('admin/candidate_form.html', candidate=None)
 
@@ -3980,7 +3994,7 @@ def admin_candidate_edit(candidate_id):
 		conn.close()
 		
 		flash('후보자 정보가 수정되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_candidates'))
 	
 	candidate = conn.execute('SELECT * FROM candidates WHERE id = ?', (candidate_id,)).fetchone()
 	conn.close()
@@ -4068,7 +4082,7 @@ def admin_commander_new():
 		conn.close()
 		
 		flash('전대장 인사말이 추가되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_commanders'))
 	
 	return render_template('admin/commander_form.html', commander=None)
 
@@ -4128,7 +4142,7 @@ def admin_commander_edit(commander_id):
 		conn.close()
 		
 		flash('전대장 인사말이 수정되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_commanders'))
 	
 	commander = conn.execute('SELECT * FROM commander_greeting WHERE id = ?', (commander_id,)).fetchone()
 	conn.close()
@@ -4197,7 +4211,7 @@ def admin_home_content_new():
 		conn.close()
 		
 		flash('홈 콘텐츠가 추가되었습니다.', 'success')
-		return redirect(url_for('index', lang=lang))
+		return redirect(url_for('admin_home_contents'))
 	
 	return render_template('admin/home_content_form.html', content=None)
 
@@ -4235,7 +4249,7 @@ def admin_home_content_edit(content_id):
 		conn.close()
 		
 		flash('홈 콘텐츠가 수정되었습니다.', 'success')
-		return redirect(url_for('index', lang=lang))
+		return redirect(url_for('admin_home_contents'))
 	
 	content = conn.execute('SELECT * FROM home_contents WHERE id = ?', (content_id,)).fetchone()
 	conn.close()
@@ -4321,7 +4335,7 @@ def admin_about_section_new():
 		conn.close()
 
 		flash('팀소개 섹션이 추가되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_about_sections'))
 	
 	return render_template('admin/about_section_form.html', section=None)
 
@@ -4377,7 +4391,7 @@ def admin_about_section_edit(section_id):
 		conn.close()
 		
 		flash('팀소개 섹션이 수정되었습니다.', 'success')
-		return redirect(url_for('about', lang=lang))
+		return redirect(url_for('admin_about_sections'))
 	
 	section = conn.execute('SELECT * FROM about_sections WHERE id = ?', (section_id,)).fetchone()
 	conn.close()
