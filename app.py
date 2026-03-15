@@ -972,6 +972,16 @@ def init_db():
 	except Exception:
 		conn.rollback()
 
+	# lang 컬럼이 NULL인 기존 데이터를 'ko'로 업데이트 (PostgreSQL 구버전 호환)
+	for tbl in ('page_sections', 'banner_settings', 'about_sections', 'home_contents',
+	            'pilots', 'maintenance_crew', 'candidates', 'commander_greeting',
+	            'gallery', 'notices'):
+		try:
+			conn.execute(f"UPDATE {tbl} SET lang = 'ko' WHERE lang IS NULL")
+			conn.commit()
+		except Exception:
+			conn.rollback()
+
 	# page_sections UNIQUE 제약조건 변경: (page_name, section_id) → (page_name, section_id, lang)
 	if USE_POSTGRES:
 		try:
@@ -2046,6 +2056,12 @@ def about():
 
 	conn.close()
 
+	# 디버그 로깅 (영어 페이지 데이터 확인용)
+	app.logger.info(f"[ABOUT] lang={lang}, lang_param={lang_param}")
+	app.logger.info(f"[ABOUT] banner={'있음' if banner else '없음'}, sections={len(sections)}, pilots={len(pilots)}")
+	app.logger.info(f"[ABOUT] commanders={len(commanders)}, overview={len(overview_sections)}, aircraft={len(aircraft_sections)}")
+	app.logger.info(f"[ABOUT] maintenance={len(maintenance_crew)}, candidates={len(candidates)}")
+
 	if lang == 'en':
 		return render_template('about_en.html', banner=banner, sections=sections, pilots=pilots, maintenance_crew=maintenance_crew, candidates=candidates, commanders=commanders, overview_sections=overview_sections, aircraft_sections=aircraft_sections, site_images=site_images)
 	else:
@@ -2744,6 +2760,34 @@ def admin_user_delete(user_id):
 
 	flash('회원이 삭제되었습니다.', 'success')
 	return redirect(url_for('admin_users'))
+
+
+# 언어별 데이터 현황 (디버그용)
+@app.route('/admin/lang-debug')
+@login_required
+def admin_lang_debug():
+	conn = get_db()
+	tables = ['about_sections', 'commander_greeting', 'pilots', 'maintenance_crew',
+	          'candidates', 'page_sections', 'banner_settings', 'home_contents', 'gallery', 'notices']
+	result = {}
+	for tbl in tables:
+		try:
+			total = conn.execute(f'SELECT COUNT(*) as cnt FROM {tbl}').fetchone()['cnt']
+			ko = conn.execute(f"SELECT COUNT(*) as cnt FROM {tbl} WHERE lang = 'ko'").fetchone()['cnt']
+			en = conn.execute(f"SELECT COUNT(*) as cnt FROM {tbl} WHERE lang = 'en'").fetchone()['cnt']
+			null_lang = conn.execute(f"SELECT COUNT(*) as cnt FROM {tbl} WHERE lang IS NULL").fetchone()['cnt']
+			result[tbl] = {'total': total, 'ko': ko, 'en': en, 'null': null_lang}
+		except Exception as e:
+			result[tbl] = {'error': str(e)}
+	conn.close()
+	html = '<h2>언어별 데이터 현황</h2><table border="1" cellpadding="8"><tr><th>테이블</th><th>전체</th><th>ko</th><th>en</th><th>NULL</th></tr>'
+	for tbl, data in result.items():
+		if 'error' in data:
+			html += f'<tr><td>{tbl}</td><td colspan="4">오류: {data["error"]}</td></tr>'
+		else:
+			html += f'<tr><td>{tbl}</td><td>{data["total"]}</td><td>{data["ko"]}</td><td>{data["en"]}</td><td>{data["null"]}</td></tr>'
+	html += '</table><br><a href="/admin">← 대시보드</a>'
+	return html
 
 
 # 관리자 대시보드
@@ -4150,13 +4194,14 @@ def admin_about_section_new():
 				image_url = f'/static/Picture/{filename}'
 
 		conn = get_db()
+		app.logger.info(f"[ADMIN SAVE] about_section_new: type={section_type}, title={title}, lang={lang}, is_active={is_active}")
 		conn.execute('''
 			INSERT INTO about_sections (section_type, title, content, image_url, order_num, is_active, lang, updated_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 		''', (section_type, title, content, image_url, order_num, is_active, lang))
 		conn.commit()
 		conn.close()
-		
+
 		flash('팀소개 섹션이 추가되었습니다.', 'success')
 		return redirect(url_for('about', lang=lang))
 	
