@@ -2178,12 +2178,18 @@ def about():
 
 	# 전대장 인사말 가져오기 - 해당 언어만
 	commanders = conn.execute('SELECT * FROM commander_greeting WHERE is_active = 1 AND lang = ? ORDER BY order_num', (lang_param,)).fetchall()
+	if not commanders and lang_param != 'ko':
+		commanders = conn.execute('SELECT * FROM commander_greeting WHERE is_active = 1 AND lang = ? ORDER BY order_num', ('ko',)).fetchall()
 
-	# 개요 섹션 가져오기 (임무, 선발, 편대) - 해당 언어만
+	# 개요 섹션 가져오기 (임무, 선발, 편대) - 언어별로 가져오기
 	overview_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('mission', 'selection', 'formation', lang_param)).fetchall()
+	if not overview_sections and lang_param != 'ko':
+		overview_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('mission', 'selection', 'formation', 'ko')).fetchall()
 
 	# 항공기 섹션 가져오기 - 해당 언어만
 	aircraft_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('aircraft_intro', 'aircraft_specs', 'aircraft_features', lang_param)).fetchall()
+	if not aircraft_sections and lang_param != 'ko':
+		aircraft_sections = conn.execute('SELECT * FROM about_sections WHERE section_type IN (?, ?, ?) AND is_active = 1 AND lang = ? ORDER BY order_num', ('aircraft_intro', 'aircraft_specs', 'aircraft_features', 'ko')).fetchall()
 
 	# 사이트 이미지 가져오기
 	site_images = {}
