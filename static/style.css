@@ -393,6 +393,11 @@ a:active {
     display: none !important;
   }
 
+  /* 모바일에서 헤더 소셜 아이콘 숨기기 (mobile-social에서 별도 표시) */
+  .header-right .social-icons {
+    display: none !important;
+  }
+
   .social-icons {
     gap: 0.5rem;
   }

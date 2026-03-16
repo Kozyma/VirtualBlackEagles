@@ -96,6 +96,9 @@
         <a href="/donate" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; font-weight: 600; border-radius: 8px; padding: 0.8rem 1rem; text-align: center; box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3);">
             💝 후원하기
         </a>
+        <a href="/?lang=en" style="background:#1a1a2e;color:#fff;font-weight:600;border-radius:8px;padding:0.8rem 1rem;text-align:center;">
+            🌐 ENG
+        </a>
         {% if session.get('user_id') %}
         <a href="{{ url_for('auth_profile') }}" style="font-weight:500;">내 프로필</a>
         <a href="{{ url_for('auth_logout') }}" style="color:#e74c3c;font-weight:500;">{{ session.get('user_name', '회원') }} (로그아웃)</a>
