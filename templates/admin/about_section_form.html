@@ -55,7 +55,11 @@
                 </div>
                 {% endif %}
                 <input type="file" id="photo" name="photo" class="form-control" accept="image/*">
-                <span class="help-text">새 이미지를 선택하면 기존 이미지가 교체됩니다</span>
+                <span class="help-text">새 이미지를 선택하면 기존 이미지가 교체됩니다 (자동 압축됨)</span>
+                <div id="photoPreview" style="display:none; margin-top:0.5rem;">
+                    <img id="previewImage" src="" alt="미리보기" style="max-width:300px; height:auto; border-radius:4px;">
+                    <p id="compressInfo" style="margin-top:0.3rem; color:#28a745; font-size:0.85rem;"></p>
+                </div>
             </div>
 
             <div class="form-group">
@@ -119,6 +123,22 @@ document.getElementById('aboutForm').addEventListener('submit', function() {
     var html = quill.root.innerHTML;
     if (html === '<p><br></p>') html = '';
     document.getElementById('content-hidden').value = html;
+});
+</script>
+<script src="{{ url_for('static', filename='image-compress.js') }}"></script>
+<script>
+ImageCompressor.setupImageInput('photo', {
+    maxWidth: 1200,
+    maxHeight: 1200,
+    quality: 0.85,
+    previewElementId: 'photoPreview',
+    previewImageId: 'previewImage',
+    onSuccess: function(info) {
+        var el = document.getElementById('compressInfo');
+        if (el) {
+            el.textContent = '원본 ' + info.originalSize.toFixed(2) + 'MB → 압축 후 ' + info.compressedSize.toFixed(2) + 'MB';
+        }
+    }
 });
 </script>
 {% endblock %}
