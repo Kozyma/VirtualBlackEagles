@@ -137,7 +137,15 @@
 {% endblock %}
 
 {% block content %}
-    <p style="color:#666;margin-bottom:1rem;">세션 ID: {{ session['session_id'] }}</p>
+    <div style="color:#666;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:center;">
+        <span>세션 ID: {{ session['session_id'] }}</span>
+        {% if session['ip_address'] %}
+        <span style="background:#fff3cd;color:#856404;padding:3px 10px;border-radius:6px;font-weight:600;font-size:0.9rem;">IP: {{ session['ip_address'] }}</span>
+        {% endif %}
+        {% if session['user_agent'] %}
+        <span style="font-size:0.8rem;color:#999;" title="{{ session['user_agent'] }}">UA: {{ session['user_agent'][:60] }}{% if session['user_agent']|length > 60 %}...{% endif %}</span>
+        {% endif %}
+    </div>
 
     <div class="chat-container">
         <div class="chat-messages" id="chatMessages">

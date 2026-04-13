@@ -1358,6 +1358,8 @@ def init_db():
 			session_id TEXT UNIQUE NOT NULL,
 			user_name TEXT,
 			user_email TEXT,
+			ip_address TEXT,
+			user_agent TEXT,
 			status TEXT DEFAULT 'active',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -1419,6 +1421,16 @@ def init_db():
 		conn.execute('ALTER TABLE blocked_ips ADD COLUMN expires_at TIMESTAMP DEFAULT NULL')
 	except Exception:
 		pass  # 이미 존재하면 무시
+
+	# chat_sessions에 ip_address, user_agent 컬럼 추가 (기존 DB 마이그레이션)
+	try:
+		conn.execute('ALTER TABLE chat_sessions ADD COLUMN ip_address TEXT')
+	except Exception:
+		pass
+	try:
+		conn.execute('ALTER TABLE chat_sessions ADD COLUMN user_agent TEXT')
+	except Exception:
+		pass
 
 	# DDL commit - 나머지 테이블 모두 확정
 	conn.commit()
@@ -4789,14 +4801,17 @@ def chat_start():
 	user_name = request.json.get('name', '방문자')
 	user_email = request.json.get('email', '')
 	
+	ip = request.remote_addr
+	ua = str(request.user_agent)[:200]
+
 	conn = get_db()
 	conn.execute('''
-		INSERT INTO chat_sessions (session_id, user_name, user_email, status)
-		VALUES (?, ?, ?, 'active')
-	''', (session_id, user_name, user_email))
+		INSERT INTO chat_sessions (session_id, user_name, user_email, ip_address, user_agent, status)
+		VALUES (?, ?, ?, ?, ?, 'active')
+	''', (session_id, user_name, user_email, ip, ua))
 	conn.commit()
 	conn.close()
-	
+
 	return {'success': True, 'session_id': session_id}
 
 
@@ -4819,10 +4834,12 @@ def chat_send():
 	# 세션이 없다면 자동으로 생성 (로컬스토리지에 남아있던 오래된 세션 ID 대비)
 	session_info = cursor.execute('SELECT * FROM chat_sessions WHERE session_id = ?', (session_id,)).fetchone()
 	if not session_info:
+		ip = request.remote_addr
+		ua = str(request.user_agent)[:200]
 		cursor.execute('''
-			INSERT INTO chat_sessions (session_id, user_name, user_email, status)
-			VALUES (?, ?, ?, 'active')
-		''', (session_id, sender_name or '방문자', ''))
+			INSERT INTO chat_sessions (session_id, user_name, user_email, ip_address, user_agent, status)
+			VALUES (?, ?, ?, ?, ?, 'active')
+		''', (session_id, sender_name or '방문자', '', ip, ua))
 	
 	# 메시지 저장
 	cursor.execute('''
@@ -4902,10 +4919,12 @@ def chat_close():
 	session_info = cursor.execute('SELECT * FROM chat_sessions WHERE session_id = ?', (session_id,)).fetchone()
 	if not session_info:
 		# 세션이 없는데 종료를 요청한 경우(오래된 세션 ID 등) - 세션을 생성 후 바로 종료 상태로 기록
+		ip = request.remote_addr
+		ua = str(request.user_agent)[:200]
 		cursor.execute('''
-			INSERT INTO chat_sessions (session_id, user_name, user_email, status)
-			VALUES (?, ?, ?, 'closed')
-		''', (session_id, '방문자', ''))
+			INSERT INTO chat_sessions (session_id, user_name, user_email, ip_address, user_agent, status)
+			VALUES (?, ?, ?, ?, ?, 'closed')
+		''', (session_id, '방문자', '', ip, ua))
 	else:
 		# 세션 상태를 closed 로 변경
 		cursor.execute("UPDATE chat_sessions SET status = 'closed', updated_at = CURRENT_TIMESTAMP WHERE session_id = ?", (session_id,))

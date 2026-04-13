@@ -112,7 +112,7 @@
         <div class="chat-session-card {% if session['status'] == 'closed' %}closed{% endif %}" onclick="location.href='{{ url_for('admin_chat_detail', session_id=session['session_id']) }}'">
             <div class="session-header">
                 <div class="session-info">
-                    <h3>{{ session['user_name'] or '익명' }}</h3>
+                    <h3>{{ session['user_name'] or '익명' }}{% if session['ip_address'] %} <span style="font-size:0.75rem;font-weight:400;color:#888;background:#f0f0f0;padding:2px 6px;border-radius:4px;margin-left:6px;">{{ session['ip_address'] }}</span>{% endif %}</h3>
                     <span class="session-status {{ session['status'] }}">
                         {% if session['status'] == 'active' %}
                             활성
