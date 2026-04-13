@@ -312,6 +312,11 @@
             {% endwith %}
             
             <form id="contactForm">
+              <!-- Anti-spam honeypot -->
+              <div style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true">
+                <input type="text" name="website" id="hp_website" tabindex="-1" autocomplete="off">
+              </div>
+              <input type="hidden" name="_ts" id="formTimestamp">
               <div class="form-group">
                 <label for="userName">이름</label>
                 <input type="text" name="name" id="userName" placeholder="이름을 입력해주세요" value="{{ session.get('user_name', '') or '' }}" required>
@@ -353,10 +358,12 @@
                 const message = document.getElementById('userMsg').value.trim();
 
                 try {
+                    const _ts = document.getElementById('formTimestamp').value;
+                    const website = document.getElementById('hp_website').value;
                     const response = await fetch('/send_mail', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, email, message, lang: 'ko' })
+                        body: JSON.stringify({ name, email, message, lang: 'ko', _ts, website })
                     });
                     const data = await response.json();
 
@@ -392,6 +399,8 @@
                     btnLoading.style.display = 'none';
                 }
             });
+            // 폼 로드 타임스탐프 설정
+            document.getElementById('formTimestamp').value = (Date.now() / 1000).toFixed(0);
             </script>
           </div>
         </div>

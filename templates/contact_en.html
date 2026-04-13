@@ -248,6 +248,11 @@
           <div class="contact-form-card">
             <h3>{{ sec.get('form_title', {}).get('title', 'Send us a Message') or 'Send us a Message' }}</h3>
             <form id="contactFormEn">
+              <!-- Anti-spam honeypot -->
+              <div style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true">
+                <input type="text" name="website" id="hp_website_en" tabindex="-1" autocomplete="off">
+              </div>
+              <input type="hidden" name="_ts" id="formTimestampEn">
               <div class="form-group">
                 <label for="contactName">Name *</label>
                 <input type="text" id="contactName" name="name" value="{{ session.get('user_name', '') or '' }}" required>
@@ -295,10 +300,12 @@
                 const message = document.getElementById('contactMessage').value.trim();
 
                 try {
+                    const _ts = document.getElementById('formTimestampEn').value;
+                    const website = document.getElementById('hp_website_en').value;
                     const response = await fetch('/send_mail', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, email, subject, message, lang: 'en' })
+                        body: JSON.stringify({ name, email, subject, message, lang: 'en', _ts, website })
                     });
                     const data = await response.json();
 
@@ -329,6 +336,8 @@
                     btnLoading.style.display = 'none';
                 }
             });
+            // Form load timestamp
+            document.getElementById('formTimestampEn').value = (Date.now() / 1000).toFixed(0);
             </script>
           </div>
         </div>

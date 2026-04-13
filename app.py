@@ -88,6 +88,25 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 UPLOAD_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 
 
+# 404 응답 추적 (봇 스캐닝 탐지)
+@app.after_request
+def track_suspicious_404(response):
+	"""404 응답을 받는 IP의 의심 점수 누적 (봇 스캐닝 탐지)"""
+	if response.status_code == 404 and not request.path.startswith('/static/'):
+		ip = request.remote_addr
+		if ip:
+			now = _time.time()
+			ip_score = _suspicious_scores[ip]
+			if now - ip_score['last_reset'] > SUSPICIOUS_SCORE_RESET:
+				ip_score['score'] = 0
+				ip_score['last_reset'] = now
+			ip_score['score'] += 3  # 404는 높은 의심 점수
+			if ip_score['score'] >= SUSPICIOUS_SCORE_THRESHOLD:
+				auto_block_ip(ip, f'404 스캐닝 탐지: 의심 점수 {ip_score["score"]}')
+				_suspicious_scores.pop(ip, None)
+	return response
+
+
 # 업로드 이미지 캐시 방지 (브라우저가 항상 최신 이미지를 로드하도록)
 @app.after_request
 def add_security_and_cache_headers(response):
@@ -133,8 +152,8 @@ _last_blocked_cleanup = [0]  # mutable for closure
 
 @app.before_request
 def check_blocked_ip():
-	# 정적 파일, 관리자 페이지는 차단 체크 제외
-	if request.path.startswith(('/static/', '/admin/')):
+	# 정적 파일은 차단 체크 제외
+	if request.path.startswith('/static/'):
 		return
 	try:
 		conn = get_db()
@@ -222,6 +241,23 @@ _rate_limit_blocked = {}  # {ip: block_until_timestamp} - 임시 차단
 RATE_LIMIT_WINDOW = 10   # 10초 이내
 RATE_LIMIT_MAX = 50       # 최대 50회 (여유 확보)
 RATE_LIMIT_BLOCK_SECONDS = 300  # 초과 시 5분간 임시 차단 (영구 차단 아님)
+_rate_limit_last_cleanup = [0]  # 메모리 누수 방지용 마지막 정리 시간
+
+# 로그인 브루트포스 방어
+_login_attempts = defaultdict(list)  # {ip: [timestamp, ...]}
+LOGIN_ATTEMPT_WINDOW = 600   # 10분
+LOGIN_ATTEMPT_MAX = 5        # 최대 5회 실패
+LOGIN_BLOCK_SECONDS = 1800   # 초과 시 30분 차단
+
+# 폼 제출 레이트 리밋 (스팸 방지)
+_form_submit_data = defaultdict(list)  # {ip: [timestamp, ...]}
+FORM_SUBMIT_WINDOW = 60     # 1분
+FORM_SUBMIT_MAX = 3          # 최대 3회
+
+# 의심 행동 점수 추적 (행동 기반 봇 탐지)
+_suspicious_scores = defaultdict(lambda: {'score': 0, 'last_reset': 0})
+SUSPICIOUS_SCORE_THRESHOLD = 10
+SUSPICIOUS_SCORE_RESET = 3600    # 1시간마다 점수 리셋
 
 def is_human(user_agent_str):
 	"""User-Agent를 분석하여 실제 사람인지 판별"""
@@ -258,7 +294,7 @@ def auto_block_ip(ip, reason, hours=None):
 # 악성 봇/스캐너 자동 차단
 @app.before_request
 def auto_block_malicious():
-	if request.path.startswith(('/static/', '/admin/')):
+	if request.path.startswith('/static/'):
 		return
 	ip = request.remote_addr
 	ua_raw = str(request.user_agent)
@@ -304,9 +340,31 @@ def auto_block_malicious():
 	if not request.headers.get('Accept') and not request.headers.get('Accept-Language'):
 		return '<h1>403 Forbidden</h1>', 403
 
-	# 7) 레이트 리밋 - 단시간 대량 요청 시 임시 차단 (영구 차단 아님)
+	# 7) 행동 기반 봇 탐지 - 의심 행동 점수 누적
 	now = _time.time()
-	# 이미 임시 차단 중이면 바로 거부
+	ip_score = _suspicious_scores[ip]
+	if now - ip_score['last_reset'] > SUSPICIOUS_SCORE_RESET:
+		ip_score['score'] = 0
+		ip_score['last_reset'] = now
+
+	# 7-1) 비정상적으로 빠른 요청 간격 (0.1초 이내)
+	if ip in _rate_limit_data and _rate_limit_data[ip]:
+		last_req = _rate_limit_data[ip][-1]
+		if now - last_req < 0.1:
+			ip_score['score'] += 2
+
+	# 7-2) 일반적이지 않은 Accept-Encoding 조합
+	accept_enc = request.headers.get('Accept-Encoding', '')
+	if accept_enc and 'gzip' not in accept_enc and 'deflate' not in accept_enc and 'br' not in accept_enc:
+		ip_score['score'] += 1
+
+	# 7-3) 의심 점수 초과 시 자동 차단
+	if ip_score['score'] >= SUSPICIOUS_SCORE_THRESHOLD:
+		auto_block_ip(ip, f'행동 기반 탐지: 의심 점수 {ip_score["score"]}')
+		_suspicious_scores.pop(ip, None)
+		return '<h1>403 Forbidden</h1>', 403
+
+	# 8) 레이트 리밋 - 단시간 대량 요청 시 임시 차단 (영구 차단 아님)
 	if ip in _rate_limit_blocked:
 		if now < _rate_limit_blocked[ip]:
 			return '<h1>429 Too Many Requests</h1><p>잠시 후 다시 시도해주세요.</p>', 429
@@ -318,6 +376,25 @@ def auto_block_malicious():
 		_rate_limit_blocked[ip] = now + RATE_LIMIT_BLOCK_SECONDS
 		del _rate_limit_data[ip]
 		return '<h1>429 Too Many Requests</h1><p>잠시 후 다시 시도해주세요.</p>', 429
+
+	# 9) 메모리 정리 (5분마다)
+	if now - _rate_limit_last_cleanup[0] > 300:
+		_rate_limit_last_cleanup[0] = now
+		stale_ips = [k for k, v in _rate_limit_data.items() if not v or now - v[-1] > RATE_LIMIT_WINDOW * 2]
+		for k in stale_ips:
+			del _rate_limit_data[k]
+		stale_blocks = [k for k, v in _rate_limit_blocked.items() if now > v]
+		for k in stale_blocks:
+			del _rate_limit_blocked[k]
+		stale_scores = [k for k, v in _suspicious_scores.items() if now - v['last_reset'] > SUSPICIOUS_SCORE_RESET * 2]
+		for k in stale_scores:
+			del _suspicious_scores[k]
+		stale_forms = [k for k, v in _form_submit_data.items() if not v or now - v[-1] > FORM_SUBMIT_WINDOW * 2]
+		for k in stale_forms:
+			del _form_submit_data[k]
+		stale_logins = [k for k, v in _login_attempts.items() if not v or now - v[-1] > LOGIN_ATTEMPT_WINDOW * 2]
+		for k in stale_logins:
+			del _login_attempts[k]
 
 
 # 페이지 방문 트래킹 (사람만, 하루에 IP+페이지당 1회)
@@ -1691,6 +1768,44 @@ def send_email(subject, to_email, body_text):
 @app.route('/send_mail', methods=['POST'])
 def send_mail():
 	"""문의 메시지 전송 (폼 POST / AJAX JSON 모두 지원)"""
+	# ── 스팸 방지 체크 ──
+	ip = request.remote_addr
+	now = _time.time()
+
+	# 1) 폼 제출 레이트 리밋
+	_form_submit_data[ip] = [t for t in _form_submit_data[ip] if now - t < FORM_SUBMIT_WINDOW]
+	if len(_form_submit_data[ip]) >= FORM_SUBMIT_MAX:
+		return {'success': False, 'error': '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.'}, 429
+	_form_submit_data[ip].append(now)
+
+	# 2) 허니팟 필드 체크
+	honeypot = request.form.get('website', '') or request.form.get('url_hp', '')
+	if request.is_json:
+		data_hp = request.get_json(silent=True) or {}
+		honeypot = data_hp.get('website', '') or data_hp.get('url_hp', '')
+	if honeypot:
+		app.logger.warning(f"[SPAM] 허니팟 트리거: IP={ip}")
+		auto_block_ip(ip, f'스팸 허니팟: {honeypot[:50]}')
+		# 정상 응답을 반환하여 스팸봇을 속임
+		if request.is_json:
+			return {'success': True, 'message': '접수되었습니다.'}, 200
+		flash('문의가 접수되었습니다.', 'success')
+		return redirect(url_for('contact'))
+
+	# 3) 타임스탐프 기반 검증 (3초 이내 제출은 봇)
+	form_ts = request.form.get('_ts', '') or (request.get_json(silent=True) or {}).get('_ts', '')
+	if form_ts:
+		try:
+			form_load_time = float(form_ts)
+			if now - form_load_time < 3:
+				app.logger.warning(f"[SPAM] 너무 빠른 폼 제출: IP={ip}, {now - form_load_time:.1f}초")
+				if request.is_json:
+					return {'success': True, 'message': '접수되었습니다.'}, 200
+				flash('문의가 접수되었습니다.', 'success')
+				return redirect(url_for('contact'))
+		except (ValueError, TypeError):
+			pass
+
 	# AJAX JSON 요청인지 확인
 	is_ajax = request.is_json
 
@@ -1710,6 +1825,15 @@ def send_mail():
 
 	if not email or not message_text:
 		error_msg = 'Please fill in email and message.' if lang == 'en' else '이메일과 메시지를 모두 입력해 주세요.'
+		if is_ajax:
+			return {'success': False, 'error': error_msg}, 400
+		flash(error_msg, 'error')
+		return redirect(url_for('contact', lang=lang) if lang == 'en' else url_for('contact'))
+
+	# 4) 이메일 형식 검증
+	import re as _re
+	if email and not _re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+		error_msg = 'Invalid email format.' if lang == 'en' else '올바른 이메일 형식이 아닙니다.'
 		if is_ajax:
 			return {'success': False, 'error': error_msg}, 400
 		flash(error_msg, 'error')
@@ -2317,10 +2441,20 @@ def schedule():
 
 	conn = get_db()
 	banner = get_banner_for_lang(conn, 'schedule', lang)
-	count_row = conn.execute('SELECT COUNT(*) as cnt FROM schedules').fetchone()
+
+	from datetime import date as _date
+	today = _date.today()
+	current_month_start = today.strftime('%Y-%m-01')
+
+	count_row = conn.execute(
+		"SELECT COUNT(*) as cnt FROM schedules WHERE event_date >= ?",
+		(current_month_start,)
+	).fetchone()
 	total = count_row['cnt']
-	schedules = conn.execute('SELECT * FROM schedules ORDER BY event_date DESC LIMIT ? OFFSET ?',
-		(per_page, (page - 1) * per_page)).fetchall()
+	schedules = conn.execute(
+		"SELECT * FROM schedules WHERE event_date >= ? ORDER BY event_date ASC LIMIT ? OFFSET ?",
+		(current_month_start, per_page, (page - 1) * per_page)
+	).fetchall()
 
 	# 달력용 전체 일정
 	all_events_raw = conn.execute('SELECT id, title, event_date, location, description FROM schedules ORDER BY event_date').fetchall()
@@ -2362,6 +2496,18 @@ def schedule_detail(schedule_id):
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
 	if request.method == 'POST':
+		ip = request.remote_addr
+		now = _time.time()
+
+		# ── 브루트포스 방어 ──
+		_login_attempts[ip] = [t for t in _login_attempts[ip] if now - t < LOGIN_ATTEMPT_WINDOW]
+		if len(_login_attempts[ip]) >= LOGIN_ATTEMPT_MAX:
+			remaining = int(LOGIN_BLOCK_SECONDS - (now - _login_attempts[ip][0]))
+			auto_block_ip(ip, f'로그인 브루트포스: {len(_login_attempts[ip])}회 실패', hours=1)
+			flash(f'로그인 시도가 너무 많습니다. {remaining // 60}분 후 다시 시도해주세요.', 'error')
+			app.logger.warning(f"[BRUTE_FORCE] IP={ip}, 시도횟수={len(_login_attempts[ip])}")
+			return render_template('admin/login.html')
+
 		username = request.form.get('username', '').strip()
 		password = request.form.get('password', '').strip()
 
@@ -2381,6 +2527,7 @@ def admin_login():
 			session['user_role'] = user['role']  # 'admin'
 			session['logged_in'] = True
 			session['username'] = user['username']
+			_login_attempts.pop(ip, None)
 			flash(f'{user["display_name"]}님 관리자 로그인 성공!', 'success')
 			return redirect(url_for('admin_dashboard'))
 
@@ -2388,10 +2535,18 @@ def admin_login():
 		if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
 			session['logged_in'] = True
 			session['username'] = username
+			_login_attempts.pop(ip, None)
 			flash('관리자 로그인 성공!', 'success')
 			return redirect(url_for('admin_dashboard'))
 
-		flash('아이디 또는 비밀번호가 잘못되었습니다.', 'error')
+		# 로그인 실패 → 시도 기록 추가
+		_login_attempts[ip].append(now)
+		remaining_attempts = LOGIN_ATTEMPT_MAX - len(_login_attempts[ip])
+		if remaining_attempts > 0:
+			flash(f'아이디 또는 비밀번호가 잘못되었습니다. (남은 시도: {remaining_attempts}회)', 'error')
+		else:
+			flash('로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.', 'error')
+		app.logger.warning(f"[LOGIN_FAIL] IP={ip}, username={username}")
 	
 	return render_template('admin/login.html')
 
